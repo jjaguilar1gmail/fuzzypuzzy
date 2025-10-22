@@ -62,3 +62,13 @@ class Grid:
                 else:
                     row_str += " . "
             print(row_str)
+    def neighbors_of(self, pos: Position):
+        """Returns a list of neighboring positions based on the grid's adjacency rules."""
+        # Utilize the Adjacency class to get raw neighbors
+        raw_neighbors = self.adjacency.get_neighbors(pos)
+        # Filter neighbors to ensure they are within grid bounds
+        valid_neighbors = []
+        for r, c in raw_neighbors:
+            if 0 <= r < self.rows and 0 <= c < self.cols:
+                valid_neighbors.append(Position(r, c))
+        return valid_neighbors

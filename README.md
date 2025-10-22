@@ -9,18 +9,20 @@ A step-by-step build plan for a handcrafted, modular Hidato puzzle platform in P
 🌱 Setup
 
  Quest 0 — Project Skeleton
-Create folders and empty class stubs with docstrings. Get a README in place and set up pip install -e ..
+Create folders and empty class stubs with docstrings. Get a README in place and set up DONE
+pip install -e ..
 
 🧱 Core Foundations
 
- Quest 1 — Cells & Positions
+ Quest 1 — Cells & Positions - DONE
 Define Position, Cell, and Grid. Add basic get/set/iterate methods and print a simple 5×5 text grid.
 
  Quest 2 — Adjacency Rules
-Implement a system to list neighboring cells (4- or 8-direction). Verify behavior at corners/edges.
+Implement a system to list neighboring cells (4- or 8-direction). DONE
+Verify behavior at corners/edges. DONE
 
  Quest 3 — ASCII Renderer
-Build a text-based board printer that clearly distinguishes blocked cells, empty cells, and givens.
+Build a text-based board printer that clearly distinguishes blocked cells, empty cells, and givens. - Figure out where best to put this tool (given your little renderer in the grid, maybe a pretty_print in the grid? Make a test for this.)
 
  Quest 4 — Constraints & Puzzle Container
 Bundle rules (Constraints) and the grid (Puzzle) into one structure. Add basic export/import (e.g., JSON).
