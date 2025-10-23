@@ -21,6 +21,8 @@ Define Position, Cell, and Grid. Add basic get/set/iterate methods and print a s
 Implement a system to list neighboring cells (4- or 8-direction). DONE
 Verify behavior at corners/edges. DONE
 
+Quest intermission - git ignore all the pycaches!!!!
+
  Quest 3 — ASCII Renderer
 Build a text-based board printer that clearly distinguishes blocked cells, empty cells, and givens. - Figure out where best to put this tool (given your little renderer in the grid, maybe a pretty_print in the grid? Make a test for this.)
 
