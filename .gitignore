@@ -1,3 +1,4 @@
 # Ignore Python bytecode caches everywhere
 __pycache__/
+.venv/
 *.py[cod]
