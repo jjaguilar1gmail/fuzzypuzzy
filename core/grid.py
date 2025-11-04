@@ -51,31 +51,14 @@ class Grid:
             if cell.is_filled():
                 yield cell.pos
     def print_grid(self):
-        """Prints a simple text representation of the grid to the console."""
-        for row in self.cells:
-            row_str = ""
-            for cell in row:
-                if cell.blocked:
-                    row_str += " X "
-                elif cell.value is not None:
-                    row_str += f" {cell.value} "
-                else:
-                    row_str += " . "
-            print(row_str)
+        """DEPRECATED: Printing moved to hidato_io/exporters.py to maintain core domain purity.
+        Use hidato_io.exporters.ascii_print(puzzle) instead."""
+        raise NotImplementedError("Use hidato_io.exporters.ascii_print(puzzle) instead")
+        
     def pretty_print_grid(self):
-        """Build a text-based board printer that clearly distinguishes blocked cells, empty cells, and givens."""
-        for row in self.cells:
-            row_str = ""
-            for cell in row:
-                if cell.blocked:
-                    row_str += "[X]"
-                elif cell.given:
-                    row_str += f"[{cell.value}]"
-                elif cell.value is not None:
-                    row_str += f" {cell.value} "
-                else:
-                    row_str += " . "
-            print(row_str)    
+        """DEPRECATED: Printing moved to hidato_io/exporters.py to maintain core domain purity.
+        Use hidato_io.exporters.ascii_print(puzzle) instead."""
+        raise NotImplementedError("Use hidato_io.exporters.ascii_print(puzzle) instead")
     def neighbors_of(self, pos: Position):
         """Returns a list of neighboring positions based on the grid's adjacency rules."""
         # Utilize the Adjacency class to get raw neighbors

@@ -1,99 +1,101 @@
 # fuzzypuzzy
-Its a puzzle game
+A collection of puzzle games with terminal interfaces and solving capabilities.
 
+## Current Feature: Hidato Terminal MVP ✅
 
-🧭 Hidato Puzzle Generator — Adventure Checklist
+A fully functional terminal-playable Hidato puzzle game with generation, solving, and ASCII rendering.
 
-A step-by-step build plan for a handcrafted, modular Hidato puzzle platform in Python.
+### 🚀 Quick Start
 
-🌱 Setup
+```bash
+# Main entry point (recommended)
+python hidato.py               # Start interactive REPL
+python hidato.py --demo        # Run full feature demonstration
+python hidato.py --version     # Show version information
+python hidato.py --help        # Show all CLI options
 
- Quest 0 — Project Skeleton
-Create folders and empty class stubs with docstrings. Get a README in place and set up DONE
-pip install -e ..
+# Alternative entry points
+python app/api.py              # Direct REPL access
+python complete_demo.py        # Comprehensive feature showcase
 
-🧱 Core Foundations
+# Available commands in REPL:
+generate 5x5           # Create a 5x5 puzzle
+generate 7x7 --seed 42 # Create reproducible 7x7 puzzle
+show                   # Display current puzzle
+move 2 3 15           # Place number 15 at position (2,3)
+hint                  # Get a solving hint
+solve                 # Auto-solve the puzzle
+export puzzle.json    # Save puzzle to file
+import puzzle.json    # Load puzzle from file
+help                  # Show all commands
+quit                  # Exit
+```
 
- Quest 1 — Cells & Positions - DONE
-Define Position, Cell, and Grid. Add basic get/set/iterate methods and print a simple 5×5 text grid.
+### ✨ Features
 
- Quest 2 — Adjacency Rules
-Implement a system to list neighboring cells (4- or 8-direction). DONE
-Verify behavior at corners/edges. DONE
+- **Puzzle Generation**: 5x5 and 7x7 Hidato puzzles with serpentine paths
+- **Interactive Play**: Move validation with adjacency constraints
+- **Intelligent Solving**: Hints and auto-solving with step explanations
+- **Visual Display**: Clean ASCII rendering with highlighted moves
+- **Save/Load**: JSON export/import with metadata preservation
+- **Performance**: Sub-second generation, real-time timing feedback
 
-Quest intermission - git ignore all the pycaches!!!! - DONE
+### 🎯 Example Session
 
- Quest 3 — ASCII Renderer
-Build a text-based board printer that clearly distinguishes blocked cells, empty cells, and givens. - Figure out where best to put this tool (given your little renderer in the grid, maybe a pretty_print in the grid? Make a test for this.) - DONE
+```
+$ python hidato.py
+🎯 Welcome to Hidato Terminal MVP!
+Type 'help' for commands or 'quit' to exit.
 
- Quest 4 — Constraints & Puzzle Container
-Bundle rules (Constraints) and the grid (Puzzle) into one structure. Add basic export/import (e.g., JSON). - DONE
+hidato> generate 5x5 --seed 42
+⏱️  Generate 5x5: 1.0ms
+Seed: 42, Givens: 5
 
-🧠 Path Generation
+[ 1] .  .  .  .
+ .  .  . [ 7] .
+ .  . [13] .  .
+ . [19] .  .  .
+ .  .  .  . [25]
 
- Quest 5 — Path Builder v0 (Deterministic Serpentine)
-Generate a clean “snake” path filling all cells. Confirm sequential numbering is correct.
+hidato> move 1 2 2
+✅ Placed 2 at (1, 2)
 
- Quest 6 — Path Builder v1 (Randomized)
-Add RNG and a bias to avoid dead ends. Generate different paths with different seeds.
+[ 1]* 2* .  .  .
+ .  .  . [ 7] .
+ .  . [13] .  .
+ . [19] .  .  .
+ .  .  .  . [25]
 
-✍️ Clue Placement & Puzzle Creation
+hidato> export my-puzzle
+✅ Puzzle exported to my-puzzle.json
 
- Quest 7 — Clue Placer v0
-Always reveal 1 and N, plus a few random clues. Optionally experiment with symmetry.
+hidato> hint
+💡 Hint: Place 3 at (2, 1): Only possible value for this cell
+```
 
-🧮 Solving & Validation
+### 🎮 Entry Points
 
- Quest 8 — Solver v0 (Greedy)
-Implement simple consecutive-number placement. Produce a step-by-step textual trace.
+| Command | Purpose | Features |
+|---------|---------|----------|
+| `python hidato.py` | **Main entry point** | CLI options, help, version info |
+| `python hidato.py --demo` | Feature demonstration | Automated showcase of all capabilities |
+| `python app/api.py` | Direct REPL | Immediate access to puzzle interface |
+| `python complete_demo.py` | Comprehensive test | Full phase-by-phase feature validation |
 
- Quest 9 — Uniqueness Check v0
-Add limited backtracking to count up to 2 solutions. Ensure puzzles are uniquely solvable.
+### 📁 Project Structure
 
- Quest 10 — Difficulty Estimator v0
-Compute difficulty based on % logic solved, backtracks, branching. Map to Easy/Medium/Hard.
+```
+core/          # Domain model (Position, Cell, Grid, Puzzle)
+generate/      # Puzzle generation pipeline
+solve/         # Solving algorithms and strategies  
+hidato_io/     # ASCII rendering and JSON serialization
+app/           # REPL interface and move validation
+util/          # Profiling and utilities
+tests/         # Contract tests for core functionality
+```
 
-🎯 Adaptive Generation
+**Documentation**:
+- [Feature Specification](specs/001-hidato-terminal-mvp/spec.md) - Requirements and user stories
+- [Implementation Plan](specs/001-hidato-terminal-mvp/plan.md) - Technical approach and architecture  
+- [Quickstart Guide](specs/001-hidato-terminal-mvp/quickstart.md) - How to run the MVP
 
- Quest 11 — Clue Placer v1 (Target Difficulty)
-Loop clue placement → uniqueness check → difficulty estimate until target difficulty is achieved.
-
-✨ Presentation
-
- Quest 12 — Pretty Output (SVG / PDF)
-Create clean, publication-quality SVG or PDF renderings of puzzles and solutions.
-
- Quest 13 — “Play Mode” (Keyboard/Click REPL)
-Add a simple interactive loop so you can play your own puzzles in the terminal.
-
-🧠 Smarter Logic
-
- Quest 14 — Strategy Plug-ins
-Modularize solving strategies (e.g., Consecutive Neighbor, Single Candidate). Enable toggling strategies for traces.
-
-📦 Content & Variety
-
- Quest 15 — Packs & Seeds
-Generate batches of puzzles (packs) with stored seeds and metadata for reproducibility.
-
- Quest 16 — Irregular Shapes & Blocks
-Add support for blocked cells and irregular shapes. Ensure generator + solver still function.
-
-🧼 Polish
-
- Quest 17 — Hygiene & Joy
-Add configuration, timers, and logging. Keep a “bloopers” log of weird puzzles. Celebrate progress!
-
-🌿 Optional Side Quests
-
- TUI Renderer — build a beautiful terminal UI (e.g., with Textual).
-
- Sound/Haptics — playful feedback for correct/incorrect moves.
-
- Tutorial Puzzle — step-by-step guided puzzle for new players.
-
- Daily Puzzle Mode — puzzle seed = YYYYMMDD.
-
-✅ Tip: Don’t rush. Each quest should end with something you can see, touch, or screenshot. That’s your adventure log.
-
-📸 Pro tip: keep a /progress_log folder with screenshots and notes from each quest — it’s surprisingly motivating to look back at.
