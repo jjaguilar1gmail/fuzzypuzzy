@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://fuzzypuzzy/specs/puzzle.schema.json",
+  "title": "HidatoPuzzle",
+  "type": "object",
+  "required": ["grid", "constraints", "difficulty"],
+  "properties": {
+    "grid": {
+      "type": "object",
+      "required": ["rows", "cols", "cells"],
+      "properties": {
+        "rows": { "type": "integer", "minimum": 1 },
+        "cols": { "type": "integer", "minimum": 1 },
+        "cells": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["row", "col", "value", "blocked", "given"],
+              "properties": {
+                "row": { "type": "integer", "minimum": 0 },
+                "col": { "type": "integer", "minimum": 0 },
+                "value": { "type": ["integer", "null"] },
+                "blocked": { "type": "boolean" },
+                "given": { "type": "boolean" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "constraints": {
+      "type": "object",
+      "required": ["min_value", "max_value", "allow_diagonal", "must_be_connected"],
+      "properties": {
+        "min_value": { "type": "integer" },
+        "max_value": { "type": "integer" },
+        "allow_diagonal": { "type": "boolean" },
+        "must_be_connected": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "difficulty": { "type": "string" },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "seed": { "type": ["integer", "string"] },
+        "path_mode": { "type": "string" },
+        "clue_mode": { "type": "string" },
+        "generated_at": { "type": "string" },
+        "timings_ms": {
+          "type": "object",
+          "additionalProperties": { "type": "number" }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
