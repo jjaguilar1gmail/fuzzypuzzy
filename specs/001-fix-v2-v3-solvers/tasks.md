@@ -22,9 +22,9 @@ description: "Task list for fixing v2/v3 solvers to solve canonical 5x5"
 
 **Purpose**: Ensure scaffolding and fixtures exist for independent testing
 
-- [ ] T001 Ensure feature branch is checked out (001-fix-v2-v3-solvers)
-- [ ] T002 [P] Add canonical 5x5 deterministic fixture in tests/integration/fixtures/canonical_5x5.json
-- [ ] T003 [P] Add test utility for timing/node metrics in tests/util/perf_utils.py
+- [x] T001 Ensure feature branch is checked out (001-fix-v2-v3-solvers)
+- [x] T002 [P] Add canonical 5x5 deterministic fixture in tests/integration/fixtures/canonical_5x5.json
+- [x] T003 [P] Add test utility for timing/node metrics in tests/util/perf_utils.py
 
 ---
 
@@ -32,10 +32,10 @@ description: "Task list for fixing v2/v3 solvers to solve canonical 5x5"
 
 **Purpose**: Core solver infrastructure needed by all stories
 
-- [ ] T004 Introduce logic fixpoint function signature in solve/solver.py (apply_logic_fixpoint(state) -> (progress, solved))
-- [ ] T005 [P] Ensure public solve() does not mutate caller Puzzle; confirm internal search uses copies in solve/solver.py
-- [ ] T006 [P] Add deterministic tie-breaking helpers (row,col; value asc) in util/ordering.py
-- [ ] T007 Wire trace recording interface for pruning reasons in solve/solver.py
+- [x] T004 Introduce logic fixpoint function signature in solve/solver.py (apply_logic_fixpoint(state) -> (progress, solved))
+- [x] T005 [P] Ensure public solve() does not mutate caller Puzzle; confirm internal search uses copies in solve/solver.py
+- [x] T006 [P] Add deterministic tie-breaking helpers (row,col; value asc) in util/ordering.py
+- [x] T007 Wire trace recording interface for pruning reasons in solve/solver.py
 
 **Checkpoint**: Foundation ready — user story implementation can now begin
 
@@ -49,16 +49,16 @@ description: "Task list for fixing v2/v3 solvers to solve canonical 5x5"
 
 ### Tests for User Story 1 (targeted regressions)
 
-- [ ] T008 [P] [US1] Add unit test for degree pruning thresholds in tests/unit/test_degree_pruning.py
-- [ ] T009 [P] [US1] Add unit test for corridor distance-sum inequality in tests/unit/test_corridor_bfs.py
-- [ ] T010 [P] [US1] Add unit test for minimal region capacity in tests/unit/test_region_capacity.py
+- [x] T008 [P] [US1] Add unit test for degree pruning thresholds in tests/unit/test_degree_pruning.py
+- [x] T009 [P] [US1] Add unit test for corridor distance-sum inequality in tests/unit/test_corridor_bfs.py
+- [x] T010 [P] [US1] Add unit test for minimal region capacity in tests/unit/test_region_capacity.py
 - [ ] T011 [US1] Add integration test for v2 fixpoint behavior on canonical 5x5 in tests/integration/test_v2_fixpoint.py
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Create corridor helper (distance-sum, dual BFS) in solve/corridor.py
-- [ ] T013 [P] [US1] Implement corridor cache lifecycle (invalidate on placement; set clean after compute) in solve/corridor.py
-- [ ] T014 [P] [US1] Create degree helper (empty-neighbor count) in solve/degree.py
+- [x] T012 [P] [US1] Create corridor helper (distance-sum, dual BFS) in solve/corridor.py
+- [x] T013 [P] [US1] Implement corridor cache lifecycle (invalidate on placement; set clean after compute) in solve/corridor.py
+- [x] T014 [P] [US1] Create degree helper (empty-neighbor count) in solve/degree.py
 - [ ] T015 [P] [US1] Implement region capacity (coarse connected components) in solve/region.py
 - [ ] T016 [US1] Integrate corridor pruning into logic_v2 fixpoint in solve/solver.py
 - [ ] T017 [US1] Integrate degree pruning into logic_v2 fixpoint in solve/solver.py

@@ -27,11 +27,15 @@ class SolverStep:
 class SolverResult:
     """Contains the result of a solving attempt."""
     
-    def __init__(self, solved: bool, steps: list[SolverStep], message: str = "", solved_puzzle: 'Puzzle' = None):
+    def __init__(self, solved: bool, steps: list[SolverStep], message: str = "", solved_puzzle: 'Puzzle' = None,
+                 nodes: int = 0, depth: int = 0, progress_made: bool = False):
         self.solved = solved
         self.steps = steps
         self.message = message
         self.solved_puzzle = solved_puzzle
+        self.nodes = nodes  # For search-based solvers
+        self.depth = depth  # For search-based solvers
+        self.progress_made = progress_made  # For logic-only solvers
 
 class Solver:
     """Deterministic solver for Hidato puzzles using consecutive logic."""
@@ -90,6 +94,31 @@ class Solver:
                 # Only copy values for non-given cells
                 if not original_cell.given and solved_cell.value is not None:
                     original_cell.value = solved_cell.value
+    
+    @staticmethod
+    def apply_logic_fixpoint(puzzle_state: Puzzle, max_passes: int = 10, **logic_options) -> tuple[bool, bool, list[SolverStep]]:
+        """
+        Apply logic_v2 strategies to a puzzle state until fixpoint (no progress).
+        This operates in-place on the puzzle_state for use within search.
+        
+        Args:
+            puzzle_state: Puzzle to apply logic to (modified in-place)
+            max_passes: Maximum iterations before stopping
+            **logic_options: Options for logic_v2 (tie_break, enable_*)
+            
+        Returns:
+            Tuple of (progress_made, solved, steps) where:
+                progress_made: Whether any placement/elimination occurred
+                solved: Whether puzzle is fully solved
+                steps: List of SolverStep objects documenting changes
+        """
+        temp_solver = Solver(puzzle_state)
+        result = temp_solver._solve_logic_v2(max_logic_passes=max_passes, **logic_options)
+        
+        # The temp_solver worked on a deep copy; we need to copy changes back to puzzle_state
+        Solver._apply_solution_to_puzzle(puzzle_state, temp_solver.puzzle)
+        
+        return (result.progress_made or len(result.steps) > 0, result.solved, result.steps)
     
     def _solve_logic_v0(self) -> SolverResult:
         """Solve using consecutive logic (no guessing).
@@ -231,6 +260,16 @@ class Solver:
         cell.value = value
         
         step = SolverStep(pos, value, reason)
+        self.steps.append(step)
+    
+    def _record_elimination(self, strategy: str, count: int, details: str = ""):
+        """Record an elimination step without placement (for pruning strategies)."""
+        # Use a placeholder position for elimination-only steps
+        placeholder_pos = Position(-1, -1)
+        reason = f"{strategy}: eliminated {count} candidate(s)"
+        if details:
+            reason += f" - {details}"
+        step = SolverStep(placeholder_pos, -1, reason)
         self.steps.append(step)
     
     def _is_solved(self) -> bool:
@@ -536,6 +575,7 @@ class Solver:
         
         max_iterations = max_logic_passes
         iteration = 0
+        overall_progress = False  # Track if ANY progress was made across all iterations
         
         # Initialize advanced analysis structures
         candidates = CandidateModel()
@@ -574,19 +614,22 @@ class Solver:
             
             # Update analysis structures if progress was made
             if progress_made:
+                overall_progress = True  # Track that we made progress this run
                 regions.build_regions(self.puzzle)
                 corridors.invalidate_cache()
                 degrees.build_degree_index(self.puzzle)
             
             # Check if solved
             if self._is_solved():
-                return SolverResult(True, self.steps, f"Solved using logic_v2 in {iteration} iterations", self.puzzle)
+                return SolverResult(True, self.steps, f"Solved using logic_v2 in {iteration} iterations", 
+                                  self.puzzle, progress_made=True)
             
             # If no progress, stop
             if not progress_made:
                 break
         
-        return SolverResult(False, self.steps, f"Stuck after {iteration} iterations using logic_v2 - no more logical moves", self.puzzle)
+        return SolverResult(False, self.steps, f"Stuck after {iteration} iterations using logic_v2 - no more logical moves", 
+                          self.puzzle, progress_made=overall_progress)
     
     def _solve_logic_v3(self, max_logic_passes: int = 50, tie_break: str = "row_col",
                        enable_island_elim: bool = True, enable_segment_bridging: bool = True,

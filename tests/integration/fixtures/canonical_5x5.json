@@ -1,0 +1,15 @@
+{
+  "description": "Classic 5x5 deterministic Hidato puzzle with 5 givens",
+  "rows": 5,
+  "cols": 5,
+  "adjacency": "8",
+  "min_value": 1,
+  "max_value": 25,
+  "givens": [
+    {"row": 0, "col": 0, "value": 1},
+    {"row": 1, "col": 3, "value": 7},
+    {"row": 2, "col": 2, "value": 13},
+    {"row": 3, "col": 1, "value": 19},
+    {"row": 4, "col": 4, "value": 25}
+  ]
+}
