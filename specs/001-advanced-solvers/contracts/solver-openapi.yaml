@@ -1,0 +1,105 @@
+openapi: 3.0.3
+info:
+  title: FuzzyPuzzy Solver API
+  version: 0.1.0
+paths:
+  /solve:
+    post:
+      summary: Solve a Hidato puzzle using a specified mode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                puzzle:
+                  type: object
+                  description: Serialized puzzle state
+                mode:
+                  type: string
+                  enum: [logic_v0, logic_v1, logic_v2, logic_v3]
+                config:
+                  type: object
+                  properties:
+                    max_logic_passes:
+                      type: integer
+                      default: 50
+                    tie_break:
+                      type: string
+                      enum: [row_col]
+                    enable_island_elim:
+                      type: boolean
+                      default: true
+                    enable_segment_bridging:
+                      type: boolean
+                      default: true
+                    enable_degree_prune:
+                      type: boolean
+                      default: true
+                    search:
+                      type: object
+                      properties:
+                        max_nodes: { type: integer, default: 20000 }
+                        max_depth: { type: integer, default: 50 }
+                        timeout_ms: { type: integer, default: 500 }
+                        ordering: { type: string, enum: [mrv_lcv_frontier], default: mrv_lcv_frontier }
+              required: [puzzle, mode]
+      responses:
+        '200':
+          description: Solver result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  solved: { type: boolean }
+                  steps:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        row: { type: integer }
+                        col: { type: integer }
+                        value: { type: integer }
+                        reason: { type: string }
+                  message: { type: string }
+                  stats:
+                    type: object
+                    properties:
+                      nodes: { type: integer }
+                      max_depth: { type: integer }
+                      elapsed_ms: { type: integer }
+                      logic_steps: { type: integer }
+        '400': { description: Invalid request }
+  /hint:
+    post:
+      summary: Get the next logical step without mutating puzzle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                puzzle: { type: object }
+                mode: { type: string, enum: [logic_v0, logic_v1, logic_v2, logic_v3] }
+              required: [puzzle, mode]
+      responses:
+        '200':
+          description: Hint result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hint:
+                    type: object
+                    nullable: true
+                    properties:
+                      row: { type: integer }
+                      col: { type: integer }
+                      value: { type: integer }
+                      reason: { type: string }
+                  message: { type: string }
+        '400': { description: Invalid request }

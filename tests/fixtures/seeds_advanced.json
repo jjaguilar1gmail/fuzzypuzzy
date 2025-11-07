@@ -1,0 +1,27 @@
+{
+  "description": "Reproducible seed list for advanced solver test fixtures",
+  "created": "2025-11-06",
+  "purpose": "Enable deterministic test puzzle generation for v1/v2/v3 solver mode validation",
+  "seeds": {
+    "v1_medium_20": [
+      12345, 23456, 34567, 45678, 56789, 67890, 78901, 89012, 90123, 1234,
+      2345, 3456, 4567, 5678, 6789, 7890, 8901, 9012, 123, 234
+    ],
+    "v2_hard_20": [
+      11111, 22222, 33333, 44444, 55555, 66666, 77777, 88888, 99999, 10101,
+      20202, 30303, 40404, 50505, 60606, 70707, 80808, 90909, 12121, 23232
+    ],
+    "v3_expert_samples": [
+      97531, 86420, 75319, 64208, 53197, 42086, 31975, 20864, 19753, 8642
+    ],
+    "reproducibility_test": [
+      42424, 13579, 97531
+    ]
+  },
+  "notes": {
+    "v1_medium_20": "Puzzles solvable by logic_v1 but not logic_v0 (two-ended propagation required)",
+    "v2_hard_20": "Puzzles requiring region/corridor/degree logic beyond v1",
+    "v3_expert_samples": "Puzzles needing bounded search (unsolved by v2 deterministic logic)",
+    "reproducibility_test": "Seeds for testing deterministic trace hash stability"
+  }
+}
