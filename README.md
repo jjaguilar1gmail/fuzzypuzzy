@@ -18,13 +18,22 @@ python hidato.py --help        # Show all CLI options
 python app/api.py              # Direct REPL access
 python complete_demo.py        # Comprehensive feature showcase
 
+# Advanced solver modes (available in REPL):
+solve --mode logic_v0          # Basic consecutive logic (default)
+solve --mode logic_v1          # Enhanced two-ended propagation
+solve --mode logic_v2          # Region-aware spatial reasoning  
+solve --mode logic_v3          # Bounded search with backtracking
+
 # Available commands in REPL:
 generate 5x5           # Create a 5x5 puzzle
 generate 7x7 --seed 42 # Create reproducible 7x7 puzzle
 show                   # Display current puzzle
 move 2 3 15           # Place number 15 at position (2,3)
-hint                  # Get a solving hint
-solve                 # Auto-solve the puzzle
+hint                  # Get a solving hint (default: logic_v0)
+hint --mode logic_v1   # Get hint using enhanced logic solver
+solve                 # Auto-solve the puzzle (default: logic_v0)
+solve --mode logic_v2  # Solve using region-aware techniques
+solve --mode logic_v3  # Solve using bounded search with backtracking
 export puzzle.json    # Save puzzle to file
 import puzzle.json    # Load puzzle from file
 help                  # Show all commands
@@ -35,7 +44,8 @@ quit                  # Exit
 
 - **Puzzle Generation**: 5x5 and 7x7 Hidato puzzles with serpentine paths
 - **Interactive Play**: Move validation with adjacency constraints
-- **Intelligent Solving**: Hints and auto-solving with step explanations
+- **Advanced Solving**: 4 progressive solver modes from basic to bounded search
+- **Intelligent Hints**: Context-aware solving suggestions with mode selection
 - **Visual Display**: Clean ASCII rendering with highlighted moves
 - **Save/Load**: JSON export/import with metadata preservation
 - **Performance**: Sub-second generation, real-time timing feedback
@@ -69,8 +79,14 @@ hidato> move 1 2 2
 hidato> export my-puzzle
 ✅ Puzzle exported to my-puzzle.json
 
-hidato> hint
-💡 Hint: Place 3 at (2, 1): Only possible value for this cell
+hidato> hint --mode logic_v1
+💡 Hint (logic_v1): Place 3 at (2, 1): Only possible value for this cell
+
+hidato> solve --mode logic_v2
+🔍 Attempting to solve puzzle using logic_v2...
+⏱️  Solve puzzle (logic_v2): 15.2ms
+✅ Puzzle solved successfully!
+🎯 Solution found in 8 steps
 ```
 
 ### 🎮 Entry Points
@@ -81,6 +97,23 @@ hidato> hint
 | `python hidato.py --demo` | Feature demonstration | Automated showcase of all capabilities |
 | `python app/api.py` | Direct REPL | Immediate access to puzzle interface |
 | `python complete_demo.py` | Comprehensive test | Full phase-by-phase feature validation |
+
+### 🧠 Solver Modes
+
+| Mode | Description | Capabilities | Best For |
+|------|-------------|--------------|----------|
+| `logic_v0` | Basic consecutive logic | Single-cell deduction | Simple puzzles |
+| `logic_v1` | Enhanced two-ended propagation | Bidirectional reasoning | Medium difficulty |
+| `logic_v2` | Region-aware spatial reasoning | Empty region analysis, corridor mapping | Complex layouts |
+| `logic_v3` | Bounded search with backtracking | Smart guessing with constraints | Hardest puzzles |
+
+**Usage Examples:**
+```bash
+# In REPL, try different modes for challenging puzzles
+solve --mode logic_v1    # Try enhanced logic first
+solve --mode logic_v2    # If stuck, use spatial reasoning
+solve --mode logic_v3    # For puzzles requiring search
+```
 
 ### 📁 Project Structure
 

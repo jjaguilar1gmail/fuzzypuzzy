@@ -30,9 +30,11 @@ class HidatoREPL:
         
     def run(self):
         """Run the REPL loop."""
-        print("Hidato Terminal MVP")
-        print("Commands: generate <size>, show, move <row> <col> <value>, hint, solve, export <file>, import <file>, quit")
-        print("Example: generate 5x5")
+        print("Hidato Terminal MVP - Advanced Solver Edition")
+        print("Commands: generate <size>, show, move <row> <col> <value>, hint [--mode <mode>], solve [--mode <mode>], export <file>, import <file>, quit")
+        print("Solver modes: logic_v0 (basic), logic_v1 (enhanced), logic_v2 (spatial), logic_v3 (search)")
+        print("Example: generate 5x5, solve --mode logic_v1, hint --mode logic_v2")
+        print("Type 'help' for detailed command information")
         print()
         
         while True:
@@ -54,9 +56,9 @@ class HidatoREPL:
                 elif cmd == "move":
                     self._handle_move(parts[1:])
                 elif cmd == "hint":
-                    self._handle_hint()
+                    self._handle_hint(parts[1:])
                 elif cmd == "solve":
-                    self._handle_solve()
+                    self._handle_solve(parts[1:])
                 elif cmd == "export":
                     self._handle_export(parts[1:])
                 elif cmd == "import":
@@ -167,36 +169,66 @@ class HidatoREPL:
         else:
             print(f"❌ Invalid move: {error_msg}")
     
-    def _handle_hint(self):
-        """Handle hint command."""
+    def _handle_hint(self, args):
+        """Handle hint command with optional mode parameter."""
         if self.current_puzzle is None:
             print("No puzzle loaded. Use 'generate <size>' first.")
             return
+        
+        # Parse mode argument
+        mode = "logic_v0"  # default
+        config = {}
+        
+        i = 0
+        while i < len(args):
+            if args[i] == "--mode" and i + 1 < len(args):
+                mode = args[i + 1]
+                i += 2
+            else:
+                i += 1
         
         try:
             solver = Solver(self.current_puzzle)
-            hint = solver.get_hint()
+            hint = solver.get_hint(mode=mode, **config)
             
             if hint:
-                print(f"💡 Hint: {hint}")
+                print(f"💡 Hint ({mode}): {hint}")
                 pos = hint.position
                 ascii_print(self.current_puzzle, highlight_move=(pos.row, pos.col))
             else:
-                print("🤔 No hints available - puzzle may require guessing or be unsolvable with basic logic")
+                print(f"🤔 No hints available using {mode} - puzzle may require a different mode or be unsolvable")
         except Exception as e:
             print(f"❌ Error getting hint: {e}")
     
-    def _handle_solve(self):
-        """Handle solve command."""
+    def _handle_solve(self, args):
+        """Handle solve command with optional mode parameter."""
         if self.current_puzzle is None:
             print("No puzzle loaded. Use 'generate <size>' first.")
             return
         
+        # Parse mode argument
+        mode = "logic_v0"  # default
+        config = {}
+        
+        i = 0
+        while i < len(args):
+            if args[i] == "--mode" and i + 1 < len(args):
+                mode = args[i + 1]
+                i += 2
+            else:
+                i += 1
+        
+        # Set reasonable defaults for logic_v3 in REPL
+        if mode == "logic_v3":
+            config.setdefault('timeout_ms', 10000)  # 10 seconds default
+            config.setdefault('max_nodes', 50000)   # More nodes
+            config.setdefault('max_depth', 100)     # Deeper search
+        
         try:
-            print("🔍 Attempting to solve puzzle...")
+            print(f"🔍 Attempting to solve puzzle using {mode}...")
             
-            with time_it("Solve puzzle"):
-                result = Solver.solve(self.current_puzzle)
+            with time_it(f"Solve puzzle ({mode})"):
+                result = Solver.solve(self.current_puzzle, mode=mode, **config)
             
             if result.solved:
                 print(f"✅ {result.message}")
@@ -206,7 +238,16 @@ class HidatoREPL:
                 # The solver modifies a copy, so we need to get the final puzzle
                 # from the solver instance that was used
                 solver = Solver(self.current_puzzle)
-                solved_result = solver._solve_logic_v0()
+                if mode == "logic_v0":
+                    solved_result = solver._solve_logic_v0()
+                elif mode == "logic_v1":
+                    solved_result = solver._solve_logic_v1(**config)
+                elif mode == "logic_v2":
+                    solved_result = solver._solve_logic_v2(**config)  
+                elif mode == "logic_v3":
+                    solved_result = solver._solve_logic_v3(**config)
+                else:
+                    solved_result = solver._solve_logic_v0()
                 ascii_print(solver.puzzle)
                 
                 # Show summary of steps
@@ -287,12 +328,22 @@ class HidatoREPL:
         print("  generate <size> [--seed <int>]  Generate new puzzle (5x5, 7x7)")
         print("  show                            Show current puzzle")
         print("  move <row> <col> <value>        Place a number (1-based coordinates)")
-        print("  hint                            Get a solving hint")
-        print("  solve                           Auto-solve the puzzle")
+        print("  hint [--mode <mode>]            Get a solving hint")
+        print("  solve [--mode <mode>]           Auto-solve the puzzle")
         print("  export <filename>               Save puzzle to JSON file")
         print("  import <filename>               Load puzzle from JSON file")
         print("  help                            Show this help")
         print("  quit                            Exit REPL")
+        print()
+        print("Solver modes:")
+        print("  logic_v0 (default)              Basic consecutive logic")
+        print("  logic_v1                        Enhanced two-ended propagation") 
+        print("  logic_v2                        Region-aware spatial reasoning")
+        print("  logic_v3                        Bounded search with backtracking")
+        print()
+        print("Examples:")
+        print("  hint --mode logic_v1")
+        print("  solve --mode logic_v2")
 
 class API:
     """High-level API façade."""
