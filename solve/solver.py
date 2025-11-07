@@ -6,6 +6,9 @@ import copy
 from typing import TYPE_CHECKING
 from core.position import Position
 from core.puzzle import Puzzle
+from solve.corridors import CorridorMap
+from solve.degree import DegreeIndex
+from solve.regions import RegionCache, EmptyRegion
 
 if TYPE_CHECKING:
     from solve.candidates import CandidateModel
