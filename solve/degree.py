@@ -40,12 +40,15 @@ class DegreeIndex:
     def _calculate_degree(self, puzzle: Puzzle, pos: Position) -> int:
         """Calculate degree for a single position.
         
+        Degree = number of empty neighbors only. Filled neighbors do not count
+        because they cannot be part of future placements.
+        
         Args:
             puzzle: Current puzzle state
             pos: Position to analyze
             
         Returns:
-            Number of neighbors that are empty or could be part of a sequence
+            Number of neighbors that are empty
         """
         degree = 0
         neighbors = puzzle.grid.neighbors_of(pos)
@@ -53,12 +56,8 @@ class DegreeIndex:
         for neighbor_pos in neighbors:
             neighbor_cell = puzzle.grid.get_cell(neighbor_pos)
             
-            # Count empty neighbors
+            # Count only empty neighbors (filled neighbors don't count)
             if neighbor_cell.is_empty():
-                degree += 1
-            # Also count filled neighbors that could be part of a sequence
-            elif neighbor_cell.value is not None:
-                # This neighbor could potentially connect to sequences through pos
                 degree += 1
         
         return degree

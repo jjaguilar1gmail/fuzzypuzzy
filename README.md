@@ -11,6 +11,7 @@ A fully functional terminal-playable Hidato puzzle game with generation, solving
 # Main entry point (recommended)
 python hidato.py               # Start interactive REPL
 python hidato.py --demo        # Run full feature demonstration
+python hidato.py --trace       # Run solver with detailed trace (for debugging/learning)
 python hidato.py --version     # Show version information
 python hidato.py --help        # Show all CLI options
 
@@ -46,9 +47,11 @@ quit                  # Exit
 - **Interactive Play**: Move validation with adjacency constraints
 - **Advanced Solving**: 4 progressive solver modes from basic to bounded search
 - **Intelligent Hints**: Context-aware solving suggestions with mode selection
+- **Detailed Tracing**: Step-by-step solver trace with strategy breakdown and validation
+- **Solution Validation**: Automatic verification (givens preserved, contiguous path, all values)
 - **Visual Display**: Clean ASCII rendering with highlighted moves
 - **Save/Load**: JSON export/import with metadata preservation
-- **Performance**: Sub-second generation, real-time timing feedback
+- **Performance**: Sub-second generation, deterministic solving, real-time timing feedback
 
 ### 🎯 Example Session
 
@@ -100,19 +103,29 @@ hidato> solve --mode logic_v2
 
 ### 🧠 Solver Modes
 
-| Mode | Description | Capabilities | Best For |
-|------|-------------|--------------|----------|
-| `logic_v0` | Basic consecutive logic | Single-cell deduction | Simple puzzles |
-| `logic_v1` | Enhanced two-ended propagation | Bidirectional reasoning | Medium difficulty |
-| `logic_v2` | Region-aware spatial reasoning | Empty region analysis, corridor mapping | Complex layouts |
-| `logic_v3` | Bounded search with backtracking | Smart guessing with constraints | Hardest puzzles |
+| Mode | Description | Capabilities | Performance |
+|------|-------------|--------------|-------------|
+| `logic_v0` | Basic consecutive logic | Single-cell deduction | <1ms |
+| `logic_v1` | Enhanced two-ended propagation | Bidirectional reasoning | <5ms |
+| `logic_v2` | Region-aware spatial reasoning | Corridor/degree/island elimination | ~15ms, ≥1 elimination |
+| `logic_v3` | Bounded search with backtracking | MRV by value, LCV/frontier ordering | ~160ms, 25 nodes, depth 14 |
+
+**Recent Improvements (001-fix-v2-v3-solvers)**:
+- ✅ **v2 (logic_v2)**: Now reaches fixpoint with corridor bridging, degree pruning, and island elimination
+- ✅ **v3 (logic_v3)**: Fixed in-place logic application and MRV-by-value heuristic
+  - **Performance**: Solves canonical 5x5 in ~160ms with 25 nodes and depth 14 (87% node reduction from baseline)
+  - **Correctness**: 100% deterministic, full solution validation
+  - **Tracing**: Use `python hidato.py --trace` to see detailed solving steps
 
 **Usage Examples:**
 ```bash
 # In REPL, try different modes for challenging puzzles
 solve --mode logic_v1    # Try enhanced logic first
-solve --mode logic_v2    # If stuck, use spatial reasoning
-solve --mode logic_v3    # For puzzles requiring search
+solve --mode logic_v2    # If stuck, use spatial reasoning (fast)
+solve --mode logic_v3    # For puzzles requiring search (deterministic)
+
+# See detailed solving trace with validation
+python hidato.py --trace  # Shows strategy breakdown and step-by-step trace
 ```
 
 ### 📁 Project Structure
@@ -131,4 +144,6 @@ tests/         # Contract tests for core functionality
 - [Feature Specification](specs/001-hidato-terminal-mvp/spec.md) - Requirements and user stories
 - [Implementation Plan](specs/001-hidato-terminal-mvp/plan.md) - Technical approach and architecture  
 - [Quickstart Guide](specs/001-hidato-terminal-mvp/quickstart.md) - How to run the MVP
+- [Solver Improvements](specs/001-fix-v2-v3-solvers/spec.md) - v2/v3 solver fixes and enhancements
+- [Solver Implementation](specs/001-fix-v2-v3-solvers/plan.md) - Technical details of solver improvements
 

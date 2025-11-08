@@ -27,11 +27,15 @@ class SolverStep:
 class SolverResult:
     """Contains the result of a solving attempt."""
     
-    def __init__(self, solved: bool, steps: list[SolverStep], message: str = "", solved_puzzle: 'Puzzle' = None):
+    def __init__(self, solved: bool, steps: list[SolverStep], message: str = "", solved_puzzle: 'Puzzle' = None,
+                 nodes: int = 0, depth: int = 0, progress_made: bool = False):
         self.solved = solved
         self.steps = steps
         self.message = message
         self.solved_puzzle = solved_puzzle
+        self.nodes = nodes  # For search-based solvers
+        self.depth = depth  # For search-based solvers
+        self.progress_made = progress_made  # For logic-only solvers
 
 class Solver:
     """Deterministic solver for Hidato puzzles using consecutive logic."""
@@ -90,6 +94,41 @@ class Solver:
                 # Only copy values for non-given cells
                 if not original_cell.given and solved_cell.value is not None:
                     original_cell.value = solved_cell.value
+    
+    @staticmethod
+    def apply_logic_fixpoint(puzzle_state: Puzzle, max_passes: int = 10, **logic_options) -> tuple[bool, bool, list[SolverStep]]:
+        """
+        Apply logic_v2 strategies to a puzzle state until fixpoint (no progress).
+        This operates in-place on the puzzle_state for use within search.
+        
+        Args:
+            puzzle_state: Puzzle to apply logic to (modified in-place)
+            max_passes: Maximum iterations before stopping
+            **logic_options: Options for logic_v2 (tie_break, enable_*)
+            
+        Returns:
+            Tuple of (progress_made, solved, steps) where:
+                progress_made: Whether any placement/elimination occurred
+                solved: Whether puzzle is fully solved
+                steps: List of SolverStep objects documenting changes
+        """
+        temp_solver = Solver(puzzle_state)
+        result = temp_solver._solve_logic_v2(max_logic_passes=max_passes, **logic_options)
+        
+        # The temp_solver worked on a deep copy; we need to copy changes back to puzzle_state
+        Solver._apply_solution_to_puzzle(puzzle_state, temp_solver.puzzle)
+        
+        # Check if puzzle_state is solved: all cells filled + valid path
+        # Fast check: any empty cells?
+        all_filled = all(not cell.is_empty() for cell in puzzle_state.grid.iter_cells())
+        if not all_filled:
+            return (result.progress_made or len(result.steps) > 0, False, result.steps)
+        
+        # All filled, now verify it's a valid Hidato solution
+        final_solver = Solver(puzzle_state)
+        actually_solved = final_solver._is_solved()
+        
+        return (result.progress_made or len(result.steps) > 0, actually_solved, result.steps)
     
     def _solve_logic_v0(self) -> SolverResult:
         """Solve using consecutive logic (no guessing).
@@ -231,6 +270,16 @@ class Solver:
         cell.value = value
         
         step = SolverStep(pos, value, reason)
+        self.steps.append(step)
+    
+    def _record_elimination(self, strategy: str, count: int, details: str = ""):
+        """Record an elimination step without placement (for pruning strategies)."""
+        # Use a placeholder position for elimination-only steps
+        placeholder_pos = Position(-1, -1)
+        reason = f"{strategy}: eliminated {count} candidate(s)"
+        if details:
+            reason += f" - {details}"
+        step = SolverStep(placeholder_pos, -1, reason)
         self.steps.append(step)
     
     def _is_solved(self) -> bool:
@@ -536,6 +585,7 @@ class Solver:
         
         max_iterations = max_logic_passes
         iteration = 0
+        overall_progress = False  # Track if ANY progress was made across all iterations
         
         # Initialize advanced analysis structures
         candidates = CandidateModel()
@@ -574,19 +624,22 @@ class Solver:
             
             # Update analysis structures if progress was made
             if progress_made:
+                overall_progress = True  # Track that we made progress this run
                 regions.build_regions(self.puzzle)
                 corridors.invalidate_cache()
                 degrees.build_degree_index(self.puzzle)
             
             # Check if solved
             if self._is_solved():
-                return SolverResult(True, self.steps, f"Solved using logic_v2 in {iteration} iterations", self.puzzle)
+                return SolverResult(True, self.steps, f"Solved using logic_v2 in {iteration} iterations", 
+                                  self.puzzle, progress_made=True)
             
             # If no progress, stop
             if not progress_made:
                 break
         
-        return SolverResult(False, self.steps, f"Stuck after {iteration} iterations using logic_v2 - no more logical moves", self.puzzle)
+        return SolverResult(False, self.steps, f"Stuck after {iteration} iterations using logic_v2 - no more logical moves", 
+                          self.puzzle, progress_made=overall_progress)
     
     def _solve_logic_v3(self, max_logic_passes: int = 50, tie_break: str = "row_col",
                        enable_island_elim: bool = True, enable_segment_bridging: bool = True,
@@ -620,25 +673,6 @@ class Solver:
         nodes_explored = 0
         max_search_depth = 0
         
-        def apply_logic_v2(puzzle_state) -> bool:
-            """Apply all logic_v2 techniques to current puzzle state."""
-            # Create solver instance for this state
-            temp_solver = Solver(puzzle_state)
-            
-            # Apply logic_v2 techniques until no progress
-            result = temp_solver._solve_logic_v2(
-                max_logic_passes=max_logic_passes,
-                tie_break=tie_break,
-                enable_island_elim=enable_island_elim,
-                enable_segment_bridging=enable_segment_bridging,
-                enable_degree_prune=enable_degree_prune
-            )
-            
-            # Copy steps to main solver
-            self.steps.extend(temp_solver.steps)
-            
-            return result.solved
-        
         def is_timeout() -> bool:
             return (time.time() - start_time) * 1000 > timeout_ms
         
@@ -653,8 +687,21 @@ class Solver:
             if nodes_explored > max_nodes or depth > max_depth or is_timeout():
                 return False
             
-            # Apply all logical techniques first
-            if apply_logic_v2(puzzle_state):
+            # Apply logic_v2 fixpoint in-place at this node (Bug #1 fix)
+            progress_made, solved, logic_steps = Solver.apply_logic_fixpoint(
+                puzzle_state,
+                max_passes=max_logic_passes,
+                tie_break=tie_break,
+                enable_island_elim=enable_island_elim,
+                enable_segment_bridging=enable_segment_bridging,
+                enable_degree_prune=enable_degree_prune
+            )
+            
+            # Add logic steps to trace
+            self.steps.extend(logic_steps)
+            
+            # Check if solved after logic
+            if solved:
                 return True
                 
             # Check if puzzle is solved using proper Hidato validation
@@ -670,37 +717,49 @@ class Solver:
             if candidates.has_empty_candidates():
                 return False
             
-            # Choose next variable using heuristics
-            best_pos = self._choose_search_variable(candidates, ordering)
-            if best_pos is None:
+            # Choose next value and position using heuristics (MRV by value - Bug #2 fix)
+            choice = self._choose_search_variable(candidates, ordering)
+            if choice is None:
                 return False
             
-            # Get candidate values for chosen position
-            candidate_values = list(candidates.pos_to_values[best_pos])
+            value, best_pos = choice
             
-            # Order values using LCV (Least Constraining Value) if enabled
-            if "lcv" in ordering.lower():
-                candidate_values = self._order_values_lcv(candidates, best_pos, candidate_values)
+            # For LCV/frontier ordering, we may want to try other positions for this value
+            # Get all positions where this value could go
+            available_positions = list(candidates.value_to_positions.get(value, [best_pos]))
             
-            # Try each candidate value
-            for value in candidate_values:
+            # Order positions using LCV/frontier if enabled
+            if "lcv" in ordering.lower() or "frontier" in ordering.lower():
+                # Frontier positions first, then others
+                frontier = self._get_frontier_positions(available_positions)
+                non_frontier = [p for p in available_positions if p not in frontier]
+                # Sort each group by row, col for determinism
+                frontier.sort(key=lambda p: (p.row, p.col))
+                non_frontier.sort(key=lambda p: (p.row, p.col))
+                ordered_positions = frontier + non_frontier
+            else:
+                # Just deterministic row-col ordering
+                ordered_positions = sorted(available_positions, key=lambda p: (p.row, p.col))
+            
+            # Try each position for the chosen value
+            for pos in ordered_positions:
                 # Check if value is already placed (safety check)
                 if self._value_exists_in_puzzle(puzzle_state, value):
-                    continue
+                    break
                 
                 # Create new puzzle state with this assignment
                 new_puzzle = self._copy_puzzle(puzzle_state)
-                new_cell = new_puzzle.grid.get_cell(best_pos)
+                new_cell = new_puzzle.grid.get_cell(pos)
                 new_cell.value = value
                 
                 # Record the guess
-                step = SolverStep(best_pos, value, f"Search guess: trying {value} at depth {depth}")
+                step = SolverStep(pos, value, f"Search guess: value {value} at {pos}, depth {depth}")
                 self.steps.append(step)
                 
                 # Recursive search
                 if search_recursive(new_puzzle, depth + 1):
-                    # Solution found! Update original puzzle
-                    self._copy_solution_to_puzzle(new_puzzle, self.puzzle)
+                    # Solution found in new_puzzle! Copy to puzzle_state so parent sees it
+                    self._copy_solution_to_puzzle(new_puzzle, puzzle_state)
                     return True
                 
                 # Backtrack: remove the guess step
@@ -716,7 +775,8 @@ class Solver:
         
         if success:
             message = f"Solved using logic_v3 in {nodes_explored} nodes, depth {max_search_depth}, {elapsed_ms:.1f}ms"
-            return SolverResult(True, self.steps, message, self.puzzle)
+            return SolverResult(True, self.steps, message, self.puzzle, 
+                              nodes=nodes_explored, depth=max_search_depth, progress_made=True)
         else:
             if is_timeout():
                 reason = f"timeout after {timeout_ms}ms"
@@ -728,7 +788,8 @@ class Solver:
                 reason = "exhausted search space"
             
             message = f"Failed using logic_v3: {reason} ({nodes_explored} nodes, {elapsed_ms:.1f}ms)"
-            return SolverResult(False, self.steps, message, self.puzzle)
+            return SolverResult(False, self.steps, message, None,
+                              nodes=nodes_explored, depth=max_search_depth, progress_made=False)
     
     def _apply_logic_v1_strategies(self, candidates: 'CandidateModel', tie_break: str) -> bool:
         """Apply all logic_v1 strategies (reusable for logic_v2).
@@ -786,6 +847,7 @@ class Solver:
             True if progress was made
         """
         progress = False
+        elimination_count = 0
         
         # Find empty regions
         empty_regions = regions.regions
@@ -801,8 +863,13 @@ class Solver:
                         old_values = list(candidates.pos_to_values[pos])
                         for value in old_values:
                             candidates.remove_candidate(value, pos)
+                            elimination_count += 1
                             progress = True
                             # Note: Don't place values here, just eliminate impossible candidates
+        
+        if elimination_count > 0:
+            self._record_elimination("region_capacity", elimination_count, 
+                                    f"{len([r for r in empty_regions if r.size < self._compute_min_sequence_for_region(r)])} insufficient regions")
         
         return progress
     
@@ -817,12 +884,15 @@ class Solver:
             True if progress was made
         """
         progress = False
+        elimination_count = 0
+        gap_count = 0
         
         # Get sequence gaps that need bridging
         gaps = corridors.get_all_sequence_gaps(self.puzzle)
         
         for start_value, end_value, gap_size in gaps:
             if gap_size > 1:  # Only process gaps that need bridging
+                gap_count += 1
                 # Find corridor positions between these values
                 corridor_positions = corridors.corridors_between(self.puzzle, start_value, end_value)
                 
@@ -843,7 +913,12 @@ class Solver:
                             
                             for pos in invalid_positions:
                                 candidates.remove_candidate(value, pos)
+                                elimination_count += 1
                                 progress = True
+        
+        if elimination_count > 0:
+            self._record_elimination("corridor", elimination_count, 
+                                    f"{gap_count} gap(s) with {len(gaps)} total segments")
         
         return progress
     
@@ -858,6 +933,7 @@ class Solver:
             True if progress was made
         """
         progress = False
+        elimination_count = 0
         
         # Build current degree index
         degree_map = degrees.build_degree_index(self.puzzle)
@@ -877,7 +953,13 @@ class Solver:
                 
                 if current_degree < required_degree:
                     candidates.remove_candidate(value, pos)
+                    elimination_count += 1
                     progress = True
+        
+        if elimination_count > 0:
+            low_degree_positions = len([p for p, d in degree_map.items() if d < 2])
+            self._record_elimination("degree", elimination_count, 
+                                    f"{low_degree_positions} low-degree position(s)")
         
         return progress
     
@@ -910,44 +992,60 @@ class Solver:
                 required.add(value)
         return required
     
-    def _choose_search_variable(self, candidates: 'CandidateModel', ordering: str) -> Position | None:
-        """Choose next variable for search using heuristics.
+    def _choose_search_variable(self, candidates: 'CandidateModel', ordering: str) -> tuple[int, Position] | None:
+        """Choose next value and position for search using heuristics.
+        
+        Bug #2 fix: MRV operates on VALUES (choose value with fewest positions),
+        not positions (old behavior chose position with fewest values).
         
         Args:
             candidates: Current candidate model
             ordering: Search ordering strategy
             
         Returns:
-            Position to branch on, or None if no candidates
+            Tuple of (value, position) to try, or None if no candidates
         """
-        if not candidates.pos_to_values:
+        if not candidates.value_to_positions:
             return None
         
         if "mrv" in ordering.lower():
-            # MRV: Choose position with Minimum Remaining Values
-            min_candidates = min(len(vals) for vals in candidates.pos_to_values.values())
-            mrv_positions = [pos for pos, vals in candidates.pos_to_values.items() 
-                           if len(vals) == min_candidates]
+            # MRV by VALUE: Choose value with Minimum Remaining positions (Bug #2 fix)
+            min_positions = min(len(positions) for positions in candidates.value_to_positions.values())
+            mrv_values = [val for val, positions in candidates.value_to_positions.items() 
+                         if len(positions) == min_positions]
+            
+            # Deterministic tie-break: choose smallest value
+            chosen_value = min(mrv_values)
+            
+            # Now choose position for this value
+            available_positions = list(candidates.value_to_positions[chosen_value])
             
             if "frontier" in ordering.lower():
-                # Prefer positions near already-placed values
-                frontier_positions = self._get_frontier_positions(mrv_positions)
+                # LCV/Frontier: Prefer positions near already-placed values
+                frontier_positions = self._get_frontier_positions(available_positions)
                 if frontier_positions:
-                    return min(frontier_positions, key=lambda p: (p.row, p.col))
+                    chosen_pos = min(frontier_positions, key=lambda p: (p.row, p.col))
+                    return (chosen_value, chosen_pos)
             
             # Default to row-col ordering for tie breaking
-            return min(mrv_positions, key=lambda p: (p.row, p.col))
+            chosen_pos = min(available_positions, key=lambda p: (p.row, p.col))
+            return (chosen_value, chosen_pos)
         
         elif "frontier" in ordering.lower():
             # Choose positions on the frontier (adjacent to placed values)
-            all_positions = list(candidates.pos_to_values.keys())
+            # Pick any value and filter to frontier positions
+            first_value = min(candidates.value_to_positions.keys())
+            all_positions = list(candidates.value_to_positions[first_value])
             frontier_positions = self._get_frontier_positions(all_positions)
             if frontier_positions:
-                return min(frontier_positions, key=lambda p: (p.row, p.col))
+                chosen_pos = min(frontier_positions, key=lambda p: (p.row, p.col))
+                return (first_value, chosen_pos)
         
-        # Default: row-col ordering
-        all_positions = list(candidates.pos_to_values.keys())
-        return min(all_positions, key=lambda p: (p.row, p.col))
+        # Default: smallest value, row-col ordered position
+        chosen_value = min(candidates.value_to_positions.keys())
+        available_positions = list(candidates.value_to_positions[chosen_value])
+        chosen_pos = min(available_positions, key=lambda p: (p.row, p.col))
+        return (chosen_value, chosen_pos)
     
     def _order_values_lcv(self, candidates: 'CandidateModel', pos: Position, values: list) -> list:
         """Order values using Least Constraining Value heuristic.
@@ -1042,3 +1140,85 @@ class Solver:
             if cell.value == value:
                 return True
         return False
+
+
+def validate_solution(puzzle: Puzzle, original_givens: dict) -> dict:
+    """
+    Validate a solved puzzle against Hidato rules.
+    
+    Args:
+        puzzle: The puzzle to validate
+        original_givens: Dict mapping Position -> value for original given cells
+        
+    Returns:
+        Dict with keys:
+            - status: 'PASS' or 'FAIL'
+            - all_filled: bool - All cells have values
+            - givens_preserved: bool - Original givens unchanged
+            - contiguous_path: bool - Consecutive values are adjacent
+            - values_complete: bool - All values 1..N present exactly once
+            - message: str - Human-readable result
+    """
+    report = {
+        'status': 'FAIL',
+        'all_filled': True,
+        'givens_preserved': True,
+        'contiguous_path': True,
+        'values_complete': True,
+        'message': ''
+    }
+    
+    # Check 1: All cells filled
+    for cell in puzzle.grid.iter_cells():
+        if cell.is_empty():
+            report['all_filled'] = False
+            report['message'] = f"Cell at {cell.pos} is empty"
+            return report
+    
+    # Check 2: Givens preserved
+    for pos, expected_value in original_givens.items():
+        actual_value = puzzle.grid.get_cell(pos).value
+        if actual_value != expected_value:
+            report['givens_preserved'] = False
+            report['message'] = f"Given at {pos} changed from {expected_value} to {actual_value}"
+            return report
+    
+    # Check 3: All values present (no duplicates, no missing)
+    placed_values = set()
+    value_positions = {}
+    for cell in puzzle.grid.iter_cells():
+        if cell.value is not None:
+            if cell.value in placed_values:
+                report['values_complete'] = False
+                report['message'] = f"Value {cell.value} appears multiple times"
+                return report
+            placed_values.add(cell.value)
+            value_positions[cell.value] = cell.pos
+    
+    required_values = set(range(puzzle.constraints.min_value, puzzle.constraints.max_value + 1))
+    if placed_values != required_values:
+        missing = required_values - placed_values
+        extra = placed_values - required_values
+        report['values_complete'] = False
+        if missing:
+            report['message'] = f"Missing values: {sorted(missing)}"
+        else:
+            report['message'] = f"Extra values: {sorted(extra)}"
+        return report
+    
+    # Check 4: Contiguous path (consecutive values adjacent)
+    for value in range(puzzle.constraints.min_value, puzzle.constraints.max_value):
+        current_pos = value_positions[value]
+        next_pos = value_positions[value + 1]
+        
+        neighbors = puzzle.grid.neighbors_of(current_pos)
+        if next_pos not in neighbors:
+            report['contiguous_path'] = False
+            report['message'] = f"Values {value} at {current_pos} and {value + 1} at {next_pos} are not adjacent"
+            return report
+    
+    # All checks passed
+    report['status'] = 'PASS'
+    report['message'] = f"Valid Hidato solution: all {len(placed_values)} values correctly placed in contiguous path"
+    return report
+

@@ -55,7 +55,21 @@ class CorridorMap:
         
         # Cache result
         self.corridor_cache[cache_key] = corridor_cells
+        self._cache_dirty = False  # Mark cache as clean after compute
         return corridor_cells.copy()
+    
+    def compute_corridor(self, start_value: int, end_value: int, puzzle: Puzzle) -> Set[Position]:
+        """Public method to compute corridor between two values.
+        
+        Args:
+            start_value: Starting value (must be placed)
+            end_value: Ending value (must be placed, > start_value)
+            puzzle: Current puzzle state
+            
+        Returns:
+            Set of empty positions in the corridor
+        """
+        return self.corridors_between(puzzle, start_value, end_value)
     
     def _find_value_position(self, puzzle: Puzzle, value: int) -> Optional[Position]:
         """Find the position where a value is placed."""
@@ -66,51 +80,99 @@ class CorridorMap:
     
     def _find_corridor_bfs(self, puzzle: Puzzle, start_pos: Position, end_pos: Position, 
                           max_length: int) -> Set[Position]:
-        """Use BFS to find all positions that could be part of a corridor of given length.
+        """Use dual multi-source BFS to find corridor positions via distance-sum inequality.
+        
+        Uses the condition: distA[p] + distB[p] <= (t-1) where t = end_value - start_value.
+        This is more efficient and accurate than nested BFS.
         
         Args:
             puzzle: Current puzzle state
-            start_pos: Starting position
-            end_pos: Target position  
-            max_length: Maximum corridor length (number of intermediate steps)
+            start_pos: Starting position (contains start value)
+            end_pos: Target position (contains end value)
+            max_length: Corridor length threshold (t-1 where t is the gap)
             
         Returns:
-            Set of positions on feasible corridors
+            Set of empty positions satisfying the distance-sum inequality
         """
         if max_length <= 0:
             return set()
         
-        # BFS from start position
+        # Get empty neighbors of anchors as frontier sources
+        start_frontier = []
+        for neighbor in puzzle.grid.neighbors_of(start_pos):
+            cell = puzzle.grid.get_cell(neighbor)
+            if cell.is_empty():
+                start_frontier.append(neighbor)
+        
+        end_frontier = []
+        for neighbor in puzzle.grid.neighbors_of(end_pos):
+            cell = puzzle.grid.get_cell(neighbor)
+            if cell.is_empty():
+                end_frontier.append(neighbor)
+        
+        if not start_frontier or not end_frontier:
+            return set()
+        
+        # Multi-source BFS from start frontier
+        dist_from_start = self._multi_source_bfs(puzzle, start_frontier, max_length)
+        
+        # Multi-source BFS from end frontier
+        dist_from_end = self._multi_source_bfs(puzzle, end_frontier, max_length)
+        
+        # Find corridor positions: distA + distB <= max_length (which is t-1)
         corridor_positions = set()
-        queue = deque([(start_pos, 0)])  # (position, distance_from_start)
-        visited = {start_pos: 0}  # position -> min_distance_from_start
+        for pos in dist_from_start:
+            if pos in dist_from_end:
+                if dist_from_start[pos] + dist_from_end[pos] <= max_length:
+                    corridor_positions.add(pos)
+        
+        return corridor_positions
+    
+    def _multi_source_bfs(self, puzzle: Puzzle, sources: List[Position], 
+                         max_dist: int) -> Dict[Position, int]:
+        """Perform multi-source BFS to compute minimum distances from any source.
+        
+        Args:
+            puzzle: Current puzzle state
+            sources: List of starting positions
+            max_dist: Maximum distance to explore
+            
+        Returns:
+            Dictionary mapping position to minimum distance from any source
+        """
+        distances = {}
+        queue = deque()
+        
+        # Initialize with all sources at distance 0
+        for source in sources:
+            distances[source] = 0
+            queue.append((source, 0))
         
         while queue:
             pos, dist = queue.popleft()
             
-            if dist > max_length:
+            # Skip if we found a better path
+            if distances[pos] < dist:
                 continue
             
-            # Check if we can reach end_pos from current position within remaining steps
-            remaining_steps = max_length - dist
-            if self._can_reach_in_steps(puzzle, pos, end_pos, remaining_steps):
-                corridor_positions.add(pos)
+            # Don't explore beyond max_dist
+            if dist >= max_dist:
+                continue
             
             # Explore neighbors
-            if dist < max_length:
-                for neighbor_pos in puzzle.grid.neighbors_of(pos):
-                    neighbor_cell = puzzle.grid.get_cell(neighbor_pos)
+            for neighbor in puzzle.grid.neighbors_of(pos):
+                cell = puzzle.grid.get_cell(neighbor)
+                
+                # Only traverse empty cells
+                if cell.is_empty():
+                    new_dist = dist + 1
                     
-                    # Only consider empty cells for corridor
-                    if neighbor_cell.is_empty():
-                        new_dist = dist + 1
-                        
-                        # Only visit if we found a shorter path
-                        if neighbor_pos not in visited or visited[neighbor_pos] > new_dist:
-                            visited[neighbor_pos] = new_dist
-                            queue.append((neighbor_pos, new_dist))
+                    # Update if we found a shorter path
+                    if neighbor not in distances or distances[neighbor] > new_dist:
+                        distances[neighbor] = new_dist
+                        queue.append((neighbor, new_dist))
         
-        return corridor_positions
+        return distances
     
     def _can_reach_in_steps(self, puzzle: Puzzle, from_pos: Position, to_pos: Position, 
                            max_steps: int) -> bool:
