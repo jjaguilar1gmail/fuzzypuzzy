@@ -1140,3 +1140,85 @@ class Solver:
             if cell.value == value:
                 return True
         return False
+
+
+def validate_solution(puzzle: Puzzle, original_givens: dict) -> dict:
+    """
+    Validate a solved puzzle against Hidato rules.
+    
+    Args:
+        puzzle: The puzzle to validate
+        original_givens: Dict mapping Position -> value for original given cells
+        
+    Returns:
+        Dict with keys:
+            - status: 'PASS' or 'FAIL'
+            - all_filled: bool - All cells have values
+            - givens_preserved: bool - Original givens unchanged
+            - contiguous_path: bool - Consecutive values are adjacent
+            - values_complete: bool - All values 1..N present exactly once
+            - message: str - Human-readable result
+    """
+    report = {
+        'status': 'FAIL',
+        'all_filled': True,
+        'givens_preserved': True,
+        'contiguous_path': True,
+        'values_complete': True,
+        'message': ''
+    }
+    
+    # Check 1: All cells filled
+    for cell in puzzle.grid.iter_cells():
+        if cell.is_empty():
+            report['all_filled'] = False
+            report['message'] = f"Cell at {cell.pos} is empty"
+            return report
+    
+    # Check 2: Givens preserved
+    for pos, expected_value in original_givens.items():
+        actual_value = puzzle.grid.get_cell(pos).value
+        if actual_value != expected_value:
+            report['givens_preserved'] = False
+            report['message'] = f"Given at {pos} changed from {expected_value} to {actual_value}"
+            return report
+    
+    # Check 3: All values present (no duplicates, no missing)
+    placed_values = set()
+    value_positions = {}
+    for cell in puzzle.grid.iter_cells():
+        if cell.value is not None:
+            if cell.value in placed_values:
+                report['values_complete'] = False
+                report['message'] = f"Value {cell.value} appears multiple times"
+                return report
+            placed_values.add(cell.value)
+            value_positions[cell.value] = cell.pos
+    
+    required_values = set(range(puzzle.constraints.min_value, puzzle.constraints.max_value + 1))
+    if placed_values != required_values:
+        missing = required_values - placed_values
+        extra = placed_values - required_values
+        report['values_complete'] = False
+        if missing:
+            report['message'] = f"Missing values: {sorted(missing)}"
+        else:
+            report['message'] = f"Extra values: {sorted(extra)}"
+        return report
+    
+    # Check 4: Contiguous path (consecutive values adjacent)
+    for value in range(puzzle.constraints.min_value, puzzle.constraints.max_value):
+        current_pos = value_positions[value]
+        next_pos = value_positions[value + 1]
+        
+        neighbors = puzzle.grid.neighbors_of(current_pos)
+        if next_pos not in neighbors:
+            report['contiguous_path'] = False
+            report['message'] = f"Values {value} at {current_pos} and {value + 1} at {next_pos} are not adjacent"
+            return report
+    
+    # All checks passed
+    report['status'] = 'PASS'
+    report['message'] = f"Valid Hidato solution: all {len(placed_values)} values correctly placed in contiguous path"
+    return report
+
