@@ -470,6 +470,10 @@ class Solver:
         
         # Extend sequence until we can't go further
         for step in range(1, 10):  # Limit propagation depth
+            # Guard against None values
+            if current_value is None:
+                break
+                
             next_value = current_value + direction
             
             # Check bounds

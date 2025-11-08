@@ -231,9 +231,9 @@ class CorridorMap:
         gaps = []
         placed_values = set()
         
-        # Find all placed values
+        # Find all placed values (skip None values from blocked cells)
         for cell in puzzle.grid.iter_cells():
-            if not cell.is_empty():
+            if not cell.is_empty() and cell.value is not None:
                 placed_values.add(cell.value)
         
         # Look for gaps
