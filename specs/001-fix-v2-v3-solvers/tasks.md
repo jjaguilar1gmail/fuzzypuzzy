@@ -52,21 +52,21 @@ description: "Task list for fixing v2/v3 solvers to solve canonical 5x5"
 - [x] T008 [P] [US1] Add unit test for degree pruning thresholds in tests/unit/test_degree_pruning.py
 - [x] T009 [P] [US1] Add unit test for corridor distance-sum inequality in tests/unit/test_corridor_bfs.py
 - [x] T010 [P] [US1] Add unit test for minimal region capacity in tests/unit/test_region_capacity.py
-- [ ] T011 [US1] Add integration test for v2 fixpoint behavior on canonical 5x5 in tests/integration/test_v2_fixpoint.py
+- [x] T011 [US1] Add integration test for v2 fixpoint behavior on canonical 5x5 in tests/integration/test_v2_fixpoint.py
 
 ### Implementation for User Story 1
 
 - [x] T012 [P] [US1] Create corridor helper (distance-sum, dual BFS) in solve/corridor.py
 - [x] T013 [P] [US1] Implement corridor cache lifecycle (invalidate on placement; set clean after compute) in solve/corridor.py
 - [x] T014 [P] [US1] Create degree helper (empty-neighbor count) in solve/degree.py
-- [ ] T015 [P] [US1] Implement region capacity (coarse connected components) in solve/region.py
-- [ ] T016 [US1] Integrate corridor pruning into logic_v2 fixpoint in solve/solver.py
-- [ ] T017 [US1] Integrate degree pruning into logic_v2 fixpoint in solve/solver.py
-- [ ] T018 [US1] Integrate region capacity pruning into logic_v2 fixpoint in solve/solver.py
-- [ ] T019 [US1] Record pruning reasons (strategy, positions, counts) into trace in solve/solver.py
-- [ ] T020 [US1] Ensure v2 returns "no more logical moves" status when fixpoint reached without contradiction in solve/solver.py
+- [x] T015 [P] [US1] Implement region capacity (coarse connected components) in solve/region.py
+- [x] T016 [US1] Integrate corridor pruning into logic_v2 fixpoint in solve/solver.py
+- [x] T017 [US1] Integrate degree pruning into logic_v2 fixpoint in solve/solver.py
+- [x] T018 [US1] Integrate region capacity pruning into logic_v2 fixpoint in solve/solver.py
+- [x] T019 [US1] Record pruning reasons (strategy, positions, counts) into trace in solve/solver.py
+- [x] T020 [US1] Ensure v2 returns "no more logical moves" status when fixpoint reached without contradiction in solve/solver.py
 
-**Checkpoint**: US1 independently delivers: logic-only pruning active, ≥1 elimination on canonical 5x5, clear trace.
+**Checkpoint**: US1 independently delivers: logic-only pruning active, ≥1 elimination on canonical 5x5, clear trace. ✅ **COMPLETE**
 
 ---
 
@@ -76,20 +76,37 @@ description: "Task list for fixing v2/v3 solvers to solve canonical 5x5"
 
 **Independent Test**: Run v3 on canonical 5x5; assert solved=true, timing and node/depth limits, repeatable results across 5 runs.
 
+**Status**: 🟡 **CORE COMPLETE, PERF PENDING**
+- ✅ Bug #1 (in-place fixpoint): FIXED - v3 now uses `Solver.apply_logic_fixpoint` which modifies puzzle in-place
+- ✅ Bug #2 (MRV by value): FIXED - `_choose_search_variable` returns `(value, position)` choosing value with min positions
+- ✅ Solution propagation: FIXED - Recursive search copies solution back up through call stack
+- ✅ Validation: All cells filled, valid Hidato path
+- ✅ Deterministic: 25 nodes, depth 14, 59 steps consistently across runs
+- ✅ Nodes/depth: Well under limits (25 vs 2000, 14 vs 25)
+- ⚠️ Performance: 167ms avg (67% over 100ms target)
+  - Baseline: Timeout at 500ms, 195 nodes
+  - Current: 167ms, 25 nodes (87% node reduction, ~3x time improvement)
+  - `deepcopy` accounts for 29ms (17%), remaining 83% in logic/candidates/frontier
+  
+**Next**: Consider T026-T027 (transposition table) or adjust target based on hardware/complexity tradeoffs.
+
 ### Tests for User Story 2 (integration + perf)
 
-- [ ] T021 [P] [US2] Add integration test for v3 solve with strict limits in tests/integration/test_v3_solve_canonical.py
-- [ ] T022 [P] [US2] Add repeatability test (5 runs same solution/metrics) in tests/integration/test_v3_repeatability.py
+- [x] T021 [P] [US2] Add integration test for v3 solve with strict limits in tests/integration/test_v3_solve_canonical.py
+- [x] T022 [P] [US2] Add repeatability test (5 runs same solution/metrics) in tests/integration/test_v3_repeatability.py
 
 ### Implementation for User Story 2
 
-- [ ] T023 [P] [US2] Apply v2 fixpoint in-place at each node (without deep-copying away progress) in solve/solver.py
-- [ ] T024 [P] [US2] Switch MRV to operate on values (min |value_to_positions|) in solve/solver.py
-- [ ] T025 [P] [US2] Implement LCV/frontier ordering for positions of chosen value in solve/solver.py
+- [x] T023 [P] [US2] Apply v2 fixpoint in-place at each node (without deep-copying away progress) in solve/solver.py
+- [x] T024 [P] [US2] Switch MRV to operate on values (min |value_to_positions|) in solve/solver.py
+- [x] T025 [P] [US2] Implement LCV/frontier ordering for positions of chosen value in solve/solver.py
 - [ ] T026 [US2] Add optional tiny transposition table with deterministic key in solve/transposition.py
 - [ ] T027 [US2] Integrate transposition lookup/store into search loop in solve/solver.py
 - [ ] T028 [US2] Ensure deterministic tie-breaking on equal candidates (row,col; value asc) in solve/solver.py
 - [ ] T029 [US2] Record search decisions in trace (value choice, ordering, node count) in solve/solver.py
+
+**Status**: Bug #1 (in-place fixpoint) and Bug #2 (MRV by value) FIXED ✅. Solution validation PASSING ✅. Deterministic (25 nodes, depth 14) ✅.  
+**Performance Issue**: Currently 167ms avg (67% over 100ms target). Nodes/depth well under limits. May need optimization or target adjustment.
 
 **Checkpoint**: US2 independently delivers: fast, deterministic v3 solve with metrics and trace.
 

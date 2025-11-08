@@ -13,6 +13,11 @@ class SolverMetrics:
     depth: Optional[int] = None
     steps: int = 0
     message: str = ""
+    
+    @property
+    def steps_count(self) -> int:
+        """Alias for steps count (for backwards compatibility)."""
+        return self.steps
 
 
 def measure_solve(solver_fn, *args, **kwargs) -> SolverMetrics:
@@ -30,12 +35,20 @@ def measure_solve(solver_fn, *args, **kwargs) -> SolverMetrics:
     result = solver_fn(*args, **kwargs)
     elapsed = time.perf_counter() - start
     
+    # Extract steps - handle both list and count
+    steps_value = 0
+    if hasattr(result, 'steps'):
+        if isinstance(result.steps, list):
+            steps_value = len(result.steps)
+        else:
+            steps_value = result.steps
+    
     return SolverMetrics(
         solved=result.solved,
         time_ms=elapsed * 1000,
         nodes=getattr(result, 'nodes', None),
         depth=getattr(result, 'depth', None),
-        steps=len(result.steps) if hasattr(result, 'steps') else 0,
+        steps=steps_value,
         message=result.message if hasattr(result, 'message') else ""
     )
 
