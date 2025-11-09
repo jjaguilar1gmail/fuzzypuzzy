@@ -135,12 +135,176 @@ Interactive Commands:
         help='Show version information'
     )
     
+    # Generator options (T003)
+    parser.add_argument(
+        '--generate',
+        action='store_true',
+        help='Generate a new puzzle'
+    )
+    
+    parser.add_argument(
+        '--size',
+        type=int,
+        help='Grid size for generation (NxN, max 9)'
+    )
+    
+    parser.add_argument(
+        '--difficulty',
+        type=str,
+        choices=['easy', 'medium', 'hard', 'extreme'],
+        help='Target difficulty band'
+    )
+    
+    parser.add_argument(
+        '--seed',
+        type=int,
+        help='Random seed for reproducible generation'
+    )
+    
+    parser.add_argument(
+        '--allow-diagonal',
+        type=lambda x: x.lower() in ('true', '1', 'yes') if isinstance(x, str) else bool(x),
+        default=True,
+        help='Allow diagonal adjacency (default: True). Use: --allow-diagonal true/false'
+    )
+    
+    parser.add_argument(
+        '--blocked',
+        type=str,
+        help='Blocked cells as comma-separated r,c pairs (e.g., "1,3;2,5")'
+    )
+    
+    parser.add_argument(
+        '--percent-fill',
+        type=float,
+        help='Target clue density (0.0-1.0), alternative to difficulty'
+    )
+    
+    parser.add_argument(
+        '--symmetry',
+        type=str,
+        choices=['rotational', 'horizontal', 'none'],
+        help='Symmetry mode for clue placement'
+    )
+    
+    parser.add_argument(
+        '--path-mode',
+        type=str,
+        choices=['serpentine', 'random_walk'],
+        default='serpentine',
+        help='Path building strategy (default: serpentine)'
+    )
+    
+    parser.add_argument(
+        '--print-seed',
+        action='store_true',
+        help='Print final seed and generation parameters'
+    )
+    
     args = parser.parse_args()
     
     if args.version:
         print("Hidato Terminal MVP v1.0")
         print("Feature: 001-hidato-terminal-mvp")
         print("Python 3.11+ compatible")
+        return
+    
+    # Handle generator mode (T014, T015)
+    if args.generate:
+        from generate.generator import Generator
+        
+        # Validate required args
+        if not args.size:
+            print("❌ Error: --size required for generation")
+            return
+        
+        # Parse blocked cells (T015)
+        blocked = []
+        if args.blocked:
+            try:
+                for pair in args.blocked.split(';'):
+                    r, c = map(int, pair.split(','))
+                    blocked.append((r, c))
+            except Exception as e:
+                print(f"❌ Error parsing --blocked: {e}")
+                print("Format: --blocked '1,3;2,5' (semicolon-separated r,c pairs)")
+                return
+        
+        print(f"🎯 Generating {args.size}x{args.size} puzzle...")
+        if args.seed:
+            print(f"   Seed: {args.seed}")
+        if args.difficulty:
+            print(f"   Difficulty: {args.difficulty}")
+        if args.percent_fill:
+            print(f"   Target fill: {args.percent_fill:.1%}")
+        if blocked:
+            print(f"   Blocked cells: {len(blocked)}")
+        print()
+        
+        try:
+            result = Generator.generate_puzzle(
+                size=args.size,
+                difficulty=args.difficulty,
+                percent_fill=args.percent_fill,
+                seed=args.seed,
+                allow_diagonal=args.allow_diagonal,
+                blocked=blocked or None,
+                symmetry=args.symmetry,
+                path_mode=args.path_mode if hasattr(args, 'path_mode') else 'serpentine',
+            )
+            
+            print("✅ Generation Complete!")
+            print(f"   Size: {result.size}x{result.size}")
+            print(f"   Clues: {result.clue_count}")
+            print(f"   Difficulty: {result.difficulty_label} (score: {result.difficulty_score:.2f})")
+            print(f"   Clue Density: {result.solver_metrics.get('clue_density', 0.0):.1%}")
+            print(f"   Logic Ratio: {result.solver_metrics.get('logic_ratio', 0.0):.1%}")
+            print(f"   Search Depth: {result.solver_metrics.get('depth', 0)}")
+            print(f"   Uniqueness: {'✓ Verified' if result.uniqueness_verified else '✗ Not verified'}")
+            print(f"   Seed: {result.seed}")
+            print(f"   Time: {result.timings_ms['total']}ms")
+            print(f"   Attempts: {result.attempts_used}")
+            print()
+            
+            # T025: Print seed and parameters if requested
+            if args.print_seed:
+                print("Reproducibility Info:")
+                print(f"  python hidato.py --generate --size {result.size} --seed {result.seed}", end="")
+                if args.difficulty:
+                    print(f" --difficulty {args.difficulty}", end="")
+                if args.percent_fill:
+                    print(f" --percent-fill {args.percent_fill}", end="")
+                if args.symmetry:
+                    print(f" --symmetry {args.symmetry}", end="")
+                if result.blocked_cells:
+                    blocked_str = ';'.join([f"{r},{c}" for r, c in result.blocked_cells])
+                    print(f" --blocked '{blocked_str}'", end="")
+                print()
+                print(f"  Path mode: {result.path_mode}, Clue mode: {result.clue_mode}")
+                print()
+            
+            # Print grid (givens only)
+            print("Generated Puzzle:")
+            givens_dict = {(g[0], g[1]): g[2] for g in result.givens}
+            blocked_set = set(result.blocked_cells)
+            
+            for r in range(result.size):
+                row_str = ""
+                for c in range(result.size):
+                    if (r, c) in blocked_set:
+                        row_str += "  ■ "
+                    elif (r, c) in givens_dict:
+                        row_str += f"{givens_dict[(r, c)]:3d} "
+                    else:
+                        row_str += "  . "
+                print(row_str)
+            print()
+            
+        except Exception as e:
+            print(f"❌ Generation failed: {e}")
+            import traceback
+            if args.trace:
+                traceback.print_exc()
         return
     
     if args.trace:

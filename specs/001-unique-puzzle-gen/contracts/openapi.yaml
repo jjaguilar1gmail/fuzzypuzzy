@@ -1,0 +1,80 @@
+openapi: 3.0.3
+info:
+  title: FuzzyPuzzy Puzzle Generator API
+  version: 0.1.0
+paths:
+  /generate:
+    post:
+      summary: Generate a uniqueness-preserving puzzle
+      operationId: generatePuzzle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerationConfig'
+      responses:
+        '200':
+          description: Generation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneratedPuzzle'
+        '400':
+          description: Invalid parameters
+        '422':
+          description: Generation failed (budget exceeded or uniqueness not achieved)
+components:
+  schemas:
+    GenerationConfig:
+      type: object
+      properties:
+        size: { type: integer, minimum: 2, maximum: 9 }
+        allow_diagonal: { type: boolean }
+        blocked: { type: array, items: { $ref: '#/components/schemas/CellPos' } }
+        difficulty: { type: string, enum: [easy, medium, hard, extreme] }
+        percent_fill: { type: number, minimum: 0, maximum: 1 }
+        seed: { type: integer }
+        path_mode: { type: string, enum: [serpentine, random_walk] }
+        clue_mode: { type: string, enum: [anchor_removal_v1] }
+        symmetry: { type: string, enum: [rotational, horizontal] }
+        turn_anchors: { type: boolean }
+        timeout_ms: { type: integer, minimum: 100 }
+        max_attempts: { type: integer, minimum: 1 }
+        uniqueness_node_cap: { type: integer, minimum: 10 }
+        uniqueness_timeout_ms: { type: integer, minimum: 50 }
+      required: [size]
+    CellPos:
+      type: object
+      properties:
+        row: { type: integer, minimum: 0 }
+        col: { type: integer, minimum: 0 }
+      required: [row, col]
+    GeneratedPuzzle:
+      type: object
+      properties:
+        size: { type: integer }
+        allow_diagonal: { type: boolean }
+        blocked_cells: { type: array, items: { $ref: '#/components/schemas/CellPos' } }
+        givens: { type: array, items: { $ref: '#/components/schemas/GivenCell' } }
+        solution: { type: array, items: { $ref: '#/components/schemas/GivenCell' } }
+        difficulty_label: { type: string }
+        difficulty_score: { type: number }
+        clue_count: { type: integer }
+        uniqueness_verified: { type: boolean }
+        attempts_used: { type: integer }
+        seed: { type: integer }
+        path_mode: { type: string }
+        clue_mode: { type: string }
+        symmetry: { type: string }
+        timings_ms: { type: object }
+        solver_metrics: { type: object }
+        version: { type: string }
+      required: [size, givens, solution, seed]
+    GivenCell:
+      type: object
+      properties:
+        row: { type: integer }
+        col: { type: integer }
+        value: { type: integer }
+      required: [row, col, value]

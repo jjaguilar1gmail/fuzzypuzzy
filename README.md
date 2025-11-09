@@ -15,6 +15,13 @@ python hidato.py --trace       # Run solver with detailed trace (for debugging/l
 python hidato.py --version     # Show version information
 python hidato.py --help        # Show all CLI options
 
+# Puzzle Generation (NEW: Uniqueness-Preserving Generator)
+python hidato.py --generate --size 5 --difficulty easy --seed 123
+python hidato.py --generate --size 7 --difficulty hard --seed 42
+python hidato.py --generate --size 6 --percent-fill 0.40 --seed 99
+python hidato.py --generate --size 5 --blocked '1,1;2,2' --seed 200
+python hidato.py --generate --size 6 --symmetry rotational --seed 777 --print-seed
+
 # Alternative entry points
 python app/api.py              # Direct REPL access
 python complete_demo.py        # Comprehensive feature showcase
@@ -43,6 +50,12 @@ quit                  # Exit
 
 ### ✨ Features
 
+- **Uniqueness-Preserving Generator**: Generate puzzles with guaranteed single solutions
+  - **Difficulty Bands**: Easy, medium, hard, extreme with automatic assessment
+  - **Deterministic**: Same seed produces identical puzzles
+  - **Blocked Cells**: Support for custom grid layouts
+  - **Symmetry Options**: Rotational and horizontal symmetry
+  - **Metrics Reporting**: Clue density, logic ratio, search depth analysis
 - **Puzzle Generation**: 5x5 and 7x7 Hidato puzzles with serpentine paths
 - **Interactive Play**: Move validation with adjacency constraints
 - **Advanced Solving**: 4 progressive solver modes from basic to bounded search
@@ -146,4 +159,6 @@ tests/         # Contract tests for core functionality
 - [Quickstart Guide](specs/001-hidato-terminal-mvp/quickstart.md) - How to run the MVP
 - [Solver Improvements](specs/001-fix-v2-v3-solvers/spec.md) - v2/v3 solver fixes and enhancements
 - [Solver Implementation](specs/001-fix-v2-v3-solvers/plan.md) - Technical details of solver improvements
+- **NEW**: [Generator Specification](specs/001-unique-puzzle-gen/spec.md) - Uniqueness-preserving generator requirements
+- **NEW**: [Generator Quickstart](specs/001-unique-puzzle-gen/quickstart.md) - How to generate puzzles
 
