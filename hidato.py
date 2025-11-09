@@ -163,9 +163,9 @@ Interactive Commands:
     
     parser.add_argument(
         '--allow-diagonal',
-        type=bool,
+        type=lambda x: x.lower() in ('true', '1', 'yes') if isinstance(x, str) else bool(x),
         default=True,
-        help='Allow diagonal adjacency (default: True)'
+        help='Allow diagonal adjacency (default: True). Use: --allow-diagonal true/false'
     )
     
     parser.add_argument(

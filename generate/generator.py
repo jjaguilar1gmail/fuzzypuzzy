@@ -153,7 +153,17 @@ class Generator:
         MIN_VIABLE_DENSITY = 0.60  # At least 40% of cells must be empty for a valid puzzle
         min_viable_clues = int(total_cells * MIN_VIABLE_DENSITY)
         
-        while len(current_givens) > target_clues and attempts_used < max_attempts * 10:
+        # Scale removal budget by difficulty (harder = more removals needed = more attempts)
+        difficulty_multiplier = {
+            "easy": 5,     # Need fewer removals
+            "medium": 10,  # Default
+            "hard": 20,    # Need many removals
+            "extreme": 30  # Need maximum removals
+        }
+        budget_multiplier = difficulty_multiplier.get(difficulty, 10)
+        removal_budget = max_attempts * budget_multiplier
+        
+        while len(current_givens) > target_clues and attempts_used < removal_budget:
             # Check timeout
             if (time.time() - start_time) * 1000 > timeout_ms:
                 break
@@ -216,6 +226,20 @@ class Generator:
             print(f"  Clues: {len(current_givens)}/{total_cells}, Removals: {removals_accepted}, Attempts: {attempts_used}", file=sys.stderr)
             print(f"  This path mode ('{path_mode}') may be too constrained for unique solutions.", file=sys.stderr)
             print(f"  Try: smaller size, serpentine mode, or accept denser puzzles.\n", file=sys.stderr)
+        
+        # Check if requested difficulty was achieved
+        if difficulty:
+            band = DIFFICULTY_BANDS.get(difficulty)
+            if band:
+                target_min = band['clue_density_min']
+                target_max = band['clue_density_max']
+                if final_density < target_min or final_density > target_max:
+                    import sys
+                    print(f"\nWARNING: Could not achieve requested difficulty '{difficulty}'", file=sys.stderr)
+                    print(f"  Target range: {target_min:.0%}-{target_max:.0%} clues", file=sys.stderr)
+                    print(f"  Achieved: {final_density:.1%} ({len(current_givens)}/{total_cells} clues)", file=sys.stderr)
+                    print(f"  The puzzle structure limited clue removal.", file=sys.stderr)
+                    print(f"  Suggestion: Try a different seed or path mode.\n", file=sys.stderr)
         
         # Build final puzzle
         final_grid = Grid(size, size, allow_diagonal=allow_diagonal)
