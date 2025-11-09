@@ -190,9 +190,9 @@ Interactive Commands:
     parser.add_argument(
         '--path-mode',
         type=str,
-        choices=['serpentine', 'random_walk', 'backbite_v1'],
+        choices=['serpentine', 'random_walk', 'backbite_v1', 'random_walk_v2'],
         default='serpentine',
-        help='Path building strategy (default: serpentine)'
+        help='Path building strategy (default: serpentine). random_walk_v2 uses Warnsdorff heuristic.'
     )
     
     # T007: Smart path mode configuration
@@ -219,6 +219,12 @@ Interactive Commands:
         '--print-seed',
         action='store_true',
         help='Print final seed and generation parameters'
+    )
+    
+    parser.add_argument(
+        '--verbose',
+        action='store_true',
+        help='Print detailed metrics including path build time and coverage'
     )
     
     args = parser.parse_args()
@@ -288,6 +294,17 @@ Interactive Commands:
             print(f"   Seed: {result.seed}")
             print(f"   Time: {result.timings_ms['total']}ms")
             print(f"   Attempts: {result.attempts_used}")
+            
+            # T042: Print path metrics if verbose
+            if args.verbose:
+                path_coverage = result.solver_metrics.get('path_coverage', 1.0)
+                path_reason = result.solver_metrics.get('path_reason', 'success')
+                path_build_ms = result.timings_ms.get('path_build', 0)
+                print(f"   Path Mode: {result.path_mode}")
+                print(f"   Path Coverage: {path_coverage:.1%}")
+                print(f"   Path Reason: {path_reason}")
+                print(f"   Path Build Time: {path_build_ms}ms")
+            
             print()
             
             # T025: Print seed and parameters if requested
