@@ -98,17 +98,17 @@ class PathBuilder:
         visited = set()
         
         def get_neighbors(pos):
-            """Get unvisited valid neighbors."""
-            neighbors = []
-            for dr in [-1, 0, 1]:
-                for dc in [-1, 0, 1]:
-                    if dr == 0 and dc == 0:
-                        continue
-                    r, c = pos.row + dr, pos.col + dc
-                    if 0 <= r < grid.rows and 0 <= c < grid.cols:
-                        neighbor_pos = Position(r, c)
-                        if neighbor_pos not in visited and (r, c) not in blocked_set:
-                            neighbors.append(neighbor_pos)
+            """Get unvisited valid neighbors, respecting grid adjacency rules."""
+            # Use grid's built-in neighbor finding (respects allow_diagonal setting)
+            all_neighbors = grid.neighbors_of(pos)
+            
+            # Filter to unvisited and non-blocked
+            neighbors = [
+                neighbor_pos for neighbor_pos in all_neighbors
+                if neighbor_pos not in visited 
+                and (neighbor_pos.row, neighbor_pos.col) not in blocked_set
+            ]
+            
             # Shuffle for randomness
             rng.shuffle(neighbors)
             return neighbors
