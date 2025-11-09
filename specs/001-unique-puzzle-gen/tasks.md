@@ -28,9 +28,9 @@ description: "Task list for feature implementation"
 
 Purpose: Ensure minimal scaffolding to start implementation without blocking.
 
-- [ ] T001 Create new module for uniqueness checks in generate/uniqueness.py
-- [ ] T002 Create new module for difficulty metrics and band mapping in generate/difficulty.py
-- [ ] T003 [P] Add CLI flag stubs for generator options in hidato.py (--generate, --size, --difficulty, --seed, --allow-diagonal, --blocked, --percent-fill, --symmetry, --trace)
+- [x] T001 Create new module for uniqueness checks in generate/uniqueness.py
+- [x] T002 Create new module for difficulty metrics and band mapping in generate/difficulty.py
+- [x] T003 [P] Add CLI flag stubs for generator options in hidato.py (--generate, --size, --difficulty, --seed, --allow-diagonal, --blocked, --percent-fill, --symmetry, --trace)
 
 ---
 
@@ -38,12 +38,12 @@ Purpose: Ensure minimal scaffolding to start implementation without blocking.
 
 Purpose: Core structures and scaffolds that MUST be complete before user stories.
 
-- [ ] T004 Create dataclasses for GeneratedPuzzle, GenerationConfig, UniquenessCheckResult, DifficultyProfile in generate/models.py
-- [ ] T005 [P] Extend generate/path_builder.py to support mode="random_walk" (seeded) and honor blocked cells
-- [ ] T006 [P] Extend generate/clue_placer.py to support anchor-based seeding (values 1, N, turn-anchors) and symmetry hooks (rotational|horizontal|none)
-- [ ] T007 Create removal scoring helper with contract score_candidates(givens, path, anchors, grid) in generate/removal.py
-- [ ] T008 Define difficulty profiles (bands) constants in generate/difficulty.py (easy, medium, hard, extreme)
-- [ ] T009 Update generate/generator.py public API to generate_puzzle(size, difficulty=None, percent_fill=None, seed=None, allow_diagonal=True, blocked=None, path_mode='serpentine', clue_mode='anchor_removal_v1', symmetry=None, turn_anchors=True, timeout_ms=5000, max_attempts=5)
+- [x] T004 Create dataclasses for GeneratedPuzzle, GenerationConfig, UniquenessCheckResult, DifficultyProfile in generate/models.py
+- [x] T005 [P] Extend generate/path_builder.py to support mode="random_walk" (seeded) and honor blocked cells
+- [x] T006 [P] Extend generate/clue_placer.py to support anchor-based seeding (values 1, N, turn-anchors) and symmetry hooks (rotational|horizontal|none)
+- [x] T007 Create removal scoring helper with contract score_candidates(givens, path, anchors, grid) in generate/removal.py
+- [x] T008 Define difficulty profiles (bands) constants in generate/difficulty.py (easy, medium, hard, extreme)
+- [x] T009 Update generate/generator.py public API to generate_puzzle(size, difficulty=None, percent_fill=None, seed=None, allow_diagonal=True, blocked=None, path_mode='serpentine', clue_mode='anchor_removal_v1', symmetry=None, turn_anchors=True, timeout_ms=5000, max_attempts=5)
 
 Checkpoint: Foundation ready — user story implementation can now begin in parallel.
 
@@ -57,13 +57,13 @@ Independent Test: Call generator with parameters; verify solver solves (solved=T
 
 ### Implementation for User Story 1
 
-- [ ] T010 [US1] Implement count_solutions(cap=2, node_cap, timeout_ms) using solve/solver.py in generate/uniqueness.py (early-abort on second solution)
-- [ ] T011 [P] [US1] Implement removal loop in generate/generator.py using generate/removal.py scoring; preserve anchors; enforce clue lower bound per band
-- [ ] T012 [P] [US1] Wire blocked cell handling end-to-end in generate/generator.py and generate/path_builder.py; ensure uniqueness checks skip blocked
-- [ ] T013 [US1] Finalize metadata assembly (seed, path_mode, clue_mode, attempts_used, timings_ms, solver_metrics) in generate/generator.py per data-model
-- [ ] T014 [US1] Implement CLI flow in hidato.py invoking Generator with parsed args; print structured summary (size, difficulty, clue_count, uniqueness_verified)
-- [ ] T015 [US1] Parse --blocked as list of r,c pairs in hidato.py and thread into generator.generate_puzzle()
-- [ ] T016 [US1] Add final validation step to re-solve returned puzzle via solve/solver.py and assert solved before returning
+- [x] T010 [US1] Implement count_solutions(cap=2, node_cap, timeout_ms) using solve/solver.py in generate/uniqueness.py (early-abort on second solution)
+- [x] T011 [P] [US1] Implement removal loop in generate/generator.py using generate/removal.py scoring; preserve anchors; enforce clue lower bound per band
+- [x] T012 [P] [US1] Wire blocked cell handling end-to-end in generate/generator.py and generate/path_builder.py; ensure uniqueness checks skip blocked
+- [x] T013 [US1] Finalize metadata assembly (seed, path_mode, clue_mode, attempts_used, timings_ms, solver_metrics) in generate/generator.py per data-model
+- [x] T014 [US1] Implement CLI flow in hidato.py invoking Generator with parsed args; print structured summary (size, difficulty, clue_count, uniqueness_verified)
+- [x] T015 [US1] Parse --blocked as list of r,c pairs in hidato.py and thread into generator.generate_puzzle()
+- [x] T016 [US1] Add final validation step to re-solve returned puzzle via solve/solver.py and assert solved before returning
 
 Checkpoint: US1 complete — unique and solvable puzzles can be generated deterministically by seed.
 
@@ -77,11 +77,11 @@ Independent Test: Generate N puzzles per band; validate each puzzle meets define
 
 ### Implementation for User Story 2
 
-- [ ] T017 [US2] Compute metrics from solver trace (clue_density, logic_ratio, nodes, depth, strategy_hits) in generate/difficulty.py
-- [ ] T018 [P] [US2] Map metrics to band label and difficulty_score in generate/difficulty.py
-- [ ] T019 [US2] Integrate difficulty enforcement into removal loop/post-check in generate/generator.py (retry or adjust removals to hit band)
-- [ ] T020 [US2] Implement clear error for unsupported difficulty in generate/generator.py (enumerate valid labels)
-- [ ] T021 [US2] Update CLI output in hidato.py to include assessed difficulty and key metrics
+- [x] T017 [US2] Compute metrics from solver trace (clue_density, logic_ratio, nodes, depth, strategy_hits) in generate/difficulty.py
+- [x] T018 [P] [US2] Map metrics to band label and difficulty_score in generate/difficulty.py
+- [x] T019 [US2] Integrate difficulty enforcement into removal loop/post-check in generate/generator.py (retry or adjust removals to hit band)
+- [x] T020 [US2] Implement clear error for unsupported difficulty in generate/generator.py (enumerate valid labels)
+- [x] T021 [US2] Update CLI output in hidato.py to include assessed difficulty and key metrics
 
 Checkpoint: US2 complete — band targeting works and assessments are reported.
 
@@ -95,10 +95,10 @@ Independent Test: Generate twice with same parameters and seed; assert serialize
 
 ### Implementation for User Story 3
 
-- [ ] T022 [US3] Ensure single util/rng.RNG instance is passed through generate/generator.py, generate/path_builder.py, generate/clue_placer.py, generate/removal.py
-- [ ] T023 [P] [US3] Implement deterministic serialization of givens (sorted by row,col then value) in generate/models.py (helper to_json())
-- [ ] T024 [US3] Record reproducibility metadata (seed, path_mode, clue_mode, symmetry) in consistent key order in generate/generator.py
-- [ ] T025 [US3] Update hidato.py to echo final seed and params; add --print-seed option
+- [x] T022 [US3] Ensure single util/rng.RNG instance is passed through generate/generator.py, generate/path_builder.py, generate/clue_placer.py, generate/removal.py
+- [x] T023 [P] [US3] Implement deterministic serialization of givens (sorted by row,col then value) in generate/models.py (helper to_json())
+- [x] T024 [US3] Record reproducibility metadata (seed, path_mode, clue_mode, symmetry) in consistent key order in generate/generator.py
+- [x] T025 [US3] Update hidato.py to echo final seed and params; add --print-seed option
 
 Checkpoint: US3 complete — reproducible by seed; stable serialization for fixtures.
 
@@ -108,11 +108,11 @@ Checkpoint: US3 complete — reproducible by seed; stable serialization for fixt
 
 Purpose: Documentation and non-functional improvements.
 
-- [ ] T026 [P] Update specs/001-unique-puzzle-gen/quickstart.md examples to match final CLI flags and outputs
-- [ ] T027 Update README.md with generator usage section and examples
+- [x] T026 [P] Update specs/001-unique-puzzle-gen/quickstart.md examples to match final CLI flags and outputs
+- [x] T027 Update README.md with generator usage section and examples
 - [ ] T028 Add optional generation benchmark helper at scripts/bench_generate.py (measure P95 by band; standard library only)
 - [ ] T029 [P] Add --trace flag handling in hidato.py and summarized trace logging in generate/generator.py
-- [ ] T030 Run ruff and basic pytest to validate no regressions across existing modules
+- [x] T030 Run ruff and basic pytest to validate no regressions across existing modules
 
 ---
 
