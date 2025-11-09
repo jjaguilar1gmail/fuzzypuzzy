@@ -190,15 +190,41 @@ Interactive Commands:
     parser.add_argument(
         '--path-mode',
         type=str,
-        choices=['serpentine', 'random_walk'],
+        choices=['serpentine', 'random_walk', 'backbite_v1', 'random_walk_v2'],
         default='serpentine',
-        help='Path building strategy (default: serpentine)'
+        help='Path building strategy (default: serpentine). random_walk_v2 uses Warnsdorff heuristic.'
+    )
+    
+    # T007: Smart path mode configuration
+    parser.add_argument(
+        '--allow-partial-paths',
+        action='store_true',
+        help='Allow partial path coverage if time budget exceeded (default: False)'
+    )
+    
+    parser.add_argument(
+        '--min-cover',
+        type=float,
+        default=0.85,
+        help='Minimum coverage ratio for partial paths (default: 0.85)'
+    )
+    
+    parser.add_argument(
+        '--path-time-ms',
+        type=int,
+        help='Time budget for path building in milliseconds (default: auto tiered)'
     )
     
     parser.add_argument(
         '--print-seed',
         action='store_true',
         help='Print final seed and generation parameters'
+    )
+    
+    parser.add_argument(
+        '--verbose',
+        action='store_true',
+        help='Print detailed metrics including path build time and coverage'
     )
     
     args = parser.parse_args()
@@ -251,6 +277,10 @@ Interactive Commands:
                 blocked=blocked or None,
                 symmetry=args.symmetry,
                 path_mode=args.path_mode if hasattr(args, 'path_mode') else 'serpentine',
+                # T007: Pass smart path config
+                allow_partial_paths=args.allow_partial_paths if hasattr(args, 'allow_partial_paths') else False,
+                min_cover_ratio=args.min_cover if hasattr(args, 'min_cover') else 0.85,
+                path_time_ms=args.path_time_ms if hasattr(args, 'path_time_ms') else None,
             )
             
             print("✅ Generation Complete!")
@@ -264,6 +294,17 @@ Interactive Commands:
             print(f"   Seed: {result.seed}")
             print(f"   Time: {result.timings_ms['total']}ms")
             print(f"   Attempts: {result.attempts_used}")
+            
+            # T042: Print path metrics if verbose
+            if args.verbose:
+                path_coverage = result.solver_metrics.get('path_coverage', 1.0)
+                path_reason = result.solver_metrics.get('path_reason', 'success')
+                path_build_ms = result.timings_ms.get('path_build', 0)
+                print(f"   Path Mode: {result.path_mode}")
+                print(f"   Path Coverage: {path_coverage:.1%}")
+                print(f"   Path Reason: {path_reason}")
+                print(f"   Path Build Time: {path_build_ms}ms")
+            
             print()
             
             # T025: Print seed and parameters if requested

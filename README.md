@@ -22,6 +22,14 @@ python hidato.py --generate --size 6 --percent-fill 0.40 --seed 99
 python hidato.py --generate --size 5 --blocked '1,1;2,2' --seed 200
 python hidato.py --generate --size 6 --symmetry rotational --seed 777 --print-seed
 
+# NEW: Smart Path Modes (Fast, Diverse Generation)
+python hidato.py --generate --size 9 --difficulty hard --path-mode backbite_v1 --seed 42
+python hidato.py --generate --size 7 --difficulty medium --path-mode random_walk_v2 --seed 123
+python hidato.py --generate --size 8 --path-mode backbite_v1 --path-time-ms 5000 --seed 99
+
+# Partial Coverage Acceptance (for challenging configurations)
+python hidato.py --generate --size 9 --allow-partial-paths --min-cover 0.85 --path-time-ms 4000 --seed 42
+
 # Alternative entry points
 python app/api.py              # Direct REPL access
 python complete_demo.py        # Comprehensive feature showcase
@@ -52,10 +60,12 @@ quit                  # Exit
 
 - **Uniqueness-Preserving Generator**: Generate puzzles with guaranteed single solutions
   - **Difficulty Bands**: Easy, medium, hard, extreme with automatic assessment
+  - **Smart Path Modes**: Choose from 4 path-building algorithms (see below)
+  - **Partial Coverage**: Accept high-coverage partial paths for challenging configs
   - **Deterministic**: Same seed produces identical puzzles
   - **Blocked Cells**: Support for custom grid layouts
   - **Symmetry Options**: Rotational and horizontal symmetry
-  - **Metrics Reporting**: Clue density, logic ratio, search depth analysis
+  - **Metrics Reporting**: Clue density, logic ratio, search depth, path build time
 - **Puzzle Generation**: 5x5 and 7x7 Hidato puzzles with serpentine paths
 - **Interactive Play**: Move validation with adjacency constraints
 - **Advanced Solving**: 4 progressive solver modes from basic to bounded search
@@ -141,6 +151,44 @@ solve --mode logic_v3    # For puzzles requiring search (deterministic)
 python hidato.py --trace  # Shows strategy breakdown and step-by-step trace
 ```
 
+### 🛤️ Smart Path Modes
+
+The generator supports four path-building algorithms with different characteristics:
+
+| Mode | Description | Performance | Use Case |
+|------|-------------|-------------|----------|
+| `serpentine` | Deterministic snake pattern | Instant | Testing, predictable layouts |
+| `random_walk` | Legacy random exploration | Variable | **Deprecated** - use random_walk_v2 |
+| `backbite_v1` | Hamiltonian path refinement | ~38ms (9x9) | **Recommended** - fast & diverse |
+| `random_walk_v2` | Smart random with Warnsdorff | ~50-200ms | Max variety, controlled retries |
+
+**Path Mode Features**:
+- ✅ **Bounded Execution**: All modes respect `--path-time-ms` budgets
+- ✅ **Deterministic**: Same seed produces identical paths
+- ✅ **Diversity**: backbite_v1 and random_walk_v2 produce varied layouts
+- ✅ **Partial Coverage**: Accept high-coverage paths (≥85%) with `--allow-partial-paths`
+
+**Usage Examples:**
+```bash
+# Recommended: Fast diverse generation
+python hidato.py --generate --size 9 --path-mode backbite_v1 --seed 42
+
+# Maximum variety (slower)
+python hidato.py --generate --size 7 --path-mode random_walk_v2 --seed 123
+
+# Challenging configs with partial acceptance
+python hidato.py --generate --size 9 --allow-partial-paths --min-cover 0.85 --seed 99
+
+# Set time budget for path building
+python hidato.py --generate --size 8 --path-mode backbite_v1 --path-time-ms 5000
+```
+
+**Partial Coverage Acceptance**:
+- When enabled with `--allow-partial-paths`, generator accepts paths covering ≥ `min-cover` ratio (default 85%)
+- Uncovered cells are blocked, and puzzle constraints adjusted
+- Useful for difficult configurations (heavy blocking, extreme constraints)
+- Output includes `path_coverage` and acceptance reason in metrics
+
 ### 📁 Project Structure
 
 ```
@@ -161,4 +209,5 @@ tests/         # Contract tests for core functionality
 - [Solver Implementation](specs/001-fix-v2-v3-solvers/plan.md) - Technical details of solver improvements
 - **NEW**: [Generator Specification](specs/001-unique-puzzle-gen/spec.md) - Uniqueness-preserving generator requirements
 - **NEW**: [Generator Quickstart](specs/001-unique-puzzle-gen/quickstart.md) - How to generate puzzles
+- **NEW**: [Smart Path Modes Quickstart](specs/001-smart-path-modes/quickstart.md) - Path mode options and examples
 

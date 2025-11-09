@@ -21,7 +21,8 @@ class Generator:
     def generate_puzzle(size, difficulty=None, percent_fill=None, seed=None,
                        allow_diagonal=True, blocked=None, path_mode="serpentine",
                        clue_mode="anchor_removal_v1", symmetry=None, turn_anchors=True,
-                       timeout_ms=5000, max_attempts=5):
+                       timeout_ms=5000, max_attempts=5,
+                       allow_partial_paths=False, min_cover_ratio=0.85, path_time_ms=None):
         """Generate a uniqueness-preserving puzzle (T009 new signature).
         
         Args:
@@ -37,6 +38,9 @@ class Generator:
             turn_anchors: Include turn points as anchors
             timeout_ms: Overall generation timeout
             max_attempts: Maximum generation attempts
+            allow_partial_paths: Accept partial coverage paths (T007)
+            min_cover_ratio: Minimum coverage for partial acceptance (T007)
+            path_time_ms: Path building time budget (T007)
             
         Returns:
             GeneratedPuzzle object
@@ -62,7 +66,11 @@ class Generator:
             symmetry=symmetry,
             turn_anchors=turn_anchors,
             timeout_ms=timeout_ms,
-            max_attempts=max_attempts
+            max_attempts=max_attempts,
+            # T010: Include smart path config
+            allow_partial_paths=allow_partial_paths,
+            min_cover_ratio=min_cover_ratio,
+            path_time_ms=path_time_ms,
         )
         
         # T020: Validate difficulty parameter
@@ -85,10 +93,46 @@ class Generator:
             cell = grid.get_cell(pos)
             cell.blocked = True
         
-        # Build path
-        path = PathBuilder.build(grid, mode=path_mode, rng=rng, blocked=config.blocked)
+        # Build path (T032: now returns PathBuildResult)
+        path_result = PathBuilder.build(grid, mode=path_mode, rng=rng, blocked=config.blocked)
+        path = path_result.positions
+        path_build_ms = path_result.metrics.get("path_build_ms", 0)
         
-        # Create constraints based on actual path length
+        # T032: Handle partial coverage if enabled
+        if allow_partial_paths and path_result.coverage < 1.0:
+            if path_result.coverage >= min_cover_ratio:
+                # Accept partial path - T033: block remainder cells
+                all_cells = set()
+                for row in range(size):
+                    for col in range(size):
+                        if (row, col) not in config.blocked:
+                            all_cells.add((row, col))
+                
+                path_cells = {(p.row, p.col) for p in path}
+                remainder_cells = all_cells - path_cells
+                
+                # Block remainder
+                for r, c in remainder_cells:
+                    pos = Position(r, c)
+                    grid.get_cell(pos).blocked = True
+                
+                import sys
+                print(f"INFO: Accepted partial path with {path_result.coverage:.1%} coverage", file=sys.stderr)
+                print(f"      Blocked {len(remainder_cells)} remainder cells", file=sys.stderr)
+            else:
+                # Coverage too low - reject
+                import sys
+                print(f"WARNING: Path coverage {path_result.coverage:.1%} below threshold {min_cover_ratio:.0%}", file=sys.stderr)
+                print(f"         Falling back to serpentine mode", file=sys.stderr)
+                # Rebuild with serpentine
+                grid = Grid(size, size, allow_diagonal=allow_diagonal)
+                for r, c in config.blocked:
+                    pos = Position(r, c)
+                    grid.get_cell(pos).blocked = True
+                path_result = PathBuilder.build(grid, mode="serpentine", rng=rng, blocked=config.blocked)
+                path = path_result.positions
+        
+        # T034: Create constraints based on actual path length
         constraints = Constraints(
             min_value=1,
             max_value=len(path),
@@ -316,10 +360,15 @@ class Generator:
             symmetry=symmetry,
             timings_ms={
                 "total": int((end_time - start_time) * 1000),
+                "path_build": path_build_ms,
                 "solve": 0,  # SolverResult doesn't track elapsed_ms currently
                 "uniqueness": 0,  # TODO: track separately
             },
-            solver_metrics=solver_metrics,  # T019: Include computed metrics
+            solver_metrics={
+                **solver_metrics,  # T019: Include computed metrics
+                "path_coverage": path_result.coverage,
+                "path_reason": path_result.reason,
+            },
         )
     
     @staticmethod
@@ -354,8 +403,9 @@ class Generator:
         # Create grid
         grid = Grid(rows, cols, allow_diagonal=True)
         
-        # Generate solution path
-        path = PathBuilder.build(grid, mode=path_mode, rng=rng, blocked=None)
+        # Generate solution path (now returns PathBuildResult)
+        path_result = PathBuilder.build(grid, mode=path_mode, rng=rng, blocked=None)
+        path = path_result.positions
         
         # Choose clues
         given_positions = CluePlacer.choose(grid, path, mode=clue_mode, rng=rng,
