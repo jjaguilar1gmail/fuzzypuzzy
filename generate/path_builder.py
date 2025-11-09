@@ -2,9 +2,32 @@
 
 Contains the PathBuilder class for building paths during generation.
 """
+from dataclasses import dataclass, field
+from typing import Optional
 from core.position import Position
 from core.grid import Grid
 from util.rng import RNG
+
+
+@dataclass
+class PathBuildSettings:
+    """Settings for path building (T003)."""
+    mode: str = "serpentine"
+    max_time_ms: Optional[int] = None
+    max_restarts: int = 10
+    rng: Optional[RNG] = None
+    blocked: Optional[list[tuple[int, int]]] = None
+
+
+@dataclass
+class PathBuildResult:
+    """Result from path building attempt (T003)."""
+    ok: bool
+    reason: str  # success | timeout | exhausted_restarts | coverage_below_threshold | partial_accepted
+    coverage: float  # 0.0-1.0
+    positions: list[Position]
+    metrics: dict = field(default_factory=dict)  # path_build_ms, turn_count, etc.
+
 
 class PathBuilder:
     """Builds solution paths for puzzle generation."""
@@ -26,8 +49,164 @@ class PathBuilder:
             return PathBuilder._build_serpentine(grid, blocked)
         elif mode == "random_walk":
             return PathBuilder._build_random_walk(grid, rng, blocked)
+        elif mode == "backbite_v1":
+            return PathBuilder._build_backbite_v1(grid, rng, blocked)
         else:
             raise ValueError(f"Unknown path mode: {mode}")
+    
+    @staticmethod
+    def _build_backbite_v1(grid: Grid, rng, blocked=None, max_time_ms=None):
+        """Build path using backbite algorithm (T013-T016).
+        
+        Backbite move: Pick an endpoint E, find a grid-neighbor N of E that's in the path.
+        Cut the path at N, reverse the segment from N to E, making N the new endpoint.
+        The path becomes: [start...N-1] + reversed[N...E] + continue
+        This ensures E is now adjacent to both its new neighbors (N-1 and what was before N).
+        
+        Args:
+            grid: Grid to fill
+            rng: Random number generator
+            blocked: Blocked cells
+            max_time_ms: Time budget (default: tiered by size)
+            
+        Returns:
+            List of positions in solution order
+        """
+        import time
+        
+        start_time = time.time()
+        
+        # T015: Tiered time budget if not specified
+        if max_time_ms is None:
+            size = grid.rows
+            if size <= 6:
+                max_time_ms = 2000
+            elif size <= 8:
+                max_time_ms = 4000
+            else:
+                max_time_ms = 6000
+        
+        # Initialize with serpentine baseline (guarantees Hamiltonian)
+        path = PathBuilder._build_serpentine(grid, blocked)
+        if not path:
+            return path
+        
+        # Budget: min(size^3, ~half time budget to allow for mutations)
+        size = grid.rows
+        budget_steps = min(size ** 3, max_time_ms // 2)
+        
+        # Convergence: early exit if no change for size*2 steps
+        no_change_limit = size * 2
+        steps_no_change = 0
+        last_path_hash = hash(tuple(path))
+        
+        blocked_set = set(blocked) if blocked else set()
+        
+        for step in range(budget_steps):
+            # T015: Check timeout
+            elapsed_ms = (time.time() - start_time) * 1000
+            if elapsed_ms > max_time_ms:
+                break
+            
+            # Pick random endpoint (head=0 or tail=last)
+            is_head = rng.choice([True, False])
+            
+            if is_head:
+                endpoint = path[0]
+                # For head, we'll reverse from some position to position 0
+            else:
+                endpoint = path[-1]
+                # For tail, we'll reverse from position len-1 to some earlier position
+            
+            # Get all grid neighbors of endpoint
+            all_neighbors = grid.neighbors_of(endpoint)
+            
+            # Find neighbors that are in path (excluding immediate path neighbor)
+            candidates = []
+            for neighbor in all_neighbors:
+                if (neighbor.row, neighbor.col) in blocked_set:
+                    continue
+                try:
+                    neighbor_idx = path.index(neighbor)
+                except ValueError:
+                    continue  # Not in path
+                
+                # Skip the immediate path neighbor
+                if is_head and neighbor_idx == 1:
+                    continue
+                if not is_head and neighbor_idx == len(path) - 2:
+                    continue
+                
+                # Valid candidate
+                candidates.append((neighbor, neighbor_idx))
+            
+            if not candidates:
+                steps_no_change += 1
+                if steps_no_change >= no_change_limit:
+                    break
+                continue
+            
+            # Pick random candidate
+            neighbor, neighbor_idx = rng.choice(candidates)
+            
+            # Perform backbite: reverse the segment
+            # The key is that after reversal, endpoint becomes adjacent to neighbor's previous neighbor
+            if is_head:
+                # Reversing from 0 to neighbor_idx means:
+                # Old: path[0], path[1], ..., path[neighbor_idx], path[neighbor_idx+1], ...
+                # After reversing [0:neighbor_idx+1]:
+                # New: path[neighbor_idx], ..., path[1], path[0], path[neighbor_idx+1], ...
+                # Now path[neighbor_idx] is first, and path[0] is followed by path[neighbor_idx+1]
+                # For this to be valid, path[0] must be grid-adjacent to path[neighbor_idx+1]
+                
+                # Check if this move is valid (will path[0] be adjacent to path[neighbor_idx+1]?)
+                if neighbor_idx + 1 < len(path):
+                    next_after_segment = path[neighbor_idx + 1]
+                    if endpoint not in grid.neighbors_of(next_after_segment):
+                        continue  # Invalid move, skip
+                
+                # Valid move: reverse
+                path[:neighbor_idx+1] = list(reversed(path[:neighbor_idx+1]))
+            else:
+                # Reversing from neighbor_idx to end means:
+                # Old: ..., path[neighbor_idx-1], path[neighbor_idx], ..., path[-1]
+                # After reversing [neighbor_idx:]:
+                # New: ..., path[neighbor_idx-1], path[-1], ..., path[neighbor_idx]
+                # Now path[-1] is adjacent to path[neighbor_idx-1], and path[neighbor_idx] is last
+                # For this to be valid, path[-1] (endpoint) must be grid-adjacent to path[neighbor_idx-1]
+                
+                # Check if this move is valid
+                if neighbor_idx > 0:
+                    prev_before_segment = path[neighbor_idx - 1]
+                    if endpoint not in grid.neighbors_of(prev_before_segment):
+                        continue  # Invalid move, skip
+                
+                # Valid move: reverse
+                path[neighbor_idx:] = list(reversed(path[neighbor_idx:]))
+            
+            # Check for change
+            new_hash = hash(tuple(path))
+            if new_hash == last_path_hash:
+                steps_no_change += 1
+                if steps_no_change >= no_change_limit:
+                    break
+            else:
+                steps_no_change = 0
+                last_path_hash = new_hash
+        
+        # Re-assign values to reflect final path order
+        for i, pos in enumerate(path, 1):
+            cell = grid.get_cell(pos)
+            cell.value = i
+        
+        return path
+        
+        # Re-assign values to reflect final path order
+        for i, pos in enumerate(path, 1):
+            cell = grid.get_cell(pos)
+            cell.value = i
+        
+        return path
     
     @staticmethod
     def _build_serpentine(grid: Grid, blocked=None):
@@ -40,6 +219,9 @@ class PathBuilder:
         Args:
             grid: Grid to fill
             blocked: Optional list of (row, col) blocked positions
+            
+        Returns:
+            List of positions in solution order (T006: still returns list for compat)
         """
         blocked_set = set(blocked) if blocked else set()
         path = []

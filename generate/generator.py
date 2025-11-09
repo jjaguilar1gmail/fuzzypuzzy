@@ -21,7 +21,8 @@ class Generator:
     def generate_puzzle(size, difficulty=None, percent_fill=None, seed=None,
                        allow_diagonal=True, blocked=None, path_mode="serpentine",
                        clue_mode="anchor_removal_v1", symmetry=None, turn_anchors=True,
-                       timeout_ms=5000, max_attempts=5):
+                       timeout_ms=5000, max_attempts=5,
+                       allow_partial_paths=False, min_cover_ratio=0.85, path_time_ms=None):
         """Generate a uniqueness-preserving puzzle (T009 new signature).
         
         Args:
@@ -37,6 +38,9 @@ class Generator:
             turn_anchors: Include turn points as anchors
             timeout_ms: Overall generation timeout
             max_attempts: Maximum generation attempts
+            allow_partial_paths: Accept partial coverage paths (T007)
+            min_cover_ratio: Minimum coverage for partial acceptance (T007)
+            path_time_ms: Path building time budget (T007)
             
         Returns:
             GeneratedPuzzle object
@@ -62,7 +66,11 @@ class Generator:
             symmetry=symmetry,
             turn_anchors=turn_anchors,
             timeout_ms=timeout_ms,
-            max_attempts=max_attempts
+            max_attempts=max_attempts,
+            # T010: Include smart path config
+            allow_partial_paths=allow_partial_paths,
+            min_cover_ratio=min_cover_ratio,
+            path_time_ms=path_time_ms,
         )
         
         # T020: Validate difficulty parameter

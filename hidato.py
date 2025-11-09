@@ -190,9 +190,29 @@ Interactive Commands:
     parser.add_argument(
         '--path-mode',
         type=str,
-        choices=['serpentine', 'random_walk'],
+        choices=['serpentine', 'random_walk', 'backbite_v1'],
         default='serpentine',
         help='Path building strategy (default: serpentine)'
+    )
+    
+    # T007: Smart path mode configuration
+    parser.add_argument(
+        '--allow-partial-paths',
+        action='store_true',
+        help='Allow partial path coverage if time budget exceeded (default: False)'
+    )
+    
+    parser.add_argument(
+        '--min-cover',
+        type=float,
+        default=0.85,
+        help='Minimum coverage ratio for partial paths (default: 0.85)'
+    )
+    
+    parser.add_argument(
+        '--path-time-ms',
+        type=int,
+        help='Time budget for path building in milliseconds (default: auto tiered)'
     )
     
     parser.add_argument(
@@ -251,6 +271,10 @@ Interactive Commands:
                 blocked=blocked or None,
                 symmetry=args.symmetry,
                 path_mode=args.path_mode if hasattr(args, 'path_mode') else 'serpentine',
+                # T007: Pass smart path config
+                allow_partial_paths=args.allow_partial_paths if hasattr(args, 'allow_partial_paths') else False,
+                min_cover_ratio=args.min_cover if hasattr(args, 'min_cover') else 0.85,
+                path_time_ms=args.path_time_ms if hasattr(args, 'path_time_ms') else None,
             )
             
             print("✅ Generation Complete!")

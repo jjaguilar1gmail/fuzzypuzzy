@@ -23,6 +23,10 @@ class GenerationConfig:
     max_attempts: int = 5
     uniqueness_node_cap: int = 1000
     uniqueness_timeout_ms: int = 2000
+    # T002: Smart path mode configuration (placeholders)
+    allow_partial_paths: bool = False
+    min_cover_ratio: float = 0.85
+    path_time_ms: Optional[int] = None  # None = auto tiered by size
     
     def __post_init__(self):
         """Validate configuration."""
@@ -32,6 +36,11 @@ class GenerationConfig:
             raise ValueError(f"Invalid difficulty: {self.difficulty}")
         if self.percent_fill and (self.percent_fill < 0.0 or self.percent_fill > 1.0):
             raise ValueError(f"percent_fill must be 0.0-1.0, got {self.percent_fill}")
+        # T009: Validate new path config
+        if self.min_cover_ratio < 0.5 or self.min_cover_ratio > 1.0:
+            raise ValueError(f"min_cover_ratio must be 0.5-1.0, got {self.min_cover_ratio}")
+        if self.path_time_ms is not None and self.path_time_ms < 100:
+            raise ValueError(f"path_time_ms must be >= 100ms, got {self.path_time_ms}")
 
 
 @dataclass
