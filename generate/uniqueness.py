@@ -10,7 +10,14 @@ from .models import UniquenessCheckResult
 def count_solutions(puzzle, cap=2, node_cap=1000, timeout_ms=5000):
     """Count solutions up to a cap (early abort).
     
-    Uses search-enabled solving with early termination when solution cap is reached.
+    NOTE: This is a simplified implementation that can verify if a puzzle
+    has at least one solution, but cannot reliably count multiple solutions
+    for large puzzles due to search space complexity.
+    
+    For uniqueness checking during generation, this will:
+    - Return solutions_found=0 if puzzle is unsolvable
+    - Return solutions_found=1 if puzzle has at least one solution
+    - Return solutions_found>=2 only for small puzzles where exhaustive search is feasible
     
     Args:
         puzzle: Puzzle to check
@@ -20,54 +27,62 @@ def count_solutions(puzzle, cap=2, node_cap=1000, timeout_ms=5000):
         
     Returns:
         UniquenessCheckResult with:
-            - is_unique: bool
-            - solutions_found: int (1 or 2)
+            - is_unique: bool (True if exactly 1 solution found, but see note above)
+            - solutions_found: int (0, 1, or 2+)
             - nodes: int
             - depth: int
             - elapsed_ms: int
     """
+    import time
     start_time = time.time()
-    solutions_found = 0
-    max_nodes = 0
-    max_depth = 0
     
-    # Try logic first (v1 or v2)
-    result = Solver.solve(puzzle, mode='logic_v2', max_time_ms=timeout_ms)
+    # For small puzzles (<=25 cells), use exhaustive search
+    total_cells = puzzle.grid.rows * puzzle.grid.cols
+    if total_cells <= 25:
+        result = Solver.count_solutions(
+            puzzle,
+            cap=cap,
+            max_nodes=node_cap * 10,  # Allow more nodes for small puzzles
+            timeout_ms=timeout_ms,
+            max_depth=total_cells
+        )
+        
+        elapsed_ms = int((time.time() - start_time) * 1000)
+        
+        return UniquenessCheckResult(
+            is_unique=(result['solutions_found'] == 1),
+            solutions_found=result['solutions_found'],
+            nodes=result['nodes'],
+            depth=result['depth'],
+            elapsed_ms=elapsed_ms
+        )
     
-    if result.solved:
-        # Found first solution via logic
-        solutions_found = 1
-        max_nodes = result.nodes
-        max_depth = result.depth
-        
-        # Try to find a second solution with search
-        # We need to try alternate branches, which requires search-enabled mode
-        result2 = Solver.solve(puzzle, mode='logic_v3', max_nodes=node_cap, 
-                              max_time_ms=timeout_ms)
-        
-        # For now, assume if logic solved it, there's likely only one solution
-        # (Full implementation would require modified solver to find multiple)
-        # This is a simplified version for MVP
-        
-    else:
-        # Logic didn't solve it, try search-enabled mode
-        result = Solver.solve(puzzle, mode='logic_v3', max_nodes=node_cap,
-                             max_time_ms=timeout_ms)
-        
-        if result.solved:
-            solutions_found = 1
-            max_nodes = result.nodes
-            max_depth = result.depth
+    # For larger puzzles, use solver to check if at least one solution exists
+    # This is a limitation - we can't efficiently enumerate all solutions
+    result = Solver.solve(puzzle, mode='logic_v3', max_nodes=node_cap, timeout_ms=timeout_ms)
     
     elapsed_ms = int((time.time() - start_time) * 1000)
     
-    return UniquenessCheckResult(
-        is_unique=(solutions_found == 1),
-        solutions_found=solutions_found,
-        nodes=max_nodes,
-        depth=max_depth,
-        elapsed_ms=elapsed_ms
-    )
+    if result.solved:
+        # Found at least one solution
+        # NOTE: We ASSUME uniqueness here - this is a known limitation
+        # True uniqueness verification would require solution enumeration
+        return UniquenessCheckResult(
+            is_unique=True,  # ASSUMPTION: generated puzzles are designed to be unique
+            solutions_found=1,
+            nodes=result.nodes,
+            depth=result.depth,
+            elapsed_ms=elapsed_ms
+        )
+    else:
+        # Could not find a solution
+        return UniquenessCheckResult(
+            is_unique=False,
+            solutions_found=0,
+            nodes=result.nodes,
+            depth=result.depth,
+            elapsed_ms=elapsed_ms
+        )
 
 
 def verify_uniqueness(puzzle, node_cap=1000, timeout_ms=5000):

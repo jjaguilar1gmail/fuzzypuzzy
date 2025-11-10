@@ -181,8 +181,14 @@ class Generator:
             # Legacy behavior: inline turn anchor detection
             anchors = {path[0], path[-1]}  # Always keep 1 and N
             
+            # T09: For hard/extreme with pruning enabled, use endpoints only
+            skip_turn_anchors = (
+                config.pruning_enabled and
+                difficulty in ["hard", "extreme"]
+            )
+            
             # Add turn points to anchors based on difficulty and turn_anchors flag
-            if turn_anchors:
+            if turn_anchors and not skip_turn_anchors:
                 turn_positions = []
                 for i in range(1, len(path) - 1):
                     prev_pos = path[i - 1]
@@ -231,78 +237,112 @@ class Generator:
         else:
             target_clues = len(anchors) + (total_cells // 4)  # Default
         
-        # Removal loop (T011)
-        current_givens = set(given_positions)
-        attempts_used = 0
-        removals_accepted = 0
+        # T16: Solver-driven pruning (if enabled)
+        if config.pruning_enabled:
+            from .pruning import prune_puzzle
+            
+            # Build initial puzzle with all path cells as givens
+            prune_grid = Grid(size, size, allow_diagonal=allow_diagonal)
+            for r, c in config.blocked:
+                pos = Position(r, c)
+                prune_grid.get_cell(pos).blocked = True
+            for pos in path:
+                prune_grid.get_cell(pos).value = grid.get_cell(pos).value
+                prune_grid.get_cell(pos).given = True
+            prune_puzzle_obj = Puzzle(prune_grid, constraints)
+            
+            # Run pruning
+            prune_result = prune_puzzle(
+                prune_puzzle_obj, path, config, 
+                solver_mode="logic_v2",
+                difficulty=difficulty
+            )
+            
+            # Extract final givens from pruned puzzle
+            current_givens = {
+                pos for pos in path
+                if prune_result.puzzle.grid.get_cell(pos).given
+            }
+            attempts_used = prune_result.session.iteration_count
+            removals_accepted = len(path) - len(current_givens)
+            
+            # Store pruning metrics for result
+            _pruning_metrics = prune_result.to_dict()
+        else:
+            # Legacy removal loop (T011)
+            current_givens = set(given_positions)
+            attempts_used = 0
+            removals_accepted = 0
+            _pruning_metrics = None
         
         # Minimum viable clue density (prevent 100% clue puzzles)
         MIN_VIABLE_DENSITY = 0.60  # At least 40% of cells must be empty for a valid puzzle
         min_viable_clues = int(total_cells * MIN_VIABLE_DENSITY)
         
-        # Scale removal budget by difficulty (harder = more removals needed = more attempts)
-        difficulty_multiplier = {
-            "easy": 5,     # Need fewer removals
-            "medium": 10,  # Default
-            "hard": 20,    # Need many removals
-            "extreme": 30  # Need maximum removals
-        }
-        budget_multiplier = difficulty_multiplier.get(difficulty, 10)
-        removal_budget = max_attempts * budget_multiplier
-        
-        while len(current_givens) > target_clues and attempts_used < removal_budget:
-            # Check timeout
-            if (time.time() - start_time) * 1000 > timeout_ms:
-                break
+        if not config.pruning_enabled:
+            # Scale removal budget by difficulty (harder = more removals needed = more attempts)
+            difficulty_multiplier = {
+                "easy": 5,     # Need fewer removals
+                "medium": 10,  # Default
+                "hard": 20,    # Need many removals
+                "extreme": 30  # Need maximum removals
+            }
+            budget_multiplier = difficulty_multiplier.get(difficulty, 10)
+            removal_budget = max_attempts * budget_multiplier
             
-            # Score removal candidates
-            candidates = score_candidates(current_givens, path, anchors, grid)
-            
-            if not candidates:
-                break
-            
-            # Try removing best candidate
-            candidate_pos, _ = candidates[0]
-            
-            # Create test puzzle without this clue
-            test_grid = Grid(size, size, allow_diagonal=allow_diagonal)
-            
-            # Mark blocked cells in test grid
-            for r, c in config.blocked:
-                pos = Position(r, c)
-                test_grid.get_cell(pos).blocked = True
-            
-            # Restore solution
-            for pos in path:
-                test_grid.get_cell(pos).value = grid.get_cell(pos).value
-            
-            # Mark current givens except candidate
-            test_givens = current_givens - {candidate_pos}
-            for pos in test_givens:
-                test_grid.get_cell(pos).given = True
-            
-            # Clear non-givens
-            for pos in path:
-                if pos not in test_givens:
-                    test_grid.get_cell(pos).value = None
-            
-            # Create test puzzle with same constraints
-            test_puzzle = Puzzle(test_grid, constraints)
-            
-            # Check uniqueness
-            uniqueness_result = count_solutions(
-                test_puzzle,
-                cap=2,
-                node_cap=config.uniqueness_node_cap,
-                timeout_ms=config.uniqueness_timeout_ms
-            )
-            
-            if uniqueness_result.is_unique:
-                # Accept removal
-                current_givens = test_givens
-                removals_accepted += 1
-            
-            attempts_used += 1
+            while len(current_givens) > target_clues and attempts_used < removal_budget:
+                # Check timeout
+                if (time.time() - start_time) * 1000 > timeout_ms:
+                    break
+                
+                # Score removal candidates
+                candidates = score_candidates(current_givens, path, anchors, grid)
+                
+                if not candidates:
+                    break
+                
+                # Try removing best candidate
+                candidate_pos, _ = candidates[0]
+                
+                # Create test puzzle without this clue
+                test_grid = Grid(size, size, allow_diagonal=allow_diagonal)
+                
+                # Mark blocked cells in test grid
+                for r, c in config.blocked:
+                    pos = Position(r, c)
+                    test_grid.get_cell(pos).blocked = True
+                
+                # Restore solution
+                for pos in path:
+                    test_grid.get_cell(pos).value = grid.get_cell(pos).value
+                
+                # Mark current givens except candidate
+                test_givens = current_givens - {candidate_pos}
+                for pos in test_givens:
+                    test_grid.get_cell(pos).given = True
+                
+                # Clear non-givens
+                for pos in path:
+                    if pos not in test_givens:
+                        test_grid.get_cell(pos).value = None
+                
+                # Create test puzzle with same constraints
+                test_puzzle = Puzzle(test_grid, constraints)
+                
+                # Check uniqueness
+                uniqueness_result = count_solutions(
+                    test_puzzle,
+                    cap=2,
+                    node_cap=config.uniqueness_node_cap,
+                    timeout_ms=config.uniqueness_timeout_ms
+                )
+                
+                if uniqueness_result.is_unique:
+                    # Accept removal
+                    current_givens = test_givens
+                    removals_accepted += 1
+                
+                attempts_used += 1
         
         # Check if we achieved a viable clue density
         final_density = len(current_givens) / total_cells
