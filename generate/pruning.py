@@ -205,9 +205,11 @@ def snapshot_puzzle_state(puzzle: Puzzle) -> dict:
     Returns:
         Dict with given_positions set
     """
-    given_positions = {
-        pos for pos in puzzle.all_positions() if puzzle.grid.get_cell(pos).given
-    }
+    given_positions = set()
+    for row in puzzle.grid.cells:
+        for cell in row:
+            if not cell.blocked and cell.given:
+                given_positions.add(cell.pos)
     return {"given_positions": given_positions}
 
 
@@ -221,9 +223,10 @@ def restore_puzzle_state(puzzle: Puzzle, snapshot: dict) -> None:
         snapshot: State dict from snapshot_puzzle_state()
     """
     given_positions = snapshot["given_positions"]
-    for pos in puzzle.all_positions():
-        cell = puzzle.grid.get_cell(pos)
-        cell.given = pos in given_positions
+    for row in puzzle.grid.cells:
+        for cell in row:
+            if not cell.blocked:
+                cell.given = cell.pos in given_positions
 
 
 def check_puzzle_uniqueness(puzzle: Puzzle, solver_mode: str) -> bool:
@@ -273,12 +276,24 @@ def prune_puzzle(
     Returns:
         PruningResult with final puzzle state and metrics
     """
+    import time
+    start_time = time.time()
+    
     session = PruningSession()
     removable = order_removable_clues(puzzle, path)
     
     if not removable:
+        clue_count = sum(
+            1 for row in puzzle.grid.cells for cell in row 
+            if not cell.blocked and cell.given
+        )
         return PruningResult(
-            puzzle, PruningStatus.SUCCESS, session, session.to_metrics()
+            puzzle=puzzle,
+            status=PruningStatus.SUCCESS,
+            session=session,
+            final_clue_count=clue_count,
+            final_density=clue_count / len(path),
+            time_ms=(time.time() - start_time) * 1000
         )
     
     # Interval reduction phase
@@ -317,8 +332,19 @@ def prune_puzzle(
     # Linear fallback phase (T04)
     # Omitted for now; will add in next iteration
     
+    # Calculate final metrics
+    final_clue_count = sum(
+        1 for row in puzzle.grid.cells for cell in row 
+        if not cell.blocked and cell.given
+    )
+    
     return PruningResult(
-        puzzle, PruningStatus.SUCCESS, session, session.to_metrics()
+        puzzle=puzzle,
+        status=PruningStatus.SUCCESS,
+        session=session,
+        final_clue_count=final_clue_count,
+        final_density=final_clue_count / len(path),
+        time_ms=(time.time() - start_time) * 1000
     )
 
 
