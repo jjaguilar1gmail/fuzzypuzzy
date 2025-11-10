@@ -35,6 +35,11 @@ class GenerationConfig:
     # T16: Solver-driven pruning configuration
     pruning_enabled: bool = True
     pruning_max_repairs: int = 2
+    # Target density ranges by difficulty
+    pruning_target_density_easy_min: float = 0.50
+    pruning_target_density_easy_max: float = 1.00
+    pruning_target_density_medium_min: float = 0.35
+    pruning_target_density_medium_max: float = 0.50
     pruning_target_density_hard_min: float = 0.24
     pruning_target_density_hard_max: float = 0.32
     pruning_linear_fallback_k: int = 6
@@ -62,6 +67,21 @@ class GenerationConfig:
         # T16: Validate pruning config
         if self.pruning_max_repairs < 0:
             raise ValueError(f"pruning_max_repairs must be >= 0, got {self.pruning_max_repairs}")
+        # Easy
+        if not (0.3 <= self.pruning_target_density_easy_min <= 1.0):
+            raise ValueError(f"pruning_target_density_easy_min must be 0.3-1.0, got {self.pruning_target_density_easy_min}")
+        if not (0.3 <= self.pruning_target_density_easy_max <= 1.0):
+            raise ValueError(f"pruning_target_density_easy_max must be 0.3-1.0, got {self.pruning_target_density_easy_max}")
+        if self.pruning_target_density_easy_min >= self.pruning_target_density_easy_max:
+            raise ValueError(f"pruning_target_density_easy_min must be < max")
+        # Medium
+        if not (0.2 <= self.pruning_target_density_medium_min <= 0.8):
+            raise ValueError(f"pruning_target_density_medium_min must be 0.2-0.8, got {self.pruning_target_density_medium_min}")
+        if not (0.2 <= self.pruning_target_density_medium_max <= 0.8):
+            raise ValueError(f"pruning_target_density_medium_max must be 0.2-0.8, got {self.pruning_target_density_medium_max}")
+        if self.pruning_target_density_medium_min >= self.pruning_target_density_medium_max:
+            raise ValueError(f"pruning_target_density_medium_min must be < max")
+        # Hard
         if not (0.1 <= self.pruning_target_density_hard_min <= 0.5):
             raise ValueError(f"pruning_target_density_hard_min must be 0.1-0.5, got {self.pruning_target_density_hard_min}")
         if not (0.1 <= self.pruning_target_density_hard_max <= 0.9):

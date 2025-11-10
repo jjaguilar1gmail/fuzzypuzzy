@@ -253,7 +253,9 @@ class Generator:
             
             # Run pruning
             prune_result = prune_puzzle(
-                prune_puzzle_obj, path, config, solver_mode="logic_v2"
+                prune_puzzle_obj, path, config, 
+                solver_mode="logic_v2",
+                difficulty=difficulty
             )
             
             # Extract final givens from pruned puzzle

@@ -234,14 +234,14 @@ def check_puzzle_uniqueness(puzzle: Puzzle, solver_mode: str) -> bool:
     
     Args:
         puzzle: Puzzle to check
-        solver_mode: Solver mode string ("logic_v2" etc.)
+        solver_mode: Solver mode string (unused, kept for signature compatibility)
     
     Returns:
-        True if puzzle has unique solution
+        True if puzzle has unique solution (exactly 1 solution, not just solvable)
     """
-    from solve.solver import Solver
-    result = Solver.solve(puzzle, mode=solver_mode)
-    return result.solved
+    from generate.uniqueness import count_solutions
+    result = count_solutions(puzzle, cap=2, node_cap=5000, timeout_ms=5000)
+    return result.is_unique
 
 
 def sample_alternate_solutions(
@@ -432,25 +432,32 @@ def prune_puzzle(
     puzzle: Puzzle,
     path: list[Position],
     config: 'GenerationConfig',
-    solver_mode: str = "logic_v2"
+    solver_mode: str = "logic_v2",
+    timeout_ms: float = None,
+    difficulty: str = None
 ) -> PruningResult:
     """Solver-driven clue pruning with interval reduction.
     
     T02: Main pruning loop with binary search and uniqueness checks.
     T03: Snapshot/revert on uniqueness failure.
     T04: Fallback to linear when count <= K.
+    T15: Timeout handling with aborted_timeout status.
     
     Args:
         puzzle: Puzzle with full path as givens
         path: Hamiltonian path positions
         config: Generation configuration
         solver_mode: Solver mode for uniqueness checks
+        timeout_ms: Optional timeout override (uses config.timeout_ms if None)
+        difficulty: Target difficulty (uses config.difficulty if None)
     
     Returns:
         PruningResult with final puzzle state and metrics
     """
     import time
     start_time = time.time()
+    timeout_limit_ms = timeout_ms if timeout_ms is not None else config.timeout_ms
+    target_difficulty = difficulty if difficulty is not None else config.difficulty
     
     session = PruningSession()
     removable = order_removable_clues(puzzle, path)
@@ -474,7 +481,45 @@ def prune_puzzle(
     last_unique_snapshot = snapshot_puzzle_state(puzzle)
     
     while low_index <= high_index:
+        # T15: Check timeout
+        elapsed_ms = (time.time() - start_time) * 1000
+        if elapsed_ms >= timeout_limit_ms:
+            session.timeout_occurred = True
+            restore_puzzle_state(puzzle, last_unique_snapshot)
+            break
+        
         session.record_iteration()
+        
+        # Check if we've reached target density (stop if in range)
+        current_clue_count = sum(
+            1 for row in puzzle.grid.cells for cell in row 
+            if not cell.blocked and cell.given
+        )
+        current_density = current_clue_count / len(path)
+        
+        # Get target density range for current difficulty
+        min_density, max_density = 0.0, 1.0
+        if target_difficulty == "easy":
+            min_density = config.pruning_target_density_easy_min
+            max_density = config.pruning_target_density_easy_max
+        elif target_difficulty == "medium":
+            min_density = config.pruning_target_density_medium_min
+            max_density = config.pruning_target_density_medium_max
+        elif target_difficulty in ["hard", "extreme"]:
+            min_density = config.pruning_target_density_hard_min
+            max_density = config.pruning_target_density_hard_max
+        
+        # Check if we're below minimum - stop to avoid going too low
+        if current_density < min_density:
+            # Already below minimum, stop pruning
+            break
+        
+        # For non-easy modes, also stop if we're in the target range
+        # For easy mode, continue removing as long as we're above minimum and unique
+        if target_difficulty != "easy":
+            if min_density <= current_density <= max_density:
+                # Within target range - stop pruning
+                break
         
         # Check fallback condition
         current_count = high_index - low_index + 1
@@ -491,7 +536,19 @@ def prune_puzzle(
         
         # Check uniqueness
         if check_puzzle_uniqueness(puzzle, solver_mode):
-            # Success: try more aggressive removal
+            # Success - but check if we went below minimum density
+            new_clue_count = sum(
+                1 for row in puzzle.grid.cells for cell in row 
+                if not cell.blocked and cell.given
+            )
+            new_density = new_clue_count / len(path)
+            
+            if new_density < min_density:
+                # Went too low - revert to last good state and stop
+                restore_puzzle_state(puzzle, last_unique_snapshot)
+                break
+            
+            # Success: save state and try more aggressive removal
             last_unique_snapshot = snapshot_puzzle_state(puzzle)
             state = contract_interval(low_index, high_index, "density_met")
             session.record_interval_contraction(state)
@@ -545,18 +602,18 @@ def prune_puzzle(
             session.record_interval_contraction(state)
             high_index = state.high_index
     
-    # Check if we exhausted repairs
+    # Check if we exhausted repairs or timed out
     final_status = PruningStatus.SUCCESS
-    if session.repairs_used >= config.pruning_max_repairs:
+    
+    if session.timeout_occurred:
+        final_status = PruningStatus.ABORTED_TIMEOUT
+    elif session.repairs_used >= config.pruning_max_repairs:
         # Restore last known unique state
         restore_puzzle_state(puzzle, last_unique_snapshot)
         if not check_puzzle_uniqueness(puzzle, solver_mode):
             final_status = PruningStatus.ABORTED_MAX_REPAIRS
         else:
             final_status = PruningStatus.SUCCESS_WITH_REPAIRS
-    elif session.repairs_used > 0:
-        final_status = PruningStatus.SUCCESS_WITH_REPAIRS
-    
     elif session.repairs_used > 0:
         final_status = PruningStatus.SUCCESS_WITH_REPAIRS
     
@@ -574,6 +631,40 @@ def prune_puzzle(
         final_density=final_clue_count / len(path),
         time_ms=(time.time() - start_time) * 1000
     )
+
+
+def compute_pruning_hash(puzzle: Puzzle, path: list[Position], difficulty: str) -> str:
+    """Compute deterministic hash of pruning result.
+    
+    T13: Stable hash for determinism verification across runs.
+    
+    Args:
+        puzzle: Final pruned puzzle
+        path: Solution path
+        difficulty: Target difficulty
+    
+    Returns:
+        Hex digest string of SHA256 hash
+    """
+    import hashlib
+    
+    # Collect givens in deterministic order
+    givens = []
+    for pos in path:
+        cell = puzzle.grid.get_cell(pos)
+        if cell.given:
+            givens.append((pos.row, pos.col, cell.value))
+    givens.sort()
+    
+    # Build hashable string
+    hash_parts = [
+        f"difficulty={difficulty}",
+        f"path_len={len(path)}",
+        f"givens={givens}"
+    ]
+    hash_input = "|".join(hash_parts).encode('utf-8')
+    
+    return hashlib.sha256(hash_input).hexdigest()
 
 
 

@@ -77,6 +77,167 @@ class Solver:
         return result
     
     @staticmethod
+    def count_solutions(puzzle: Puzzle, cap: int = 2, max_nodes: int = 10000, 
+                       timeout_ms: int = 5000, max_depth: int = 50) -> dict:
+        """Count the number of solutions up to a cap.
+        
+        This method explores the search space and counts distinct solutions.
+        It terminates early when the cap is reached for efficiency.
+        
+        Args:
+            puzzle: The puzzle to analyze (not modified)
+            cap: Maximum number of solutions to find (default 2 for uniqueness check)
+            max_nodes: Maximum search nodes to explore
+            timeout_ms: Timeout in milliseconds
+            max_depth: Maximum search depth
+            
+        Returns:
+            dict with:
+                solutions_found: int (number of distinct solutions found, capped at cap)
+                nodes: int (nodes explored)
+                depth: int (max depth reached)
+                timed_out: bool (whether timeout occurred)
+                exhausted: bool (whether search space was exhausted)
+        """
+        import time
+        from solve.candidates import CandidateModel
+        
+        start_time = time.time()
+        nodes_explored = 0
+        max_search_depth = 0
+        solutions_found = 0
+        timed_out = False
+        exhausted = False
+        
+        def is_timeout() -> bool:
+            return (time.time() - start_time) * 1000 > timeout_ms
+        
+        def is_complete(puzzle_state) -> bool:
+            """Check if puzzle is completely filled and valid."""
+            # All cells must have values
+            for cell in puzzle_state.grid.iter_cells():
+                if cell.is_empty():
+                    return False
+            # Verify it's a valid solution
+            temp_solver = Solver(puzzle_state)
+            return temp_solver._is_solved()
+        
+        def get_next_empty_cell(puzzle_state):
+            """Find the next empty cell to fill (simple row-major order)."""
+            for row in range(puzzle_state.grid.rows):
+                for col in range(puzzle_state.grid.cols):
+                    pos = Position(row, col)
+                    cell = puzzle_state.grid.get_cell(pos)
+                    if cell.is_empty():
+                        return pos
+            return None
+        
+        def get_possible_values(puzzle_state, pos):
+            """Get possible values for a position based on Hidato adjacency rules."""
+            # Position must be empty
+            if not puzzle_state.grid.get_cell(pos).is_empty():
+                return []
+            
+            # Find which values are already placed and their positions
+            placed_values = {}
+            for cell in puzzle_state.grid.iter_cells():
+                if cell.value is not None:
+                    placed_values[cell.value] = cell.pos
+            
+            possible = []
+            neighbors = puzzle_state.grid.neighbors_of(pos)
+            
+            for value in range(puzzle_state.constraints.min_value, 
+                             puzzle_state.constraints.max_value + 1):
+                # Skip if value is already placed
+                if value in placed_values:
+                    continue
+                
+                # Check adjacency constraints
+                prev_value = value - 1
+                next_value = value + 1
+                
+                # If previous value is placed, current position must be adjacent to it
+                if prev_value >= puzzle_state.constraints.min_value and prev_value in placed_values:
+                    if placed_values[prev_value] not in neighbors:
+                        continue  # Not adjacent to previous value
+                
+                # If next value is placed, current position must be adjacent to it
+                if next_value <= puzzle_state.constraints.max_value and next_value in placed_values:
+                    if placed_values[next_value] not in neighbors:
+                        continue  # Not adjacent to next value
+                
+                # Value is valid for this position
+                possible.append(value)
+            
+            return possible
+        
+        def search_recursive(puzzle_state, depth: int) -> None:
+            """Recursive search that counts all solutions up to cap."""
+            nonlocal nodes_explored, max_search_depth, solutions_found, timed_out, exhausted
+            
+            # Early termination if we've found enough solutions
+            if solutions_found >= cap:
+                return
+            
+            nodes_explored += 1
+            max_search_depth = max(max_search_depth, depth)
+            
+            # Check termination conditions
+            if nodes_explored > max_nodes or depth > max_depth:
+                exhausted = True
+                return
+            
+            if is_timeout():
+                timed_out = True
+                return
+            
+            # Check if puzzle is complete
+            if is_complete(puzzle_state):
+                solutions_found += 1
+                return
+            
+            # Find next empty cell
+            pos = get_next_empty_cell(puzzle_state)
+            if pos is None:
+                # No empty cells but not complete - contradiction
+                return
+            
+            # Get possible values for this position
+            possible_values = get_possible_values(puzzle_state, pos)
+            
+            if not possible_values:
+                # No valid values - dead end
+                return
+            
+            # Try each possible value (explore all branches)
+            for value in possible_values:
+                # Early exit if we've found enough solutions
+                if solutions_found >= cap:
+                    return
+                
+                # Create new puzzle state with this assignment
+                temp_solver = Solver(puzzle_state)
+                new_puzzle = temp_solver._copy_puzzle(puzzle_state)
+                new_cell = new_puzzle.grid.get_cell(pos)
+                new_cell.value = value
+                
+                # Recursive search
+                search_recursive(new_puzzle, depth + 1)
+        
+        # Create a working copy of the puzzle
+        solver = Solver(puzzle)
+        search_recursive(solver.puzzle, 0)
+        
+        return {
+            'solutions_found': solutions_found,
+            'nodes': nodes_explored,
+            'depth': max_search_depth,
+            'timed_out': timed_out,
+            'exhausted': exhausted or nodes_explored > max_nodes
+        }
+    
+    @staticmethod
     def _apply_solution_to_puzzle(original_puzzle: Puzzle, solved_puzzle: Puzzle) -> None:
         """Apply the solution from solved_puzzle to original_puzzle.
         
