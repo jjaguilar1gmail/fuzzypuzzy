@@ -181,8 +181,14 @@ class Generator:
             # Legacy behavior: inline turn anchor detection
             anchors = {path[0], path[-1]}  # Always keep 1 and N
             
+            # T09: For hard/extreme with pruning enabled, use endpoints only
+            skip_turn_anchors = (
+                config.pruning_enabled and
+                difficulty in ["hard", "extreme"]
+            )
+            
             # Add turn points to anchors based on difficulty and turn_anchors flag
-            if turn_anchors:
+            if turn_anchors and not skip_turn_anchors:
                 turn_positions = []
                 for i in range(1, len(path) - 1):
                     prev_pos = path[i - 1]

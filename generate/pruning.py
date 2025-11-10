@@ -244,6 +244,179 @@ def check_puzzle_uniqueness(puzzle: Puzzle, solver_mode: str) -> bool:
     return result.solved
 
 
+def sample_alternate_solutions(
+    puzzle: Puzzle,
+    path: list[Position],
+    solver_mode: str,
+    alternates_count: int,
+    time_cap_ms: float = 5000
+) -> list[dict]:
+    """Sample alternate solutions by varying solver behavior.
+    
+    T05: Generate 3-5 alternate solutions with time cap.
+    Uses different search orderings to find diverse solutions.
+    
+    Args:
+        puzzle: Non-unique puzzle to solve
+        path: Original solution path positions
+        solver_mode: Solver mode string
+        alternates_count: Number of alternates to sample
+        time_cap_ms: Total time budget for all alternates
+    
+    Returns:
+        List of alternate solution dicts with position->value mappings
+    """
+    import time
+    from solve.solver import Solver
+    
+    alternates = []
+    start_time = time.time()
+    
+    # Try different solver orderings/tie-breaks to get diversity
+    orderings = ["row_col", "col_row", "value_asc", "value_desc", "random"]
+    
+    for i in range(alternates_count):
+        elapsed_ms = (time.time() - start_time) * 1000
+        if elapsed_ms >= time_cap_ms:
+            break
+        
+        # Use different ordering for each alternate
+        ordering = orderings[i % len(orderings)]
+        
+        # Solve with specific ordering
+        result = Solver.solve(
+            puzzle, 
+            mode=solver_mode,
+            ordering=ordering,
+            max_time_ms=int((time_cap_ms - elapsed_ms) / (alternates_count - i))
+        )
+        
+        if result.solved:
+            # Extract solution as position->value dict
+            solution = {}
+            for row in result.solved_puzzle.grid.cells:
+                for cell in row:
+                    if not cell.blocked and cell.value is not None:
+                        solution[cell.pos] = cell.value
+            alternates.append(solution)
+    
+    return alternates
+
+
+def build_ambiguity_profile(
+    alternates: list[dict],
+    path: list[Position],
+    givens: set[Position]
+) -> AmbiguityProfile:
+    """Build ambiguity profile from alternate solutions.
+    
+    T06: Compute divergence frequencies for repair candidate selection.
+    
+    Args:
+        alternates: List of alternate solution dicts (pos->value)
+        path: Original solution path
+        givens: Current given positions (to exclude from profile)
+    
+    Returns:
+        AmbiguityProfile with frequency-scored entries
+    """
+    from collections import Counter
+    
+    if not alternates:
+        return AmbiguityProfile([], len(alternates))
+    
+    # Count value divergences at each position
+    divergence_counts = Counter()
+    
+    for pos in path:
+        if pos in givens:
+            continue  # Skip givens
+        
+        # Check if values differ across alternates
+        values = set()
+        for alt in alternates:
+            if pos in alt:
+                values.add(alt[pos])
+        
+        # If multiple values exist, this position has ambiguity
+        if len(values) > 1:
+            divergence_counts[pos] = len(values)
+    
+    # Convert to profile entries with scores
+    entries = []
+    for pos, frequency in divergence_counts.items():
+        # Score = frequency (simple version; can add corridor weighting later)
+        score = float(frequency)
+        entries.append({
+            "position": pos,
+            "frequency": frequency,
+            "score": score
+        })
+    
+    # Sort by score descending
+    entries.sort(key=lambda e: e["score"], reverse=True)
+    
+    return AmbiguityProfile(entries, len(alternates))
+
+
+def select_repair_candidates(
+    profile: AmbiguityProfile,
+    path: list[Position],
+    top_n: int
+) -> list[RepairCandidate]:
+    """Select top-N repair candidates from ambiguity profile.
+    
+    T07: Choose repair clues from mid-segment high-frequency positions.
+    
+    Args:
+        profile: Ambiguity profile with scored entries
+        path: Solution path for position indexing
+        top_n: Number of candidates to return
+    
+    Returns:
+        List of RepairCandidate objects with position and rationale
+    """
+    candidates = []
+    
+    # Filter to mid-segment positions (exclude first/last 10% of path)
+    path_len = len(path)
+    mid_start = int(path_len * 0.1)
+    mid_end = int(path_len * 0.9)
+    mid_positions = set(path[mid_start:mid_end])
+    
+    for entry in profile.entries:
+        pos = entry["position"]
+        
+        # Only consider mid-segment positions
+        if pos not in mid_positions:
+            continue
+        
+        frequency = entry["frequency"]
+        score = entry["score"]
+        
+        candidates.append(RepairCandidate(
+            position=pos,
+            rationale=f"ambiguity_freq_{frequency}",
+            score=score
+        ))
+        
+        if len(candidates) >= top_n:
+            break
+    
+    return candidates
+
+
+def apply_repair_clue(puzzle: Puzzle, candidate: RepairCandidate) -> None:
+    """Apply a repair clue by marking position as given.
+    
+    Args:
+        puzzle: Puzzle to repair
+        candidate: Repair candidate with position
+    """
+    cell = puzzle.grid.get_cell(candidate.position)
+    cell.given = True
+
+
 def remove_clue_batch(puzzle: Puzzle, positions: list[Position]) -> None:
     """Remove given flags from specified positions.
     
@@ -298,6 +471,7 @@ def prune_puzzle(
     
     # Interval reduction phase
     low_index, high_index = 0, len(removable) - 1
+    last_unique_snapshot = snapshot_puzzle_state(puzzle)
     
     while low_index <= high_index:
         session.record_iteration()
@@ -318,19 +492,73 @@ def prune_puzzle(
         # Check uniqueness
         if check_puzzle_uniqueness(puzzle, solver_mode):
             # Success: try more aggressive removal
+            last_unique_snapshot = snapshot_puzzle_state(puzzle)
             state = contract_interval(low_index, high_index, "density_met")
             session.record_interval_contraction(state)
             low_index = state.low_index
         else:
-            # Failure: revert and shrink upper bound
+            # Failure: revert and try repair (T05-T08)
             restore_puzzle_state(puzzle, snapshot)
             session.record_uniqueness_failure()
+            
+            # Check if we can repair
+            if session.repairs_used < config.pruning_max_repairs:
+                # Sample alternates and build profile
+                current_givens = {
+                    cell.pos for row in puzzle.grid.cells for cell in row
+                    if not cell.blocked and cell.given
+                }
+                
+                alternates = sample_alternate_solutions(
+                    puzzle, path, solver_mode,
+                    config.pruning_alternates_count,
+                    time_cap_ms=2000
+                )
+                
+                if alternates and len(alternates) > 1:
+                    # Build ambiguity profile
+                    profile = build_ambiguity_profile(
+                        alternates, path, current_givens
+                    )
+                    
+                    # Select repair candidate
+                    candidates = select_repair_candidates(
+                        profile, path, config.pruning_repair_topn
+                    )
+                    
+                    if candidates:
+                        # Apply first repair candidate
+                        apply_repair_clue(puzzle, candidates[0])
+                        session.record_repair()
+                        
+                        # Re-check uniqueness after repair
+                        if check_puzzle_uniqueness(puzzle, solver_mode):
+                            # Repair succeeded, continue with current interval
+                            last_unique_snapshot = snapshot_puzzle_state(puzzle)
+                            continue
+                        else:
+                            # Repair didn't help, revert and contract
+                            restore_puzzle_state(puzzle, snapshot)
+            
+            # Contract interval (either no repair or repair failed)
             state = contract_interval(low_index, high_index, "uniqueness_fail")
             session.record_interval_contraction(state)
             high_index = state.high_index
     
-    # Linear fallback phase (T04)
-    # Omitted for now; will add in next iteration
+    # Check if we exhausted repairs
+    final_status = PruningStatus.SUCCESS
+    if session.repairs_used >= config.pruning_max_repairs:
+        # Restore last known unique state
+        restore_puzzle_state(puzzle, last_unique_snapshot)
+        if not check_puzzle_uniqueness(puzzle, solver_mode):
+            final_status = PruningStatus.ABORTED_MAX_REPAIRS
+        else:
+            final_status = PruningStatus.SUCCESS_WITH_REPAIRS
+    elif session.repairs_used > 0:
+        final_status = PruningStatus.SUCCESS_WITH_REPAIRS
+    
+    elif session.repairs_used > 0:
+        final_status = PruningStatus.SUCCESS_WITH_REPAIRS
     
     # Calculate final metrics
     final_clue_count = sum(
@@ -340,7 +568,7 @@ def prune_puzzle(
     
     return PruningResult(
         puzzle=puzzle,
-        status=PruningStatus.SUCCESS,
+        status=final_status,
         session=session,
         final_clue_count=final_clue_count,
         final_density=final_clue_count / len(path),

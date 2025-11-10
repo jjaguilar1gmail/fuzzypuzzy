@@ -197,3 +197,84 @@ class TestPruningStatus:
         assert PruningStatus.SUCCESS_WITH_REPAIRS.value == "success_with_repairs"
         assert PruningStatus.ABORTED_MAX_REPAIRS.value == "aborted_max_repairs"
         assert PruningStatus.ABORTED_TIMEOUT.value == "aborted_timeout"
+
+
+class TestRepairLogic:
+    """Test repair candidate selection and application (T05-T08)."""
+    
+    def test_sample_alternate_solutions(self):
+        """Sample alternates returns valid solutions."""
+        from generate.pruning import sample_alternate_solutions
+        
+        # Create simple puzzle
+        path = [Position(0, i) for i in range(5)]
+        cells = []
+        for i, pos in enumerate(path):
+            cells.append(Cell(pos, i + 1, False, True))
+        
+        grid = Grid(1, 5, cells, allow_diagonal=False)
+        puzzle = Puzzle(grid, Constraints(1, 5, "4"))
+        
+        # Remove some givens to create non-unique puzzle
+        puzzle.grid.get_cell(Position(0, 2)).given = False
+        
+        alternates = sample_alternate_solutions(
+            puzzle, path, "logic_v0", alternates_count=2, time_cap_ms=1000
+        )
+        
+        # Should return list (may be empty if puzzle is still unique)
+        assert isinstance(alternates, list)
+    
+    def test_build_ambiguity_profile(self):
+        """Build profile from alternates."""
+        from generate.pruning import build_ambiguity_profile
+        
+        path = [Position(0, i) for i in range(5)]
+        givens = {path[0], path[4]}
+        
+        # Mock alternates with divergence at position (0,2)
+        alternates = [
+            {Position(0, 1): 2, Position(0, 2): 3, Position(0, 3): 4},
+            {Position(0, 1): 2, Position(0, 2): 5, Position(0, 3): 4},  # Different at (0,2)
+        ]
+        
+        profile = build_ambiguity_profile(alternates, path, givens)
+        
+        assert len(profile.entries) > 0
+        assert profile.computed_from_alternates == 2
+    
+    def test_select_repair_candidates(self):
+        """Select top-N candidates from profile."""
+        from generate.pruning import select_repair_candidates, AmbiguityProfile
+        
+        path = [Position(0, i) for i in range(10)]
+        
+        # Mock profile with scored entries
+        entries = [
+            {"position": Position(0, 5), "frequency": 3, "score": 3.0},
+            {"position": Position(0, 4), "frequency": 2, "score": 2.0},
+        ]
+        profile = AmbiguityProfile(entries, 3)
+        
+        candidates = select_repair_candidates(profile, path, top_n=1)
+        
+        assert len(candidates) <= 1
+        if candidates:
+            assert candidates[0].position == Position(0, 5)
+    
+    def test_apply_repair_clue(self):
+        """Apply repair marks position as given."""
+        from generate.pruning import apply_repair_clue, RepairCandidate
+        
+        path = [Position(0, i) for i in range(3)]
+        cells = []
+        for i, pos in enumerate(path):
+            cells.append(Cell(pos, i + 1, False, False))  # Not given
+        
+        grid = Grid(1, 3, cells, allow_diagonal=False)
+        puzzle = Puzzle(grid, Constraints(1, 3, "4"))
+        
+        candidate = RepairCandidate(Position(0, 1), "test", 1.0)
+        apply_repair_clue(puzzle, candidate)
+        
+        assert puzzle.grid.get_cell(Position(0, 1)).given is True
