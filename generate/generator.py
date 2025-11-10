@@ -89,13 +89,41 @@ class Generator:
         rng = RNG(seed)
         actual_seed = rng.get_seed()
         
+        # T023: Generate and apply mask if enabled
+        mask_cells = []
+        mask_pattern_id = None
+        mask_attempts = config.mask_max_attempts
+        
+        if config.mask_enabled:
+            from generate.mask import build_mask
+            
+            # Determine start/end for validation
+            # For now, assume corners (will be adjusted by path builder)
+            start_pos = (0, 0)
+            end_pos = (size - 1, size - 1)
+            
+            mask = build_mask(
+                config=config,
+                size=size,
+                difficulty=difficulty or "medium",
+                start=start_pos,
+                end=end_pos,
+                allow_diagonal=allow_diagonal
+            )
+            
+            if mask is not None:
+                mask_cells = list(mask.cells)
+                mask_pattern_id = mask.pattern_id
+                mask_attempts = mask.attempt_index + 1
+        
         # Build solution path
         total_cells = size * size - len(config.blocked)
         
         grid = Grid(size, size, allow_diagonal=allow_diagonal)
         
-        # Mark blocked cells BEFORE building path
-        for r, c in config.blocked:
+        # Mark blocked cells BEFORE building path (original + mask)
+        all_blocked = list(config.blocked) + mask_cells
+        for r, c in all_blocked:
             pos = Position(r, c)
             cell = grid.get_cell(pos)
             cell.blocked = True
@@ -462,6 +490,14 @@ class Generator:
                 "anchor_selection_reason": _anchor_metrics.anchor_selection_reason,
                 "anchor_min_index_gap_enforced": _anchor_metrics.min_index_gap_enforced,
                 "anchor_adjacency_mode": _anchor_metrics.adjacency_mode,
+                # T005/T010: Mask & repair metrics (populated from mask generation)
+                "mask_enabled": config.mask_enabled,
+                "mask_pattern_id": mask_pattern_id,
+                "mask_cells_count": len(mask_cells),
+                "mask_density": len(mask_cells) / (size * size) if size > 0 else 0.0,
+                "mask_attempts": mask_attempts,
+                "structural_repair_used": False,
+                "ambiguity_regions_detected": 0,
             },
         )
     

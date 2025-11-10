@@ -446,6 +446,27 @@ def apply_repair_clue(puzzle: Puzzle, candidate: RepairCandidate) -> None:
     cell.given = True
 
 
+def apply_structural_repair_stub(puzzle: Puzzle, config: 'GenerationConfig') -> bool:
+    """Attempt structural repair via ambiguity-aware blocking (T013 stub).
+    
+    This is a placeholder for US2 implementation. When enabled, it will:
+    - Detect ambiguity regions from multiple solutions
+    - Score candidate block positions
+    - Insert structural block if connectivity preserved
+    - Return True if uniqueness restored
+    
+    Args:
+        puzzle: Puzzle with ambiguity
+        config: Configuration with structural_repair_enabled flag
+        
+    Returns:
+        True if structural repair succeeded, False otherwise
+    """
+    # T013: Stub returns False (no repair yet)
+    # US2 implementation will add actual logic here
+    return False
+
+
 def remove_clue_batch(puzzle: Puzzle, positions: list[Position]) -> None:
     """Remove given flags from specified positions.
     

@@ -6,26 +6,26 @@
 ## Phase 1: Setup (Shared Infrastructure)
 **Purpose**: Establish directories, config flags, baseline scaffolding.
 
-- [ ] T001 Create feature directories `generate/mask/` and `generate/repair/` (empty `__init__.py` files)
-- [ ] T002 Add mask & repair config flags to `generate/models.py` (`GenerationConfig`): `mask_enabled`, `mask_mode`, `mask_template`, `mask_density`, `mask_max_attempts`, `structural_repair_enabled`, `structural_repair_max`, `structural_repair_timeout_ms`
-- [ ] T003 [P] Define placeholder error classes in `generate/mask/errors.py` (`InvalidMaskError`, `MaskDensityExceeded`)
-- [ ] T004 [P] Define placeholder error classes in `generate/repair/errors.py` (`StructuralRepairExhausted`)
-- [ ] T005 Add seed/logging extension points (no-op) in `generate/generator.py` for future mask metrics fields
+- [x] T001 Create feature directories `generate/mask/` and `generate/repair/` (empty `__init__.py` files)
+- [x] T002 Add mask & repair config flags to `generate/models.py` (`GenerationConfig`): `mask_enabled`, `mask_mode`, `mask_template`, `mask_density`, `mask_max_attempts`, `structural_repair_enabled`, `structural_repair_max`, `structural_repair_timeout_ms`
+- [x] T003 [P] Define placeholder error classes in `generate/mask/errors.py` (`InvalidMaskError`, `MaskDensityExceeded`)
+- [x] T004 [P] Define placeholder error classes in `generate/repair/errors.py` (`StructuralRepairExhausted`)
+- [x] T005 Add seed/logging extension points (no-op) in `generate/generator.py` for future mask metrics fields
 
 ---
 ## Phase 2: Foundational (Blocking Prerequisites)
 **Purpose**: Core entities & validation utilities required before any story logic.
 
-- [ ] T006 Implement `BlockMask` & `MaskPattern` dataclasses in `generate/mask/models.py`
-- [ ] T007 [P] Implement `AmbiguityRegion` & `RepairAction` dataclasses in `generate/repair/models.py`
-- [ ] T008 Implement mask validation (connectivity + orphan pockets + density) in `generate/mask/validate.py`
-- [ ] T009 [P] Add reproducible RNG helper for mask generation in `generate/mask/rng.py`
-- [ ] T010 Integrate optional mask acceptance & application stub into `generate/generator.py` (pre-path build hook)
-- [ ] T011 Modify uniqueness staged transposition key to include mask signature in `generate/uniqueness_staged/__init__.py`
-- [ ] T012 [P] Add metrics structure extensions (`GenerationMetrics` fields) in `generate/mask/metrics.py`
-- [ ] T013 Add structural repair budget enforcement hook (stub) in `generate/pruning.py`
-- [ ] T014 Create initial test skeleton `tests/test_foundation_mask_config.py` verifying new config flags exist
-- [ ] T015 [P] Create initial test skeleton `tests/test_foundation_dataclasses.py` verifying core dataclasses instantiate
+- [x] T006 Implement `BlockMask` & `MaskPattern` dataclasses in `generate/mask/models.py`
+- [x] T007 [P] Implement `AmbiguityRegion` & `RepairAction` dataclasses in `generate/repair/models.py`
+- [x] T008 Implement mask validation (connectivity + orphan pockets + density) in `generate/mask/validate.py`
+- [x] T009 [P] Add reproducible RNG helper for mask generation in `generate/mask/rng.py`
+- [x] T010 Integrate optional mask acceptance & application stub into `generate/generator.py` (pre-path build hook)
+- [x] T011 Modify uniqueness staged transposition key to include mask signature in `generate/uniqueness_staged/__init__.py`
+- [x] T012 [P] Add metrics structure extensions (`GenerationMetrics` fields) in `generate/mask/metrics.py`
+- [x] T013 Add structural repair budget enforcement hook (stub) in `generate/pruning.py`
+- [x] T014 Create initial test skeleton `tests/test_foundation_mask_config.py` verifying new config flags exist
+- [x] T015 [P] Create initial test skeleton `tests/test_foundation_dataclasses.py` verifying core dataclasses instantiate
 
 **Checkpoint**: Foundation complete; user stories can proceed.
 
@@ -35,17 +35,17 @@
 **Independent Test**: Compare generation with/without mask for 7x7 & 9x9 (branching factor ↓, clue count ↓, uniqueness preserved).
 
 ### Tests (US1)
-- [ ] T016 [P] [US1] Add mask pattern generation tests `tests/test_mask_patterns.py` (corridor, ring, spiral templates)
-- [ ] T017 [P] [US1] Add procedural mask sampling tests `tests/test_mask_procedural.py` (density bounds & reproducibility)
-- [ ] T018 [P] [US1] Add validation tests `tests/test_mask_validation.py` (connectivity, orphan pockets, start/end unblocked)
+- [x] T016 [P] [US1] Add mask pattern generation tests `tests/test_mask_patterns.py` (corridor, ring, spiral templates)
+- [x] T017 [P] [US1] Add procedural mask sampling tests `tests/test_mask_procedural.py` (density bounds & reproducibility)
+- [x] T018 [P] [US1] Add validation tests `tests/test_mask_validation.py` (connectivity, orphan pockets, start/end unblocked)
 - [ ] T019 [US1] Add integration test `tests/test_mask_integration_generation.py` (7x7 vs 9x9 baseline metrics)
 
 ### Implementation (US1)
-- [ ] T020 [P] [US1] Implement template pattern generators in `generate/mask/patterns.py` (corridor, ring, spiral, cross)
-- [ ] T021 [P] [US1] Implement procedural sampler in `generate/mask/procedural.py`
-- [ ] T022 [US1] Implement `build_mask` orchestrator in `generate/mask/__init__.py` (select template → fallback procedural → validate)
-- [ ] T023 [US1] Integrate mask application into `generate/generator.py` pre path with deterministic seed logic
-- [ ] T024 [P] [US1] Implement density heuristic & auto-disable logic in `generate/mask/density.py`
+- [x] T020 [P] [US1] Implement template pattern generators in `generate/mask/patterns.py` (corridor, ring, spiral, cross)
+- [x] T021 [P] [US1] Implement procedural sampler in `generate/mask/procedural.py`
+- [x] T022 [US1] Implement `build_mask` orchestrator in `generate/mask/__init__.py` (select template → fallback procedural → validate)
+- [x] T023 [US1] Integrate mask application into `generate/generator.py` pre path with deterministic seed logic
+- [x] T024 [P] [US1] Implement density heuristic & auto-disable logic in `generate/mask/density.py`
 - [ ] T025 [US1] Add mask metrics capture (pattern_id, cell_count, density, attempts) in `generate/mask/metrics.py`
 - [ ] T026 [US1] Update `GeneratedPuzzle` enrichment for mask metrics in `generate/models.py` (timings/solver_metrics extension)
 - [ ] T027 [P] [US1] Add branch factor measurement hook in `generate/path_builder.py`

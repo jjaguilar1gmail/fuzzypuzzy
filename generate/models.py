@@ -45,6 +45,16 @@ class GenerationConfig:
     pruning_linear_fallback_k: int = 6
     pruning_alternates_count: int = 5
     pruning_repair_topn: int = 5
+    # T002: Mask-driven blocking configuration
+    mask_enabled: bool = False
+    mask_mode: str = "auto"  # "auto" | "template" | "procedural"
+    mask_template: Optional[str] = None  # e.g., "corridor", "ring", "spiral"
+    mask_density: Optional[float] = None  # None = auto heuristic
+    mask_max_attempts: int = 5
+    # T002: Ambiguity-aware structural repair configuration
+    structural_repair_enabled: bool = False
+    structural_repair_max: int = 2
+    structural_repair_timeout_ms: int = 400
     
     def __post_init__(self):
         """Validate configuration."""
@@ -94,6 +104,17 @@ class GenerationConfig:
             raise ValueError(f"pruning_alternates_count must be >= 1, got {self.pruning_alternates_count}")
         if self.pruning_repair_topn < 1:
             raise ValueError(f"pruning_repair_topn must be >= 1, got {self.pruning_repair_topn}")
+        # T002: Validate mask config
+        if self.mask_mode not in ['auto', 'template', 'procedural']:
+            raise ValueError(f"mask_mode must be 'auto', 'template', or 'procedural', got {self.mask_mode}")
+        if self.mask_density is not None and (self.mask_density < 0.0 or self.mask_density > 0.10):
+            raise ValueError(f"mask_density must be 0.0-0.10, got {self.mask_density}")
+        if self.mask_max_attempts < 1:
+            raise ValueError(f"mask_max_attempts must be >= 1, got {self.mask_max_attempts}")
+        if self.structural_repair_max < 0:
+            raise ValueError(f"structural_repair_max must be >= 0, got {self.structural_repair_max}")
+        if self.structural_repair_timeout_ms < 100:
+            raise ValueError(f"structural_repair_timeout_ms must be >= 100ms, got {self.structural_repair_timeout_ms}")
 
 
 @dataclass
