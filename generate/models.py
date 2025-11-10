@@ -32,6 +32,14 @@ class GenerationConfig:
     adaptive_turn_anchors: bool = True
     anchor_counts: Optional[dict] = None  # Per-difficulty overrides
     anchor_tolerance: float = 0.0  # Future tuning parameter
+    # T16: Solver-driven pruning configuration
+    pruning_enabled: bool = True
+    pruning_max_repairs: int = 2
+    pruning_target_density_hard_min: float = 0.24
+    pruning_target_density_hard_max: float = 0.32
+    pruning_linear_fallback_k: int = 6
+    pruning_alternates_count: int = 5
+    pruning_repair_topn: int = 5
     
     def __post_init__(self):
         """Validate configuration."""
@@ -51,6 +59,21 @@ class GenerationConfig:
             raise ValueError(f"anchor_policy_name must be 'adaptive_v1' or 'legacy', got {self.anchor_policy_name}")
         if self.anchor_tolerance < 0.0:
             raise ValueError(f"anchor_tolerance must be >= 0.0, got {self.anchor_tolerance}")
+        # T16: Validate pruning config
+        if self.pruning_max_repairs < 0:
+            raise ValueError(f"pruning_max_repairs must be >= 0, got {self.pruning_max_repairs}")
+        if not (0.1 <= self.pruning_target_density_hard_min <= 0.5):
+            raise ValueError(f"pruning_target_density_hard_min must be 0.1-0.5, got {self.pruning_target_density_hard_min}")
+        if not (0.1 <= self.pruning_target_density_hard_max <= 0.9):
+            raise ValueError(f"pruning_target_density_hard_max must be 0.1-0.9, got {self.pruning_target_density_hard_max}")
+        if self.pruning_target_density_hard_min >= self.pruning_target_density_hard_max:
+            raise ValueError(f"pruning_target_density_hard_min must be < max")
+        if self.pruning_linear_fallback_k < 1:
+            raise ValueError(f"pruning_linear_fallback_k must be >= 1, got {self.pruning_linear_fallback_k}")
+        if self.pruning_alternates_count < 1:
+            raise ValueError(f"pruning_alternates_count must be >= 1, got {self.pruning_alternates_count}")
+        if self.pruning_repair_topn < 1:
+            raise ValueError(f"pruning_repair_topn must be >= 1, got {self.pruning_repair_topn}")
 
 
 @dataclass
