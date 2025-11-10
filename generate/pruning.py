@@ -238,10 +238,39 @@ def check_puzzle_uniqueness(puzzle: Puzzle, solver_mode: str) -> bool:
     
     Returns:
         True if puzzle has unique solution (exactly 1 solution, not just solvable)
+        
+    Notes:
+        Uses staged uniqueness validation with bounded search and time budgets.
+        Falls back to old method if staged checker returns inconclusive.
     """
-    from generate.uniqueness import count_solutions
-    result = count_solutions(puzzle, cap=2, node_cap=5000, timeout_ms=5000)
-    return result.is_unique
+    # Option 1: Use staged uniqueness checker (ENABLED)
+    from generate.uniqueness_staged import create_request, check_uniqueness, UniquenessDecision
+    
+    # Determine adjacency (4 or 8)
+    adjacency = 8 if puzzle.constraints.allow_diagonal else 4
+    
+    request = create_request(
+        puzzle=puzzle,
+        size=puzzle.grid.rows,  # Use actual grid size
+        adjacency=adjacency,
+        difficulty='medium',  # Conservative budget (500ms)
+        enable_early_exit=True,
+        enable_probes=False,  # Disable probes for now (placeholder logic)
+        enable_sat=False
+    )
+    result = check_uniqueness(request)
+    
+    # Honor tri-state decision per FR-008
+    if result.decision == UniquenessDecision.UNIQUE:
+        return True
+    elif result.decision == UniquenessDecision.NON_UNIQUE:
+        return False
+    else:  # INCONCLUSIVE
+        # Fallback to old method for inconclusive cases
+        from generate.uniqueness import count_solutions
+        fallback_result = count_solutions(puzzle, cap=2, node_cap=5000, timeout_ms=5000)
+        return fallback_result.is_unique
+
 
 
 def sample_alternate_solutions(
