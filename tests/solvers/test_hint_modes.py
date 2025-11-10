@@ -13,28 +13,29 @@ class TestHintModes:
     
     def test_hint_mode_routing_v0(self):
         """Test hint routing to logic_v0."""
+        # Create a 1x3 line puzzle with 1 and 3 at ends - forces 2 in middle
         cells = []
-        for row in range(3):
+        for row in range(1):
             for col in range(3):
                 pos = Position(row, col)
-                if row == 0 and col == 0:
-                    cells.append(Cell(pos, 1, True))
-                elif row == 0 and col == 1:
-                    cells.append(Cell(pos, 2, True))
+                if col == 0:
+                    cells.append(Cell(pos, 1, False, True))  # value=1 at (0,0)
+                elif col == 2:
+                    cells.append(Cell(pos, 3, False, True))  # value=3 at (0,2)
                 else:
-                    cells.append(Cell(pos, None, False))
+                    cells.append(Cell(pos, None, False, False))
         
-        grid = Grid(3, 3, cells)
-        constraints = Constraints(1, 9, "8")
+        grid = Grid(1, 3, cells, allow_diagonal=False)  # 4-neighbor only for line
+        constraints = Constraints(1, 3, "4")  # 4-neighbor constraint
         puzzle = Puzzle(grid, constraints)
         
         solver = Solver(puzzle)
         hint = solver.get_hint(mode="logic_v0")
         
-        # Should find hint for value 3
+        # Should find hint for value 2 at position (0,1) - only cell between 1 and 3
         assert hint is not None
-        assert hint.value == 3
-        assert hint.position == Position(0, 2)
+        assert hint.value == 2
+        assert hint.position == Position(0, 1)
     
     def test_hint_mode_routing_v1(self):
         """Test hint routing to logic_v1 (placeholder)."""
@@ -43,9 +44,9 @@ class TestHintModes:
             for col in range(3):
                 pos = Position(row, col)
                 if row == 0 and col == 0:
-                    cells.append(Cell(pos, 1, True))
+                    cells.append(Cell(pos, 1, False, True))
                 else:
-                    cells.append(Cell(pos, None, False))
+                    cells.append(Cell(pos, None, False, False))
         
         grid = Grid(3, 3, cells)
         constraints = Constraints(1, 9, "8")
@@ -81,9 +82,9 @@ class TestHintModes:
             for col in range(3):
                 pos = Position(row, col)
                 if row == 0 and col == 0:
-                    cells.append(Cell(pos, 1, True))
+                    cells.append(Cell(pos, 1, False, True))
                 else:
-                    cells.append(Cell(pos, None, False))
+                    cells.append(Cell(pos, None, False, False))
         
         grid = Grid(3, 3, cells)
         constraints = Constraints(1, 9, "8")

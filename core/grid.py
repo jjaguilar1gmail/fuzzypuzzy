@@ -9,10 +9,20 @@ from core.adjacency import Adjacency
 class Grid:
     """A grid is a basic board container. Fields:
     rows: int, cols: int, cells: List[List[Cell]], adjacency: Adjacency"""
-    def __init__(self, rows: int, cols: int, allow_diagonal: bool = True):
+    def __init__(self, rows: int, cols: int, cells=None, *, allow_diagonal: bool = True):
         self.rows = rows
         self.cols = cols
-        self.cells = [[Cell(Position(r, c)) for c in range(cols)] for r in range(rows)]
+        if cells is not None:
+            # Convert flat list to 2D grid structure
+            if isinstance(cells, list) and len(cells) > 0 and isinstance(cells[0], Cell):
+                # Flat list of cells
+                self.cells = [[cells[r * cols + c] for c in range(cols)] for r in range(rows)]
+            else:
+                # Already a 2D structure
+                self.cells = cells
+        else:
+            # Create empty cells
+            self.cells = [[Cell(Position(r, c)) for c in range(cols)] for r in range(rows)]
         self.adjacency = Adjacency(allow_diagonal=allow_diagonal)
     def get_cell(self, pos: Position) -> Cell:
         """Returns the cell at the given position."""

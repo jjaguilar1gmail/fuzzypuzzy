@@ -135,7 +135,7 @@ class Puzzle:
         return True
     def clone(self, replacements: dict[Position, int] | None = None) -> "Puzzle":
         """Returns a shallow copy with optional value updates (never mutates givens)."""
-        new_grid = Grid(self.grid.rows, self.grid.cols, self.constraints.allow_diagonal)
+        new_grid = Grid(self.grid.rows, self.grid.cols, allow_diagonal=self.constraints.allow_diagonal)
         for cell in self.grid.iter_cells():
             new_cell = new_grid.get_cell(cell.pos)
             new_cell.value = cell.value
