@@ -30,7 +30,13 @@ class PathBuildResult:
 
 
 class PathBuilder:
-    """Builds solution paths for puzzle generation."""
+    """Builds solution paths for puzzle generation.
+    
+    T027: Branch factor measurement could be added by tracking:
+    - Average neighbor count at each step
+    - Choice points where multiple valid moves exist
+    - This would help quantify mask impact on path construction
+    """
     
     @staticmethod
     def build(grid: Grid, mode="serpentine", rng=None, blocked=None, settings=None):

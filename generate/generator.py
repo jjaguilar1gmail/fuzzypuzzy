@@ -24,7 +24,10 @@ class Generator:
                        clue_mode="anchor_removal_v1", symmetry=None, turn_anchors=True,
                        timeout_ms=5000, max_attempts=5,
                        allow_partial_paths=False, min_cover_ratio=0.85, path_time_ms=None,
-                       anchor_policy_name="adaptive_v1", adaptive_turn_anchors=True):
+                       anchor_policy_name="adaptive_v1", adaptive_turn_anchors=True,
+                       mask_enabled=False, mask_mode="auto", mask_template=None,
+                       mask_density=0.10, mask_max_attempts=5,
+                       structural_repair_enabled=False, structural_repair_max=2):
         """Generate a uniqueness-preserving puzzle (T009 new signature).
         
         Args:
@@ -45,6 +48,13 @@ class Generator:
             path_time_ms: Path building time budget (T007)
             anchor_policy_name: Anchor policy name (T055)
             adaptive_turn_anchors: Enable adaptive anchor selection (T055)
+            mask_enabled: Enable mask-driven blocking (T001)
+            mask_mode: Mask generation mode ("auto"|"template"|"procedural") (T001)
+            mask_template: Template pattern name ("corridor"|"ring"|"spiral"|"cross") (T001)
+            mask_density: Target mask density (0.0-0.12) (T001)
+            mask_max_attempts: Max attempts for mask generation (T001)
+            structural_repair_enabled: Enable ambiguity-aware structural repair (T029)
+            structural_repair_max: Max repair attempts (T029)
             
         Returns:
             GeneratedPuzzle object
@@ -78,6 +88,14 @@ class Generator:
             # T055: Include anchor policy config
             anchor_policy_name=anchor_policy_name,
             adaptive_turn_anchors=adaptive_turn_anchors,
+            # T001: Include mask config
+            mask_enabled=mask_enabled,
+            mask_mode=mask_mode,
+            mask_template=mask_template,
+            mask_density=mask_density,
+            mask_max_attempts=mask_max_attempts,
+            structural_repair_enabled=structural_repair_enabled,
+            structural_repair_max=structural_repair_max,
         )
         
         # T020: Validate difficulty parameter

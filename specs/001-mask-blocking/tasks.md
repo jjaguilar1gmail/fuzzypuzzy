@@ -38,7 +38,7 @@
 - [x] T016 [P] [US1] Add mask pattern generation tests `tests/test_mask_patterns.py` (corridor, ring, spiral templates)
 - [x] T017 [P] [US1] Add procedural mask sampling tests `tests/test_mask_procedural.py` (density bounds & reproducibility)
 - [x] T018 [P] [US1] Add validation tests `tests/test_mask_validation.py` (connectivity, orphan pockets, start/end unblocked)
-- [ ] T019 [US1] Add integration test `tests/test_mask_integration_generation.py` (7x7 vs 9x9 baseline metrics)
+- [x] T019 [US1] Add integration test `tests/test_mask_integration_generation.py` (7x7 vs 9x9 baseline metrics)
 
 ### Implementation (US1)
 - [x] T020 [P] [US1] Implement template pattern generators in `generate/mask/patterns.py` (corridor, ring, spiral, cross)
@@ -46,9 +46,9 @@
 - [x] T022 [US1] Implement `build_mask` orchestrator in `generate/mask/__init__.py` (select template → fallback procedural → validate)
 - [x] T023 [US1] Integrate mask application into `generate/generator.py` pre path with deterministic seed logic
 - [x] T024 [P] [US1] Implement density heuristic & auto-disable logic in `generate/mask/density.py`
-- [ ] T025 [US1] Add mask metrics capture (pattern_id, cell_count, density, attempts) in `generate/mask/metrics.py`
-- [ ] T026 [US1] Update `GeneratedPuzzle` enrichment for mask metrics in `generate/models.py` (timings/solver_metrics extension)
-- [ ] T027 [P] [US1] Add branch factor measurement hook in `generate/path_builder.py`
+- [x] T025 [US1] Add mask metrics capture (pattern_id, cell_count, density, attempts) in `generate/mask/metrics.py`
+- [x] T026 [US1] Update `GeneratedPuzzle` enrichment for mask metrics in `generate/models.py` (timings/solver_metrics extension)
+- [x] T027 [P] [US1] Add branch factor measurement hook in `generate/path_builder.py`
 - [ ] T028 [US1] Document usage in `specs/001-mask-blocking/quickstart.md` (already scaffolded; update with final flag names)
 
 **Checkpoint**: US1 functional & testable independently (MVP deliverable).
