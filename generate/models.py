@@ -27,6 +27,11 @@ class GenerationConfig:
     allow_partial_paths: bool = False
     min_cover_ratio: float = 0.85
     path_time_ms: Optional[int] = None  # None = auto tiered by size
+    # T046: Adaptive anchor policy configuration
+    anchor_policy_name: str = "adaptive_v1"
+    adaptive_turn_anchors: bool = True
+    anchor_counts: Optional[dict] = None  # Per-difficulty overrides
+    anchor_tolerance: float = 0.0  # Future tuning parameter
     
     def __post_init__(self):
         """Validate configuration."""
@@ -41,6 +46,11 @@ class GenerationConfig:
             raise ValueError(f"min_cover_ratio must be 0.5-1.0, got {self.min_cover_ratio}")
         if self.path_time_ms is not None and self.path_time_ms < 100:
             raise ValueError(f"path_time_ms must be >= 100ms, got {self.path_time_ms}")
+        # T046: Validate anchor policy config
+        if self.anchor_policy_name not in ['adaptive_v1', 'legacy']:
+            raise ValueError(f"anchor_policy_name must be 'adaptive_v1' or 'legacy', got {self.anchor_policy_name}")
+        if self.anchor_tolerance < 0.0:
+            raise ValueError(f"anchor_tolerance must be >= 0.0, got {self.anchor_tolerance}")
 
 
 @dataclass
