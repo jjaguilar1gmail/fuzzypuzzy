@@ -13,6 +13,8 @@ Auto-generated from all feature plans. Last updated: 2025-11-04
 - Python 3.11 (stdlib only) + Internal modules only (core.grid, core.position, generate.generator, solve.solver) (001-adaptive-turn-anchors)
 - Python 3.11 (stdlib only; dataclasses optional) + Internal modules only (core.*, generate.*, solve.*, util.*) (001-solver-driven-pruning)
 - N/A (in-memory puzzle state; optional JSON export) (001-solver-driven-pruning)
+- Python 3.11 (stdlib only per constitution) + Standard library (time, heapq, dataclasses, random); optional external SAT/CP via hook (disabled by default). (001-staged-uniqueness-validation)
+- N/A (in-memory puzzle objects) (001-staged-uniqueness-validation)
 
 - Python 3.11+ + Standard library only for v0 (json, dataclasses optional); future YAML/SVG optional later (001-hidato-terminal-mvp)
 
@@ -32,9 +34,9 @@ cd src; pytest; ruff check .
 Python 3.11+: Follow standard conventions
 
 ## Recent Changes
+- 001-staged-uniqueness-validation: Added Python 3.11 (stdlib only per constitution) + Standard library (time, heapq, dataclasses, random); optional external SAT/CP via hook (disabled by default).
 - 001-solver-driven-pruning: Added Python 3.11 (stdlib only; dataclasses optional) + Internal modules only (core.*, generate.*, solve.*, util.*)
 - 001-adaptive-turn-anchors: Added Python 3.11 (stdlib only) + Internal modules only (core.grid, core.position, generate.generator, solve.solver)
-- 001-smart-path-modes: Added Python 3.11 (stdlib only) + Internal modules only (core.grid, util.rng, generate.*)
 
 
 <!-- MANUAL ADDITIONS START -->
