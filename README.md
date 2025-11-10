@@ -189,11 +189,61 @@ python hidato.py --generate --size 8 --path-mode backbite_v1 --path-time-ms 5000
 - Useful for difficult configurations (heavy blocking, extreme constraints)
 - Output includes `path_coverage` and acceptance reason in metrics
 
+### 🎯 Adaptive Turn Anchors
+
+The generator uses intelligent anchor selection to enable truly minimal-clue puzzles while preserving uniqueness:
+
+| Difficulty | Anchor Strategy | Goal |
+|------------|----------------|------|
+| **Easy** | Endpoints + 2-3 hard anchors | Preserve structure and clarity |
+| **Medium** | Endpoints + 1 soft anchor (droppable) | Balance challenge with hints |
+| **Hard** | Endpoints only | Minimize clues for maximum challenge |
+| **Extreme** | Endpoints only | Ultra-minimal with repair-only anchors |
+
+**Adaptive Features**:
+- ✅ **Policy-Driven**: `adaptive_v1` policy adjusts anchors by difficulty
+- ✅ **Soft Anchors**: Medium difficulty may drop redundant anchors
+- ✅ **Repair Anchors**: Hard/Extreme add anchors only as last resort for uniqueness
+- ✅ **Legacy Fallback**: Use `--anchor-policy legacy` for old behavior
+- ✅ **Metrics**: Track anchor counts, types, positions, and selection reason
+
+**Usage Examples:**
+```bash
+# Default: Adaptive anchors (fewer clues on hard puzzles)
+python hidato.py --generate --size 7 --difficulty hard --seed 42 --verbose
+
+# Legacy mode: More anchors (traditional behavior)
+python hidato.py --generate --size 7 --difficulty hard --seed 42 --anchor-policy legacy --verbose
+
+# Quick disable: Use flag to turn off adaptive anchors
+python hidato.py --generate --size 6 --difficulty medium --no-adaptive-turn-anchors
+
+# View anchor metrics with verbose flag
+python hidato.py --generate --size 5 --difficulty easy --seed 99 --verbose
+# Output includes:
+#   Anchor Policy: adaptive_v1
+#   Anchor Count: 5 (hard: 3, soft: 0, repair: 0)
+#   Anchor Reason: policy
+```
+
+**Anchor Types**:
+- **Hard**: Must-keep structural anchors for easy difficulty
+- **Soft**: Optional anchors for medium that may be dropped if redundant
+- **Repair**: Last-resort anchors added when uniqueness verification fails
+- **Endpoint**: Always kept (start and end of path)
+
+**Impact on Generation**:
+- Adaptive mode enables lower clue counts on hard/extreme difficulties
+- Legacy mode maintains backward compatibility with higher anchor counts
+- Same seed + same policy = deterministic anchor placement
+- Metrics visibility helps tune puzzle generation parameters
+
 ### 📁 Project Structure
 
 ```
 core/          # Domain model (Position, Cell, Grid, Puzzle)
 generate/      # Puzzle generation pipeline
+  anchor_policy.py  # Adaptive anchor selection (NEW)
 solve/         # Solving algorithms and strategies  
 hidato_io/     # ASCII rendering and JSON serialization
 app/           # REPL interface and move validation
@@ -208,6 +258,8 @@ tests/         # Contract tests for core functionality
 - [Solver Improvements](specs/001-fix-v2-v3-solvers/spec.md) - v2/v3 solver fixes and enhancements
 - [Solver Implementation](specs/001-fix-v2-v3-solvers/plan.md) - Technical details of solver improvements
 - **NEW**: [Generator Specification](specs/001-unique-puzzle-gen/spec.md) - Uniqueness-preserving generator requirements
+- **NEW**: [Adaptive Turn Anchors](specs/001-adaptive-turn-anchors/spec.md) - Intelligent anchor selection by difficulty
+```
 - **NEW**: [Generator Quickstart](specs/001-unique-puzzle-gen/quickstart.md) - How to generate puzzles
 - **NEW**: [Smart Path Modes Quickstart](specs/001-smart-path-modes/quickstart.md) - Path mode options and examples
 

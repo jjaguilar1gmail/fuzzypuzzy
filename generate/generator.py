@@ -12,6 +12,7 @@ from .clue_placer import CluePlacer
 from .validator import Validator
 from .models import GenerationConfig, GeneratedPuzzle
 from util.rng import RNG
+from .anchor_policy import get_policy, select_anchors, ANCHOR_KIND_HARD, ANCHOR_KIND_SOFT, ANCHOR_KIND_REPAIR, ANCHOR_KIND_ENDPOINT
 
 
 class Generator:
@@ -22,7 +23,8 @@ class Generator:
                        allow_diagonal=True, blocked=None, path_mode="serpentine",
                        clue_mode="anchor_removal_v1", symmetry=None, turn_anchors=True,
                        timeout_ms=5000, max_attempts=5,
-                       allow_partial_paths=False, min_cover_ratio=0.85, path_time_ms=None):
+                       allow_partial_paths=False, min_cover_ratio=0.85, path_time_ms=None,
+                       anchor_policy_name="adaptive_v1", adaptive_turn_anchors=True):
         """Generate a uniqueness-preserving puzzle (T009 new signature).
         
         Args:
@@ -41,6 +43,8 @@ class Generator:
             allow_partial_paths: Accept partial coverage paths (T007)
             min_cover_ratio: Minimum coverage for partial acceptance (T007)
             path_time_ms: Path building time budget (T007)
+            anchor_policy_name: Anchor policy name (T055)
+            adaptive_turn_anchors: Enable adaptive anchor selection (T055)
             
         Returns:
             GeneratedPuzzle object
@@ -71,6 +75,9 @@ class Generator:
             allow_partial_paths=allow_partial_paths,
             min_cover_ratio=min_cover_ratio,
             path_time_ms=path_time_ms,
+            # T055: Include anchor policy config
+            anchor_policy_name=anchor_policy_name,
+            adaptive_turn_anchors=adaptive_turn_anchors,
         )
         
         # T020: Validate difficulty parameter
@@ -147,36 +154,72 @@ class Generator:
         # This ensures we can actually perform removal
         given_positions = list(path)  # Start with full solution as givens
         
-        # Identify anchors (must keep)
-        # Always keep 1 and N, but make turn anchors configurable by difficulty
-        anchors = {path[0], path[-1]}  # Always keep 1 and N
+        # T048: Select anchors using adaptive policy
+        # Determine if we should use adaptive or legacy anchor selection
+        use_adaptive = config.adaptive_turn_anchors and config.anchor_policy_name != "legacy"
         
-        # Add turn points to anchors based on difficulty and turn_anchors flag
-        if turn_anchors:
-            turn_positions = []
-            for i in range(1, len(path) - 1):
-                prev_pos = path[i - 1]
-                curr_pos = path[i]
-                next_pos = path[i + 1]
-                
-                dr1 = curr_pos.row - prev_pos.row
-                dc1 = curr_pos.col - prev_pos.col
-                dr2 = next_pos.row - curr_pos.row
-                dc2 = next_pos.col - curr_pos.col
-                
-                if (dr1, dc1) != (dr2, dc2):
-                    turn_positions.append(curr_pos)
+        if use_adaptive:
+            # Use adaptive policy
+            policy = get_policy(config.anchor_policy_name)
+            anchor_list, anchor_metrics = select_anchors(
+                path=path,
+                difficulty=difficulty or "medium",
+                policy=policy,
+                symmetry=config.symmetry,
+                rng=rng
+            )
             
-            # For easier difficulties, only keep some turn anchors
-            if difficulty == "easy" and len(turn_positions) > 4:
-                # Keep only every other turn for easy
-                anchors.update(turn_positions[::2][:4])
-            elif difficulty == "medium" and len(turn_positions) > 6:
-                # Keep more turns for medium
-                anchors.update(turn_positions[::2][:6])
-            else:
-                # Keep all turns for hard/extreme or if not many turns
-                anchors.update(turn_positions)
+            # Extract positions for anchors (hard, repair, and endpoints)
+            anchors = set()
+            for anchor in anchor_list:
+                if anchor.kind in [ANCHOR_KIND_HARD, ANCHOR_KIND_REPAIR, ANCHOR_KIND_ENDPOINT]:
+                    anchors.add(anchor.position)
+            
+            # Store metrics for later inclusion in result
+            _anchor_metrics = anchor_metrics
+        else:
+            # Legacy behavior: inline turn anchor detection
+            anchors = {path[0], path[-1]}  # Always keep 1 and N
+            
+            # Add turn points to anchors based on difficulty and turn_anchors flag
+            if turn_anchors:
+                turn_positions = []
+                for i in range(1, len(path) - 1):
+                    prev_pos = path[i - 1]
+                    curr_pos = path[i]
+                    next_pos = path[i + 1]
+                    
+                    dr1 = curr_pos.row - prev_pos.row
+                    dc1 = curr_pos.col - prev_pos.col
+                    dr2 = next_pos.row - curr_pos.row
+                    dc2 = next_pos.col - curr_pos.col
+                    
+                    if (dr1, dc1) != (dr2, dc2):
+                        turn_positions.append(curr_pos)
+                
+                # For easier difficulties, only keep some turn anchors
+                if difficulty == "easy" and len(turn_positions) > 4:
+                    # Keep only every other turn for easy
+                    anchors.update(turn_positions[::2][:4])
+                elif difficulty == "medium" and len(turn_positions) > 6:
+                    # Keep more turns for medium
+                    anchors.update(turn_positions[::2][:6])
+                else:
+                    # Keep all turns for hard/extreme or if not many turns
+                    anchors.update(turn_positions)
+            
+            # Build legacy metrics
+            from .anchor_policy import AnchorMetrics
+            _anchor_metrics = AnchorMetrics(
+                anchor_count=len(anchors),
+                hard_count=len(anchors) - 2 if turn_anchors else 0,
+                soft_count=0,
+                repair_count=0,
+                endpoint_count=2,
+                positions=[(a.row, a.col) for a in anchors],
+                policy_name="legacy",
+                anchor_selection_reason="legacy"
+            )
         
         # Determine target clue count
         total_cells = len(path)
@@ -368,6 +411,17 @@ class Generator:
                 **solver_metrics,  # T019: Include computed metrics
                 "path_coverage": path_result.coverage,
                 "path_reason": path_result.reason,
+                # T054: Include anchor metrics
+                "anchor_count": _anchor_metrics.anchor_count,
+                "anchor_hard_count": _anchor_metrics.hard_count,
+                "anchor_soft_count": _anchor_metrics.soft_count,
+                "anchor_repair_count": _anchor_metrics.repair_count,
+                "anchor_endpoint_count": _anchor_metrics.endpoint_count,
+                "anchor_positions": _anchor_metrics.positions,
+                "anchor_policy_name": _anchor_metrics.policy_name,
+                "anchor_selection_reason": _anchor_metrics.anchor_selection_reason,
+                "anchor_min_index_gap_enforced": _anchor_metrics.min_index_gap_enforced,
+                "anchor_adjacency_mode": _anchor_metrics.adjacency_mode,
             },
         )
     

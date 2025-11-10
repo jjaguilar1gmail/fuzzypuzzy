@@ -227,6 +227,21 @@ Interactive Commands:
         help='Print detailed metrics including path build time and coverage'
     )
     
+    # T055: Anchor policy options
+    parser.add_argument(
+        '--anchor-policy',
+        type=str,
+        choices=['adaptive_v1', 'legacy'],
+        default='adaptive_v1',
+        help='Anchor selection policy (default: adaptive_v1)'
+    )
+    
+    parser.add_argument(
+        '--no-adaptive-turn-anchors',
+        action='store_true',
+        help='Disable adaptive turn anchors (use legacy behavior)'
+    )
+    
     args = parser.parse_args()
     
     if args.version:
@@ -281,6 +296,9 @@ Interactive Commands:
                 allow_partial_paths=args.allow_partial_paths if hasattr(args, 'allow_partial_paths') else False,
                 min_cover_ratio=args.min_cover if hasattr(args, 'min_cover') else 0.85,
                 path_time_ms=args.path_time_ms if hasattr(args, 'path_time_ms') else None,
+                # T055: Pass anchor policy config
+                anchor_policy_name=args.anchor_policy if hasattr(args, 'anchor_policy') else 'adaptive_v1',
+                adaptive_turn_anchors=not args.no_adaptive_turn_anchors if hasattr(args, 'no_adaptive_turn_anchors') else True,
             )
             
             print("✅ Generation Complete!")
@@ -304,6 +322,16 @@ Interactive Commands:
                 print(f"   Path Coverage: {path_coverage:.1%}")
                 print(f"   Path Reason: {path_reason}")
                 print(f"   Path Build Time: {path_build_ms}ms")
+                # T055: Print anchor metrics
+                anchor_count = result.solver_metrics.get('anchor_count', 0)
+                anchor_policy = result.solver_metrics.get('anchor_policy_name', 'unknown')
+                anchor_reason = result.solver_metrics.get('anchor_selection_reason', 'unknown')
+                hard_count = result.solver_metrics.get('anchor_hard_count', 0)
+                soft_count = result.solver_metrics.get('anchor_soft_count', 0)
+                repair_count = result.solver_metrics.get('anchor_repair_count', 0)
+                print(f"   Anchor Policy: {anchor_policy}")
+                print(f"   Anchor Count: {anchor_count} (hard: {hard_count}, soft: {soft_count}, repair: {repair_count})")
+                print(f"   Anchor Reason: {anchor_reason}")
             
             print()
             
