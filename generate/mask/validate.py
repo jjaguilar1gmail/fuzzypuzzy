@@ -2,6 +2,7 @@
 from collections import deque
 from core.position import Position
 from core.grid import Grid
+from generate.util.connectivity import get_neighbor_offsets, bfs_reachable, find_connected_components
 from .errors import InvalidMaskError
 
 
@@ -44,20 +45,8 @@ def validate_mask(mask_cells: set[tuple[int, int]],
         raise InvalidMaskError("All cells are blocked")
     
     # BFS from arbitrary valid cell to check connectivity
-    visited = set()
-    queue = deque([next(iter(valid_cells))])
-    visited.add(queue[0])
-    
-    while queue:
-        r, c = queue.popleft()
-        
-        # Check neighbors
-        for dr, dc in _get_neighbor_offsets(allow_diagonal):
-            nr, nc = r + dr, c + dc
-            if 0 <= nr < size and 0 <= nc < size:
-                if (nr, nc) in valid_cells and (nr, nc) not in visited:
-                    visited.add((nr, nc))
-                    queue.append((nr, nc))
+    start_cell = next(iter(valid_cells))
+    visited = bfs_reachable(start_cell, valid_cells, size, allow_diagonal)
     
     # All valid cells should be reachable
     if len(visited) != len(valid_cells):
@@ -70,16 +59,6 @@ def validate_mask(mask_cells: set[tuple[int, int]],
     _check_orphan_pockets(valid_cells, mask_cells, size, allow_diagonal)
 
 
-def _get_neighbor_offsets(allow_diagonal: bool) -> list[tuple[int, int]]:
-    """Get neighbor offsets based on adjacency mode."""
-    if allow_diagonal:
-        return [(-1, -1), (-1, 0), (-1, 1),
-                (0, -1),          (0, 1),
-                (1, -1),  (1, 0),  (1, 1)]
-    else:
-        return [(-1, 0), (0, -1), (0, 1), (1, 0)]
-
-
 def _check_orphan_pockets(valid_cells: set[tuple[int, int]],
                          mask_cells: set[tuple[int, int]],
                          size: int,
@@ -88,30 +67,11 @@ def _check_orphan_pockets(valid_cells: set[tuple[int, int]],
     
     These are disallowed as they feel unfair/unnatural.
     """
-    # For each valid cell, check if it's in a small isolated pocket
-    checked = set()
+    # Use shared connectivity to find all components
+    components = find_connected_components(valid_cells, size, allow_diagonal)
     
-    for cell in valid_cells:
-        if cell in checked:
-            continue
-            
-        # BFS to find connected component from this cell
-        pocket = set()
-        queue = deque([cell])
-        pocket.add(cell)
-        
-        while queue:
-            r, c = queue.popleft()
-            for dr, dc in _get_neighbor_offsets(allow_diagonal):
-                nr, nc = r + dr, c + dc
-                if 0 <= nr < size and 0 <= nc < size:
-                    if (nr, nc) in valid_cells and (nr, nc) not in pocket:
-                        pocket.add((nr, nc))
-                        queue.append((nr, nc))
-        
-        checked.update(pocket)
-        
-        # If pocket is small (1-2 cells) and has no escape to grid edges, reject
+    # Check each component for small isolated pockets
+    for pocket in components:
         if len(pocket) <= 2:
             has_edge = any(r == 0 or r == size-1 or c == 0 or c == size-1 
                           for r, c in pocket)
