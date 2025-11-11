@@ -21,8 +21,8 @@ class GenerationConfig:
     turn_anchors: bool = True
     timeout_ms: int = 5000
     max_attempts: int = 5
-    uniqueness_node_cap: int = 1000
-    uniqueness_timeout_ms: int = 2000
+    uniqueness_node_cap: int = 10000  # Increased from 1000 for larger puzzles
+    uniqueness_timeout_ms: int = 5000  # Increased from 2000 for larger puzzles
     # T002: Smart path mode configuration (placeholders)
     allow_partial_paths: bool = False
     min_cover_ratio: float = 0.85

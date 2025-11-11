@@ -262,4 +262,20 @@ tests/         # Contract tests for core functionality
 ```
 - **NEW**: [Generator Quickstart](specs/001-unique-puzzle-gen/quickstart.md) - How to generate puzzles
 - **NEW**: [Smart Path Modes Quickstart](specs/001-smart-path-modes/quickstart.md) - Path mode options and examples
+ - **NEW**: [Uniqueness Improvements](docs/uniqueness_improvements.md) - Structural guardrails & pruning strategy
+
+### 🧪 Uniqueness & Guardrail Tests
+
+Run the test suite (includes uniqueness engine & guardrail regression tests):
+
+```powershell
+cd tests; pytest -k uniqueness -v; cd ..
+```
+
+Key tests:
+- `test_uniqueness_engines.py` – classic vs staged engine sanity checks
+- `test_uniqueness_seed42_regression.py` – ensures seed 42 no longer produces ambiguous sparse puzzle
+- `test_uniqueness_guard_metrics.py` – guard helper metric stability across seeds
+
+All uniqueness-sensitive tests tolerate minor density variance while enforcing structural constraints (max gap ≤ 12, quartile coverage, dispersion).
 
