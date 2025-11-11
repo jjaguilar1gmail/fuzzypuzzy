@@ -8,6 +8,7 @@ import { useGameStore } from '@/state/gameStore';
 import { useProgressStore } from '@/state/progressStore';
 import Grid from '@/components/Grid/Grid';
 import Palette from '@/components/Palette/Palette';
+import BottomSheet from '@/components/Palette/BottomSheet';
 import CompletionModal from '@/components/HUD/CompletionModal';
 
 /**
@@ -22,6 +23,7 @@ export default function PackPuzzlePage() {
   const [error, setError] = useState<string | null>(null);
   const [pack, setPack] = useState<Pack | null>(null);
   const [currentIndex, setCurrentIndex] = useState<number>(-1);
+  const [showCompletion, setShowCompletion] = useState(false);
   
   const loadPuzzleToStore = useGameStore((state) => state.loadPuzzle);
   const isComplete = useGameStore((state) => state.isComplete);
@@ -68,6 +70,7 @@ export default function PackPuzzlePage() {
     if (isComplete && packId && typeof packId === 'string' && puzzleId && typeof puzzleId === 'string') {
       const moves = undoStack.length;
       recordCompletion(packId, puzzleId, moves, elapsedMs);
+      setShowCompletion(true);
     }
   }, [isComplete, packId, puzzleId, elapsedMs, undoStack.length, recordCompletion]);
 
@@ -147,7 +150,9 @@ export default function PackPuzzlePage() {
           </div>
           
           <div className="lg:sticky lg:top-8">
-            <Palette />
+            <BottomSheet>
+              <Palette />
+            </BottomSheet>
           </div>
         </motion.div>
 
@@ -173,7 +178,10 @@ export default function PackPuzzlePage() {
         </div>
 
         {/* Completion modal */}
-        <CompletionModal />
+        <CompletionModal
+          isOpen={showCompletion}
+          onClose={() => setShowCompletion(false)}
+        />
       </div>
     </main>
   );

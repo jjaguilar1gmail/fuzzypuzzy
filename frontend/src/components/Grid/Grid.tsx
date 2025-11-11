@@ -1,17 +1,25 @@
 import { useGameStore } from '@/state/gameStore';
 import { getCell } from '@/domain/grid';
 import { motion } from 'framer-motion';
+import { memo, useMemo } from 'react';
 
-export default function Grid() {
+const Grid = memo(function Grid() {
   const grid = useGameStore((state) => state.grid);
   const selectedCell = useGameStore((state) => state.selectedCell);
   const selectCell = useGameStore((state) => state.selectCell);
 
-  if (!grid) return null;
+  // Memoize grid dimensions to prevent recalculation
+  const dimensions = useMemo(() => {
+    if (!grid) return null;
+    const cellSize = 60;
+    const gap = 2;
+    const totalSize = grid.size * cellSize + (grid.size - 1) * gap;
+    return { cellSize, gap, totalSize };
+  }, [grid?.size]);
 
-  const cellSize = 60;
-  const gap = 2;
-  const totalSize = grid.size * cellSize + (grid.size - 1) * gap;
+  if (!grid || !dimensions) return null;
+
+  const { cellSize, gap, totalSize } = dimensions;
 
   return (
     <svg
@@ -120,4 +128,6 @@ export default function Grid() {
       )}
     </svg>
   );
-}
+});
+
+export default Grid;

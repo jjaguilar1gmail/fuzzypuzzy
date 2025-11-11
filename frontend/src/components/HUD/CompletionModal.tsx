@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '@/state/gameStore';
 
@@ -13,6 +13,20 @@ export default function CompletionModal({ isOpen, onClose }: CompletionModalProp
   const mistakes = useGameStore((state) => state.mistakes);
   const undoStack = useGameStore((state) => state.undoStack);
 
+  // Memoize format function to prevent recreation
+  const formatTime = useCallback((ms: number) => {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  }, []);
+
+  // Memoize reset handler
+  const handleReset = useCallback(() => {
+    useGameStore.getState().resetPuzzle();
+    onClose();
+  }, [onClose]);
+
   useEffect(() => {
     if (isOpen) {
       // Optional: play completion sound
@@ -23,13 +37,6 @@ export default function CompletionModal({ isOpen, onClose }: CompletionModalProp
       return () => document.removeEventListener('keydown', handleEscape);
     }
   }, [isOpen, onClose]);
-
-  const formatTime = (ms: number) => {
-    const seconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
 
   return (
     <AnimatePresence>
@@ -92,10 +99,7 @@ export default function CompletionModal({ isOpen, onClose }: CompletionModalProp
 
               <div className="flex gap-3">
                 <motion.button
-                  onClick={() => {
-                    useGameStore.getState().resetPuzzle();
-                    onClose();
-                  }}
+                  onClick={handleReset}
                   className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}

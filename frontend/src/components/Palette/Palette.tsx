@@ -1,7 +1,8 @@
 import { useGameStore } from '@/state/gameStore';
 import { motion } from 'framer-motion';
+import { memo, useMemo } from 'react';
 
-export default function Palette() {
+const Palette = memo(function Palette() {
   const puzzle = useGameStore((state) => state.puzzle);
   const pencilMode = useGameStore((state) => state.pencilMode);
   const togglePencilMode = useGameStore((state) => state.togglePencilMode);
@@ -11,10 +12,18 @@ export default function Palette() {
   const undoStack = useGameStore((state) => state.undoStack);
   const redoStack = useGameStore((state) => state.redoStack);
 
-  if (!puzzle) return null;
+  // Memoize number grid calculations
+  const numberGrid = useMemo(() => {
+    if (!puzzle) return null;
+    const maxValue = puzzle.size * puzzle.size;
+    const numbers = Array.from({ length: maxValue }, (_, i) => i + 1);
+    const gridCols = Math.min(10, maxValue);
+    return { numbers, gridCols };
+  }, [puzzle?.size]);
 
-  const maxValue = puzzle.size * puzzle.size;
-  const numbers = Array.from({ length: maxValue }, (_, i) => i + 1);
+  if (!puzzle || !numberGrid) return null;
+
+  const { numbers, gridCols } = numberGrid;
 
   return (
     <div className="flex flex-col gap-4 items-center">
@@ -23,7 +32,7 @@ export default function Palette() {
         <motion.button
           onClick={togglePencilMode}
           aria-pressed={pencilMode}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+          className={`px-4 py-3 min-h-[44px] rounded-lg font-medium transition-colors ${
             pencilMode
               ? 'bg-blue-500 text-white'
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -37,7 +46,7 @@ export default function Palette() {
         <motion.button
           onClick={undo}
           disabled={undoStack.length === 0}
-          className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-3 min-h-[44px] rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           aria-label="Undo"
@@ -48,7 +57,7 @@ export default function Palette() {
         <motion.button
           onClick={redo}
           disabled={redoStack.length === 0}
-          className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-3 min-h-[44px] rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           aria-label="Redo"
@@ -61,7 +70,7 @@ export default function Palette() {
       <div
         className="grid gap-2"
         style={{
-          gridTemplateColumns: `repeat(${Math.min(10, maxValue)}, minmax(0, 1fr))`,
+          gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
         }}
         role="toolbar"
         aria-label="Number palette"
@@ -84,4 +93,6 @@ export default function Palette() {
       </div>
     </div>
   );
-}
+});
+
+export default Palette;

@@ -4,6 +4,7 @@ import { getDailyPuzzle } from '@/lib/daily';
 import { loadGameState, saveGameState } from '@/lib/persistence';
 import Grid from '@/components/Grid/Grid';
 import Palette from '@/components/Palette/Palette';
+import BottomSheet from '@/components/Palette/BottomSheet';
 import CompletionModal from '@/components/HUD/CompletionModal';
 import SettingsMenu from '@/components/HUD/SettingsMenu';
 
@@ -84,7 +85,9 @@ export default function HomePage() {
       </div>
 
       <Grid />
-      <Palette />
+      <BottomSheet>
+        <Palette />
+      </BottomSheet>
 
       <CompletionModal
         isOpen={showCompletion}

@@ -15,7 +15,7 @@ export default function SettingsMenu() {
     <div className="relative">
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors"
+        className="p-3 min-w-[44px] min-h-[44px] rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors flex items-center justify-center"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         aria-label="Settings"
@@ -55,7 +55,7 @@ export default function SettingsMenu() {
                     <button
                       key={t}
                       onClick={() => setTheme(t)}
-                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      className={`flex-1 px-3 py-3 min-h-[44px] rounded-lg text-sm font-medium transition-colors ${
                         theme === t
                           ? 'bg-blue-500 text-white'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -74,15 +74,15 @@ export default function SettingsMenu() {
                 </label>
                 <button
                   onClick={toggleSound}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  className={`relative inline-flex min-h-[44px] min-w-[44px] h-10 w-16 items-center rounded-full transition-colors ${
                     soundEnabled ? 'bg-blue-500' : 'bg-gray-300'
                   }`}
                   role="switch"
                   aria-checked={soundEnabled}
                 >
                   <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      soundEnabled ? 'translate-x-6' : 'translate-x-1'
+                    className={`inline-block h-8 w-8 transform rounded-full bg-white transition-transform ${
+                      soundEnabled ? 'translate-x-7' : 'translate-x-1'
                     }`}
                   />
                 </button>
@@ -95,15 +95,15 @@ export default function SettingsMenu() {
                 </label>
                 <button
                   onClick={togglePencilModeDefault}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  className={`relative inline-flex min-h-[44px] min-w-[44px] h-10 w-16 items-center rounded-full transition-colors ${
                     pencilModeDefault ? 'bg-blue-500' : 'bg-gray-300'
                   }`}
                   role="switch"
                   aria-checked={pencilModeDefault}
                 >
                   <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      pencilModeDefault ? 'translate-x-6' : 'translate-x-1'
+                    className={`inline-block h-8 w-8 transform rounded-full bg-white transition-transform ${
+                      pencilModeDefault ? 'translate-x-7' : 'translate-x-1'
                     }`}
                   />
                 </button>
