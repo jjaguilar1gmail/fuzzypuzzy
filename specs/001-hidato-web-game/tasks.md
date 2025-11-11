@@ -109,20 +109,20 @@ Independent Test: Run CLI with sizes/difficulties/count and verify output manife
 
 ### Tests for User Story 3 (write before implementation)
 
-- [ ] T052 [P] [US3] Pytest CLI invocation test (args parse, exit codes) at `tests/packgen/test_cli.py`
-- [ ] T053 [P] [US3] Validate exported metadata.json and puzzles shape at `tests/packgen/test_export.py`
-- [ ] T054 [US3] Generation summary report contents test at `tests/packgen/test_report.py`
+- [x] T052 [P] [US3] Pytest CLI invocation test (args parse, exit codes) at `tests/packgen/test_cli.py`
+- [x] T053 [P] [US3] Validate exported metadata.json and puzzles shape at `tests/packgen/test_export.py`
+- [x] T054 [US3] Generation summary report contents test at `tests/packgen/test_report.py`
 
 ### Implementation for User Story 3
 
-- [ ] T028 [US3] Create CLI entrypoint at `app/packgen/cli.py`
-- [ ] T029 [P] [US3] Implement generator wrapper using engine at `app/packgen/generate_pack.py`
-- [ ] T030 [P] [US3] Implement JSON exporters (metadata + puzzles) at `app/packgen/export.py`
-- [ ] T031 [US3] Implement summary report writer at `app/packgen/report.py`
-- [ ] T032 [US3] Add example configuration at `app/packgen/config.example.json`
-- [ ] T033 [US3] Ensure unique timestamped output directories at `frontend/public/packs/{packId}-{timestamp}/`
-- [ ] T034 [US3] Add argparse options (sizes, difficulties, count, outdir, seed, retries) in `app/packgen/cli.py`
-- [ ] T035 [US3] Validate outputs against constraints before write at `app/packgen/generate_pack.py`
+- [x] T028 [US3] Create CLI entrypoint at `app/packgen/cli.py`
+- [x] T029 [P] [US3] Implement generator wrapper using engine at `app/packgen/generate_pack.py`
+- [x] T030 [P] [US3] Implement JSON exporters (metadata + puzzles) at `app/packgen/export.py`
+- [x] T031 [US3] Implement summary report writer at `app/packgen/report.py`
+- [x] T032 [US3] Add example configuration at `app/packgen/config.example.json`
+- [x] T033 [US3] Ensure unique timestamped output directories at `frontend/public/packs/{packId}-{timestamp}/`
+- [x] T034 [US3] Add argparse options (sizes, difficulties, count, outdir, seed, retries) in `app/packgen/cli.py`
+- [x] T035 [US3] Validate outputs against constraints before write at `app/packgen/generate_pack.py`
 
 Checkpoint: US3 independently functional with CLI-only verification
 

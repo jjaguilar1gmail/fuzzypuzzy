@@ -1,5 +1,35 @@
 [
   {
+    "id": "auto-index-test",
+    "title": "Auto Index Test",
+    "puzzle_count": 3,
+    "difficulty_counts": {
+      "easy": 3
+    },
+    "created_at": "2025-11-11T19:26:09.991006Z",
+    "description": "Testing automatic index.json updates"
+  },
+  {
+    "id": "backbite-test-blah",
+    "title": "Backbite Test Pack",
+    "description": "Hard puzzles for testing",
+    "puzzle_count": 2,
+    "difficulty_counts": {
+      "hard": 2
+    },
+    "created_at": "2025-11-11T00:00:00Z"
+  },
+  {
+    "id": "daily-nov",
+    "title": "Daily November",
+    "description": "Easy puzzles for testing",
+    "puzzle_count": 3,
+    "difficulty_counts": {
+      "easy": 3
+    },
+    "created_at": "2025-11-11T00:00:00Z"
+  },
+  {
     "id": "sample",
     "title": "Sample Pack",
     "description": "A test pack with one easy puzzle for MVP testing",
