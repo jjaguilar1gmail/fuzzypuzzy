@@ -120,6 +120,12 @@ Examples:
         help='Include full solution in puzzle JSON (default: false)'
     )
     
+    parser.add_argument(
+        '--enable-anti-branch',
+        action='store_true',
+        help='Enable anti-branch uniqueness probe (experimental, default: false)'
+    )
+    
     return parser.parse_args()
 
 
@@ -190,6 +196,7 @@ def main():
     print(f"Seed: {args.seed or 'random'}")
     print(f"Max retries: {args.retries}")
     print(f"Path mode: {args.path_mode}")
+    print(f"Anti-branch probe: {'enabled' if args.enable_anti_branch else 'disabled'}")
     print()
     
     start_time = time.time()
@@ -207,6 +214,7 @@ def main():
             description=args.description,
             include_solution=args.include_solution,
             path_mode=args.path_mode,
+            enable_anti_branch=args.enable_anti_branch,
         )
     except Exception as e:
         print(f"❌ Generation failed: {e}", file=sys.stderr)

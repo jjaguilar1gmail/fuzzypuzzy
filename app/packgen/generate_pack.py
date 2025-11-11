@@ -78,6 +78,7 @@ def generate_pack(
     description: str | None = None,
     include_solution: bool = False,
     path_mode: str = "backbite_v1",
+    enable_anti_branch: bool = False,
 ) -> Tuple[str, GenerationReport]:
     """Generate a puzzle pack using the existing engine.
     
@@ -92,6 +93,7 @@ def generate_pack(
         description: Pack description
         include_solution: Include full solution in exports
         path_mode: Path generation mode (default: "backbite_v1")
+        enable_anti_branch: Enable anti-branch uniqueness probe (experimental)
         
     Returns:
         Tuple of (pack_id, GenerationReport)
@@ -154,6 +156,7 @@ def generate_pack(
                     path_mode=path_mode,
                     timeout_ms=10000,
                     max_attempts=5,
+                    enable_anti_branch=enable_anti_branch,
                 )
                 elapsed_ms = (time.time() - start) * 1000
                 

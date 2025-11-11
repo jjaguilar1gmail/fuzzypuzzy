@@ -2,27 +2,27 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 Create feature scaffolding directories per plan in specs/001-anti-branch-uniqueness/
-- [ ] T002 Add new Python modules stubs solve/uniqueness_probe.py, generate/spacing.py, generate/anchors_policy.py, util/logging_uniqueness.py
-- [ ] T003 Wire CLI flags for anti-branch probe in app/packgen/cli.py (no-op handler initially)
+- [x] T001 Create feature scaffolding directories per plan in specs/001-anti-branch-uniqueness/
+- [x] T002 Add new Python modules stubs solve/uniqueness_probe.py, generate/spacing.py, generate/anchors_policy.py, util/logging_uniqueness.py
+- [x] T003 Wire CLI flags for anti-branch probe in app/packgen/cli.py (--enable-anti-branch flag added)
 
 ## Phase 2: Foundational
 
-- [ ] T004 Implement SizeTierPolicy config defaults and loader in util/logging_uniqueness.py (or config module)
-- [ ] T005 Implement line-delimited JSON logger in util/logging_uniqueness.py
-- [ ] T006 Define data classes for ProbeOutcome, RemovalAttemptLog, UniquenessProbeConfig in solve/uniqueness_probe.py
-- [ ] T007 Add spacing metrics helpers (avg Manhattan, quadrant variance, cluster detection) in generate/spacing.py
+- [x] T004 Implement SizeTierPolicy config defaults and loader in util/logging_uniqueness.py
+- [x] T005 Implement line-delimited JSON logger (UniquenessLogger class) in util/logging_uniqueness.py
+- [x] T006 Define data classes for ProbeOutcome, RemovalAttemptLog, UniquenessProbeConfig in solve/uniqueness_probe.py
+- [x] T007 Add spacing metrics helpers (avg_manhattan_distance, quadrant_variance, detect_clusters, spacing_score) in generate/spacing.py
 
 ## Phase 3: [US1] Prevent False Uniqueness (P1)
 
-- [ ] T008 [US1] Integrate logic fixpoint pre-check entry in solve/uniqueness_probe.py
-- [ ] T009 [US1] Implement anti-branch DFS with early-exit at 2 solutions in solve/uniqueness_probe.py
-- [ ] T010 [P] [US1] Implement tie-break shuffling (MRV/LCV/frontier) and permutation tracking in solve/uniqueness_probe.py
-- [ ] T011 [US1] Run 2–3 probes based on size tier; aggregate outcomes and classification in solve/uniqueness_probe.py
-- [ ] T012 [US1] Add extended attempt (+50% budgets) for UNKNOWN/TIMEOUT when fallback disabled in solve/uniqueness_probe.py
-- [ ] T013 [US1] Emit per-probe and summary telemetry records in util/logging_uniqueness.py
-- [ ] T014 [US1] Enforce removal acceptance policy in generate/generator.py (accept only if all probes EXHAUST)
-- [ ] T015 [US1] Restrict metrics collection to path modes {backbite_v1, random_v2} per spec FR-010 in generate/generator.py (retain general compatibility)
+- [x] T008 [US1] Integrate logic fixpoint pre-check entry in solve/uniqueness_probe.py
+- [x] T009 [US1] Implement anti-branch DFS with early-exit at 2 solutions in solve/uniqueness_probe.py (leverages existing Solver.count_solutions)
+- [x] T010 [P] [US1] Implement tie-break shuffling (MRV/LCV/frontier) and permutation tracking in solve/uniqueness_probe.py
+- [x] T011 [US1] Run 2–3 probes based on size tier; aggregate outcomes and classification in solve/uniqueness_probe.py
+- [x] T012 [US1] Add extended attempt (+50% budgets) for UNKNOWN/TIMEOUT when fallback disabled in solve/uniqueness_probe.py
+- [x] T013 [US1] Emit per-probe and summary telemetry records via optional logger parameter in solve/uniqueness_probe.py
+- [x] T014 [US1] Enforce removal acceptance policy in generate/generator.py (accept only if all probes EXHAUST)
+- [x] T015 [US1] Restrict metrics collection to path modes {backbite_v1, random_v2} per spec FR-010 in generate/generator.py (retain general compatibility)
 
 ## Phase 4: [US2] Reduce Clue Clustering (P2)
 

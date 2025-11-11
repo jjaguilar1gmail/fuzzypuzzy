@@ -27,7 +27,8 @@ class Generator:
                        anchor_policy_name="adaptive_v1", adaptive_turn_anchors=True,
                        mask_enabled=False, mask_mode="auto", mask_template=None,
                        mask_density=0.10, mask_max_attempts=5,
-                       structural_repair_enabled=False, structural_repair_max=2):
+                       structural_repair_enabled=False, structural_repair_max=2,
+                       enable_anti_branch=False):
         """Generate a uniqueness-preserving puzzle (T009 new signature).
         
         Args:
@@ -55,6 +56,7 @@ class Generator:
             mask_max_attempts: Max attempts for mask generation (T001)
             structural_repair_enabled: Enable ambiguity-aware structural repair (T029)
             structural_repair_max: Max repair attempts (T029)
+            enable_anti_branch: Enable anti-branch uniqueness probe (experimental)
             
         Returns:
             GeneratedPuzzle object
@@ -398,15 +400,39 @@ class Generator:
                 # Create test puzzle with same constraints
                 test_puzzle = Puzzle(test_grid, constraints)
                 
-                # Check uniqueness
-                uniqueness_result = count_solutions(
-                    test_puzzle,
-                    cap=2,
-                    node_cap=config.uniqueness_node_cap,
-                    timeout_ms=config.uniqueness_timeout_ms
-                )
+                # Check uniqueness with anti-branch probe if enabled (T014)
+                if enable_anti_branch and path_mode in {"backbite_v1", "random_v2"}:
+                    from solve.uniqueness_probe import run_anti_branch_probe, UniquenessProbeConfig
+                    from util.logging_uniqueness import get_size_tier_policy
+                    
+                    # Get size-tier policy
+                    tier_policy = get_size_tier_policy(total_cells)
+                    
+                    # Configure probe
+                    probe_config = UniquenessProbeConfig(
+                        seed=rng.rng.randint(0, 2**31 - 1),
+                        size_tier=tier_policy.tier_name,
+                        max_nodes=tier_policy.max_nodes,
+                        timeout_ms=tier_policy.timeout_ms,
+                        probe_count=tier_policy.probe_count,
+                        extended_factor=tier_policy.extended_factor
+                    )
+                    
+                    # Run probe (no logger passed here; will be wired in packgen layer)
+                    probe_result = run_anti_branch_probe(test_puzzle, probe_config, logger=None)
+                    
+                    is_unique = (probe_result.final_decision == "ACCEPT")
+                else:
+                    # Fall back to traditional count_solutions (T015)
+                    uniqueness_result = count_solutions(
+                        test_puzzle,
+                        cap=2,
+                        node_cap=config.uniqueness_node_cap,
+                        timeout_ms=config.uniqueness_timeout_ms
+                    )
+                    is_unique = uniqueness_result.is_unique
                 
-                if uniqueness_result.is_unique:
+                if is_unique:
                     # Accept removal
                     current_givens = test_givens
                     removals_accepted += 1
