@@ -158,6 +158,10 @@ class GeneratedPuzzle:
     timings_ms: dict
     solver_metrics: dict
     version: str = "1.0"
+    # US1: Mask metrics
+    mask_metrics: Optional[dict] = None
+    # US2: Repair metrics
+    repair_metrics: Optional[dict] = None
     
     def to_json(self):
         """Serialize to dict for JSON export."""
@@ -178,5 +182,7 @@ class GeneratedPuzzle:
             "symmetry": self.symmetry,
             "timings_ms": self.timings_ms,
             "solver_metrics": self.solver_metrics,
+            "mask_metrics": self.mask_metrics,
+            "repair_metrics": self.repair_metrics,
             "version": self.version,
         }
