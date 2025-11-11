@@ -8,6 +8,7 @@ from enum import Enum
 
 from core.position import Position
 from core.puzzle import Puzzle
+from generate.repair import apply_structural_repair
 
 if TYPE_CHECKING:
     from generate.models import GenerationConfig
@@ -610,42 +611,88 @@ def prune_puzzle(
             
             # Check if we can repair
             if session.repairs_used < config.pruning_max_repairs:
-                # Sample alternates and build profile
-                current_givens = {
-                    cell.pos for row in puzzle.grid.cells for cell in row
-                    if not cell.blocked and cell.given
-                }
+                repair_succeeded = False
                 
-                alternates = sample_alternate_solutions(
-                    puzzle, path, solver_mode,
-                    config.pruning_alternates_count,
-                    time_cap_ms=2000
-                )
-                
-                if alternates and len(alternates) > 1:
-                    # Build ambiguity profile
-                    profile = build_ambiguity_profile(
-                        alternates, path, current_givens
+                # T036: Try structural repair first if enabled (US2)
+                if config.structural_repair_enabled:
+                    # Sample alternate solutions for structural repair
+                    current_givens_list = [
+                        (cell.pos.row, cell.pos.col, cell.value)
+                        for row in puzzle.grid.cells for cell in row
+                        if not cell.blocked and cell.given
+                    ]
+                    
+                    alternates = sample_alternate_solutions(
+                        puzzle, path, solver_mode,
+                        config.pruning_alternates_count,
+                        time_cap_ms=2000
                     )
                     
-                    # Select repair candidate
-                    candidates = select_repair_candidates(
-                        profile, path, config.pruning_repair_topn
-                    )
-                    
-                    if candidates:
-                        # Apply first repair candidate
-                        apply_repair_clue(puzzle, candidates[0])
-                        session.record_repair()
+                    if alternates and len(alternates) > 1:
+                        # Attempt structural repair (blocking)
+                        repair_result = apply_structural_repair(
+                            grid=puzzle.grid,
+                            givens=current_givens_list,
+                            solutions=alternates,
+                            max_repairs=config.structural_repair_max,
+                            timeout_ms=config.structural_repair_timeout_ms,
+                            allow_clue_fallback=False,
+                            verify_solvability=False  # Skip for now, TODO: Puzzle integration
+                        )
                         
-                        # Re-check uniqueness after repair
-                        if check_puzzle_uniqueness(puzzle, solver_mode):
-                            # Repair succeeded, continue with current interval
-                            last_unique_snapshot = snapshot_puzzle_state(puzzle)
-                            continue
-                        else:
-                            # Repair didn't help, revert and contract
-                            restore_puzzle_state(puzzle, snapshot)
+                        if repair_result and repair_result.get('actions'):
+                            # Structural repair applied blocks
+                            session.record_repair()
+                            
+                            # Re-check uniqueness after structural repair
+                            if check_puzzle_uniqueness(puzzle, solver_mode):
+                                repair_succeeded = True
+                                last_unique_snapshot = snapshot_puzzle_state(puzzle)
+                            else:
+                                # Structural repair didn't restore uniqueness, revert
+                                restore_puzzle_state(puzzle, snapshot)
+                
+                # Fallback to clue-based repair if structural repair disabled or failed
+                if not repair_succeeded:
+                    current_givens = {
+                        cell.pos for row in puzzle.grid.cells for cell in row
+                        if not cell.blocked and cell.given
+                    }
+                    
+                    alternates = sample_alternate_solutions(
+                        puzzle, path, solver_mode,
+                        config.pruning_alternates_count,
+                        time_cap_ms=2000
+                    )
+                    
+                    if alternates and len(alternates) > 1:
+                        # Build ambiguity profile
+                        profile = build_ambiguity_profile(
+                            alternates, path, current_givens
+                        )
+                        
+                        # Select repair candidate
+                        candidates = select_repair_candidates(
+                            profile, path, config.pruning_repair_topn
+                        )
+                        
+                        if candidates:
+                            # Apply first repair candidate
+                            apply_repair_clue(puzzle, candidates[0])
+                            session.record_repair()
+                            
+                            # Re-check uniqueness after repair
+                            if check_puzzle_uniqueness(puzzle, solver_mode):
+                                # Repair succeeded, continue with current interval
+                                repair_succeeded = True
+                                last_unique_snapshot = snapshot_puzzle_state(puzzle)
+                            else:
+                                # Repair didn't help, revert and contract
+                                restore_puzzle_state(puzzle, snapshot)
+                
+                # Continue if any repair succeeded
+                if repair_succeeded:
+                    continue
             
             # Contract interval (either no repair or repair failed)
             state = contract_interval(low_index, high_index, "uniqueness_fail")
