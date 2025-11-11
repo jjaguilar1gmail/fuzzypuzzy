@@ -24,7 +24,10 @@ class Generator:
                        clue_mode="anchor_removal_v1", symmetry=None, turn_anchors=True,
                        timeout_ms=5000, max_attempts=5,
                        allow_partial_paths=False, min_cover_ratio=0.85, path_time_ms=None,
-                       anchor_policy_name="adaptive_v1", adaptive_turn_anchors=True):
+                       anchor_policy_name="adaptive_v1", adaptive_turn_anchors=True,
+                       mask_enabled=False, mask_mode="auto", mask_template=None,
+                       mask_density=0.10, mask_max_attempts=5,
+                       structural_repair_enabled=False, structural_repair_max=2):
         """Generate a uniqueness-preserving puzzle (T009 new signature).
         
         Args:
@@ -45,6 +48,13 @@ class Generator:
             path_time_ms: Path building time budget (T007)
             anchor_policy_name: Anchor policy name (T055)
             adaptive_turn_anchors: Enable adaptive anchor selection (T055)
+            mask_enabled: Enable mask-driven blocking (T001)
+            mask_mode: Mask generation mode ("auto"|"template"|"procedural") (T001)
+            mask_template: Template pattern name ("corridor"|"ring"|"spiral"|"cross") (T001)
+            mask_density: Target mask density (0.0-0.12) (T001)
+            mask_max_attempts: Max attempts for mask generation (T001)
+            structural_repair_enabled: Enable ambiguity-aware structural repair (T029)
+            structural_repair_max: Max repair attempts (T029)
             
         Returns:
             GeneratedPuzzle object
@@ -78,6 +88,14 @@ class Generator:
             # T055: Include anchor policy config
             anchor_policy_name=anchor_policy_name,
             adaptive_turn_anchors=adaptive_turn_anchors,
+            # T001: Include mask config
+            mask_enabled=mask_enabled,
+            mask_mode=mask_mode,
+            mask_template=mask_template,
+            mask_density=mask_density,
+            mask_max_attempts=mask_max_attempts,
+            structural_repair_enabled=structural_repair_enabled,
+            structural_repair_max=structural_repair_max,
         )
         
         # T020: Validate difficulty parameter
@@ -89,21 +107,72 @@ class Generator:
         rng = RNG(seed)
         actual_seed = rng.get_seed()
         
+        # T023: Generate and apply mask if enabled
+        mask_cells = []
+        mask_pattern_id = None
+        mask_attempts = config.mask_max_attempts
+        
+        if config.mask_enabled:
+            from generate.mask import build_mask
+            
+            # Determine start/end for validation
+            # For now, assume corners (will be adjusted by path builder)
+            start_pos = (0, 0)
+            end_pos = (size - 1, size - 1)
+            
+            mask = build_mask(
+                config=config,
+                size=size,
+                difficulty=difficulty or "medium",
+                start=start_pos,
+                end=end_pos,
+                allow_diagonal=allow_diagonal
+            )
+            
+            if mask is not None:
+                mask_cells = list(mask.cells)
+                mask_pattern_id = mask.pattern_id
+                mask_attempts = mask.attempt_index + 1
+        
         # Build solution path
         total_cells = size * size - len(config.blocked)
         
         grid = Grid(size, size, allow_diagonal=allow_diagonal)
         
-        # Mark blocked cells BEFORE building path
-        for r, c in config.blocked:
+        # Mark blocked cells BEFORE building path (original + mask)
+        all_blocked = list(config.blocked) + mask_cells
+        for r, c in all_blocked:
             pos = Position(r, c)
             cell = grid.get_cell(pos)
             cell.blocked = True
         
-        # Build path (T032: now returns PathBuildResult)
-        path_result = PathBuilder.build(grid, mode=path_mode, rng=rng, blocked=config.blocked)
+        # Build path (T032: now returns PathBuildResult) with all blocked cells
+        path_result = PathBuilder.build(grid, mode=path_mode, rng=rng, blocked=all_blocked)
         path = path_result.positions
         path_build_ms = path_result.metrics.get("path_build_ms", 0)
+        
+        # Check if path generation failed (empty path)
+        if not path or len(path) == 0:
+            import sys
+            print(f"WARNING: Path generation failed with {path_mode} - blocked cells incompatible", file=sys.stderr)
+            
+            # Try falling back to random_walk_v2 which can handle blocked cells
+            if path_mode != 'random_walk_v2' and mask_cells:
+                print(f"         Falling back to random_walk_v2 mode", file=sys.stderr)
+                grid = Grid(size, size, allow_diagonal=allow_diagonal)
+                for r, c in all_blocked:
+                    pos = Position(r, c)
+                    grid.get_cell(pos).blocked = True
+                path_result = PathBuilder.build(grid, mode='random_walk_v2', rng=rng, blocked=all_blocked)
+                path = path_result.positions
+                path_build_ms = path_result.metrics.get("path_build_ms", 0)
+                
+                if not path or len(path) == 0:
+                    print(f"ERROR: Even random_walk_v2 failed - mask configuration too restrictive", file=sys.stderr)
+                    return None
+            else:
+                print(f"       Try a different path mode or mask configuration", file=sys.stderr)
+                return None
         
         # T032: Handle partial coverage if enabled
         if allow_partial_paths and path_result.coverage < 1.0:
@@ -133,10 +202,10 @@ class Generator:
                 print(f"         Falling back to serpentine mode", file=sys.stderr)
                 # Rebuild with serpentine
                 grid = Grid(size, size, allow_diagonal=allow_diagonal)
-                for r, c in config.blocked:
+                for r, c in all_blocked:
                     pos = Position(r, c)
                     grid.get_cell(pos).blocked = True
-                path_result = PathBuilder.build(grid, mode="serpentine", rng=rng, blocked=config.blocked)
+                path_result = PathBuilder.build(grid, mode="serpentine", rng=rng, blocked=all_blocked)
                 path = path_result.positions
         
         # T034: Create constraints based on actual path length
@@ -243,7 +312,7 @@ class Generator:
             
             # Build initial puzzle with all path cells as givens
             prune_grid = Grid(size, size, allow_diagonal=allow_diagonal)
-            for r, c in config.blocked:
+            for r, c in all_blocked:
                 pos = Position(r, c)
                 prune_grid.get_cell(pos).blocked = True
             for pos in path:
@@ -308,7 +377,7 @@ class Generator:
                 test_grid = Grid(size, size, allow_diagonal=allow_diagonal)
                 
                 # Mark blocked cells in test grid
-                for r, c in config.blocked:
+                for r, c in all_blocked:
                     pos = Position(r, c)
                     test_grid.get_cell(pos).blocked = True
                 
@@ -372,7 +441,7 @@ class Generator:
         final_grid = Grid(size, size, allow_diagonal=allow_diagonal)
         
         # Mark blocked cells in final grid
-        for r, c in config.blocked:
+        for r, c in all_blocked:
             pos = Position(r, c)
             final_grid.get_cell(pos).blocked = True
         
@@ -425,11 +494,11 @@ class Generator:
         
         end_time = time.time()
         
-        # Create result
+        # Create result (T023: Include mask cells in blocked_cells)
         return GeneratedPuzzle(
             size=size,
             allow_diagonal=allow_diagonal,
-            blocked_cells=list(config.blocked),
+            blocked_cells=all_blocked,  # Include mask cells
             givens=sorted(givens),
             solution=sorted(solution),
             difficulty_label=assessed_label,  # T019: Use assessed difficulty
@@ -462,6 +531,14 @@ class Generator:
                 "anchor_selection_reason": _anchor_metrics.anchor_selection_reason,
                 "anchor_min_index_gap_enforced": _anchor_metrics.min_index_gap_enforced,
                 "anchor_adjacency_mode": _anchor_metrics.adjacency_mode,
+                # T005/T010: Mask & repair metrics (populated from mask generation)
+                "mask_enabled": config.mask_enabled,
+                "mask_pattern_id": mask_pattern_id,
+                "mask_cells_count": len(mask_cells),
+                "mask_density": len(mask_cells) / (size * size) if size > 0 else 0.0,
+                "mask_attempts": mask_attempts,
+                "structural_repair_used": False,
+                "ambiguity_regions_detected": 0,
             },
         )
     

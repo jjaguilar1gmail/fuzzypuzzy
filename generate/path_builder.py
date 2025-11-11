@@ -30,7 +30,13 @@ class PathBuildResult:
 
 
 class PathBuilder:
-    """Builds solution paths for puzzle generation."""
+    """Builds solution paths for puzzle generation.
+    
+    T027: Branch factor measurement could be added by tracking:
+    - Average neighbor count at each step
+    - Choice points where multiple valid moves exist
+    - This would help quantify mask impact on path construction
+    """
     
     @staticmethod
     def build(grid: Grid, mode="serpentine", rng=None, blocked=None, settings=None):
@@ -272,6 +278,7 @@ class PathBuilder:
         blocked_set = set(blocked) if blocked else set()
         path = []
         value = 1
+        prev_pos = None
         
         for row in range(grid.rows):
             if row % 2 == 0:  # Even rows: left to right
@@ -288,8 +295,23 @@ class PathBuilder:
                     
                 cell = grid.get_cell(pos)
                 if not cell.blocked:
+                    # Check adjacency with previous position
+                    if prev_pos is not None:
+                        dr = abs(pos.row - prev_pos.row)
+                        dc = abs(pos.col - prev_pos.col)
+                        is_adjacent = (dr <= 1 and dc <= 1 and (dr + dc) > 0)
+                        
+                        if not is_adjacent:
+                            # Blocked cells created a non-adjacent jump - path is invalid
+                            import sys
+                            print(f"WARNING: Serpentine path with blocks creates non-adjacent jump "
+                                  f"from {(prev_pos.row, prev_pos.col)} to {(pos.row, pos.col)}", file=sys.stderr)
+                            # Return empty path to signal failure
+                            return []
+                    
                     cell.value = value
                     path.append(pos)
+                    prev_pos = pos
                     value += 1
         
         return path

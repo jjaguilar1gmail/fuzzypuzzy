@@ -57,32 +57,26 @@ def count_solutions(puzzle, cap=2, node_cap=1000, timeout_ms=5000):
             elapsed_ms=elapsed_ms
         )
     
-    # For larger puzzles, use solver to check if at least one solution exists
-    # This is a limitation - we can't efficiently enumerate all solutions
-    result = Solver.solve(puzzle, mode='logic_v3', max_nodes=node_cap, timeout_ms=timeout_ms)
+    # For larger puzzles, use count_solutions with higher limits
+    # This is more expensive but necessary for true uniqueness verification
+    result = Solver.count_solutions(
+        puzzle,
+        cap=cap,
+        max_nodes=node_cap * 5,  # More nodes for larger puzzles
+        timeout_ms=timeout_ms,
+        max_depth=total_cells
+    )
     
     elapsed_ms = int((time.time() - start_time) * 1000)
     
-    if result.solved:
-        # Found at least one solution
-        # NOTE: We ASSUME uniqueness here - this is a known limitation
-        # True uniqueness verification would require solution enumeration
-        return UniquenessCheckResult(
-            is_unique=True,  # ASSUMPTION: generated puzzles are designed to be unique
-            solutions_found=1,
-            nodes=result.nodes,
-            depth=result.depth,
-            elapsed_ms=elapsed_ms
-        )
-    else:
-        # Could not find a solution
-        return UniquenessCheckResult(
-            is_unique=False,
-            solutions_found=0,
-            nodes=result.nodes,
-            depth=result.depth,
-            elapsed_ms=elapsed_ms
-        )
+    # Return actual solution count, not assumption
+    return UniquenessCheckResult(
+        is_unique=(result['solutions_found'] == 1),
+        solutions_found=result['solutions_found'],
+        nodes=result['nodes'],
+        depth=result['depth'],
+        elapsed_ms=elapsed_ms
+    )
 
 
 def verify_uniqueness(puzzle, node_cap=1000, timeout_ms=5000):

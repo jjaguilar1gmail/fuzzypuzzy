@@ -116,6 +116,7 @@ def check_uniqueness(request: UniquenessCheckRequest) -> UniquenessCheckResult:
         - Each stage operates on puzzle snapshots or read-only access
         - Deterministic: same seed + config → identical outcomes (FR-013)
         - Early returns: exits immediately when Non-Unique detected (FR-006)
+        - T011: Transposition table integration with mask signature pending probes stage update
     """
     import time
     import logging
