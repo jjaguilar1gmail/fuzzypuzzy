@@ -1,0 +1,156 @@
+openapi: 3.0.3
+info:
+  title: Hidato Puzzle Packs API (Static Layout)
+  version: 0.1.0
+  description: >-
+    Reference API shape for how the frontend consumes static JSON packs.
+    In MVP, these are served as files under public/packs and not via a dynamic server.
+servers:
+  - url: https://example.com
+paths:
+  /packs:
+    get:
+      summary: List available packs
+      responses:
+        '200':
+          description: Array of available packs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PackSummary'
+  /packs/{packId}:
+    parameters:
+      - name: packId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get pack metadata
+      responses:
+        '200':
+          description: Pack metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pack'
+        '404':
+          description: Pack not found
+  /packs/{packId}/puzzles/{puzzleId}:
+    parameters:
+      - name: packId
+        in: path
+        required: true
+        schema: { type: string }
+      - name: puzzleId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      summary: Get a specific puzzle
+      responses:
+        '200':
+          description: Hidato puzzle payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Puzzle'
+        '404':
+          description: Puzzle not found
+components:
+  schemas:
+    CellValue:
+      type: object
+      additionalProperties: false
+      required: [row, col, value]
+      properties:
+        row: { type: integer, minimum: 0 }
+        col: { type: integer, minimum: 0 }
+        value: { type: integer, minimum: 1 }
+    Puzzle:
+      type: object
+      additionalProperties: false
+      required: [id, size, difficulty, seed, clue_count, givens]
+      properties:
+        schema_version:
+          type: string
+          default: '1.0'
+        id: { type: string }
+        pack_id: { type: string }
+        size:
+          type: integer
+          minimum: 5
+          maximum: 10
+        difficulty:
+          type: string
+          enum: [easy, medium, hard, extreme]
+        seed: { type: integer }
+        clue_count: { type: integer, minimum: 1 }
+        max_gap:
+          oneOf:
+            - type: integer
+              maximum: 12
+            - type: 'null'
+        givens:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/CellValue' }
+        solution:
+          type: array
+          items: { $ref: '#/components/schemas/CellValue' }
+          nullable: true
+    Pack:
+      type: object
+      additionalProperties: false
+      required: [id, title, puzzles, created_at]
+      properties:
+        schema_version:
+          type: string
+          default: '1.0'
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        puzzles:
+          type: array
+          minItems: 1
+          items: { type: string }
+        difficulty_counts:
+          type: object
+          propertyNames:
+            enum: [easy, medium, hard, extreme]
+          additionalProperties:
+            type: integer
+            minimum: 0
+        size_distribution:
+          type: object
+          additionalProperties: false
+          patternProperties:
+            "^(5|6|7|8|9|10)$":
+              type: integer
+              minimum: 0
+        created_at:
+          type: string
+          format: date-time
+    PackSummary:
+      type: object
+      additionalProperties: false
+      required: [id, title]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        difficulty_counts:
+          type: object
+          propertyNames:
+            enum: [easy, medium, hard, extreme]
+          additionalProperties:
+            type: integer
+            minimum: 0
+        size_distribution:
+          type: object
+          additionalProperties: false
+          patternProperties:
+            "^(5|6|7|8|9|10)$":
+              type: integer
+              minimum: 0

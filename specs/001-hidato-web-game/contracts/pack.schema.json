@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://fuzzypuzzy/specs/001-hidato-web-game/pack.schema.json",
+  "title": "Puzzle Pack",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "title", "puzzles", "created_at"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Local schema version for persistence migrations.",
+      "default": "1.0"
+    },
+    "id": { "type": "string", "description": "Pack identifier (unique)." },
+    "title": { "type": "string" },
+    "description": { "type": "string" },
+    "puzzles": {
+      "type": "array",
+      "description": "Array of puzzle ids contained in this pack.",
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "difficulty_counts": {
+      "type": "object",
+      "description": "Counts of puzzles per difficulty.",
+      "propertyNames": { "enum": ["easy", "medium", "hard", "extreme"] },
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "size_distribution": {
+      "type": "object",
+      "description": "Counts of puzzles per grid size (string keys).",
+      "patternProperties": {
+        "^(5|6|7|8|9|10)$": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "created_at": { "type": "string", "format": "date-time" }
+  }
+}

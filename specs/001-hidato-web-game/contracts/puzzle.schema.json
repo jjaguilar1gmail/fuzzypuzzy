@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://fuzzypuzzy/specs/001-hidato-web-game/puzzle.schema.json",
+  "title": "Hidato Puzzle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "size",
+    "difficulty",
+    "seed",
+    "clue_count",
+    "givens"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Local schema version for persistence migrations.",
+      "default": "1.0"
+    },
+    "id": { "type": "string", "description": "Puzzle identifier (unique within a pack)." },
+    "pack_id": { "type": "string", "description": "Owning pack id." },
+    "size": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 10,
+      "description": "Grid size N for an N x N puzzle (MVP supports 5..10)."
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": ["easy", "medium", "hard", "extreme"],
+      "description": "Difficulty bucket for grouping/filters."
+    },
+    "seed": { "type": "integer", "description": "Generator seed used to create the puzzle." },
+    "clue_count": { "type": "integer", "minimum": 1, "description": "Number of givens in the puzzle." },
+    "max_gap": {
+      "type": ["integer", "null"],
+      "maximum": 12,
+      "description": "Guardrail metric; puzzles target <=12 in generation. Optional in payload."
+    },
+    "givens": {
+      "type": "array",
+      "description": "List of given cells with fixed values.",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/cellValue" }
+    },
+    "solution": {
+      "type": ["array", "null"],
+      "description": "Optional full solution as placed values (may be omitted in client packs).",
+      "items": { "$ref": "#/definitions/cellValue" }
+    }
+  },
+  "definitions": {
+    "cellValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["row", "col", "value"],
+      "properties": {
+        "row": { "type": "integer", "minimum": 0 },
+        "col": { "type": "integer", "minimum": 0 },
+        "value": { "type": "integer", "minimum": 1 }
+      },
+      "description": "A single cell assignment at (row, col) with a numeric value."
+    }
+  },
+  "$comment": "Note: JSON Schema cannot enforce uniqueness by (row,col) or contiguity of values; those are validated by the engine."
+}
