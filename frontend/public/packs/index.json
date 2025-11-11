@@ -1,32 +1,12 @@
 [
   {
-    "id": "auto-index-test",
-    "title": "Auto Index Test",
-    "puzzle_count": 3,
-    "difficulty_counts": {
-      "easy": 3
-    },
-    "created_at": "2025-11-11T19:26:09.991006Z",
-    "description": "Testing automatic index.json updates"
-  },
-  {
-    "id": "backbite-test-blah",
-    "title": "Backbite Test Pack",
-    "description": "Hard puzzles for testing",
-    "puzzle_count": 2,
-    "difficulty_counts": {
-      "hard": 2
-    },
-    "created_at": "2025-11-11T00:00:00Z"
-  },
-  {
     "id": "daily-nov",
     "title": "Daily November",
     "puzzle_count": 5,
     "difficulty_counts": {
       "easy": 5
     },
-    "created_at": "2025-11-11T19:51:05.291005Z",
+    "created_at": "2025-11-11T20:15:10.104964Z",
     "description": "Easy puzzles for November"
   },
   {
