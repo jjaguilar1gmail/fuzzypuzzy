@@ -25,10 +25,13 @@ export type PackOutput = z.output<typeof PackSchema>;
 export const PackSummarySchema = z.object({
   id: z.string(),
   title: z.string(),
+  description: z.string().optional(),
+  puzzle_count: z.number().int().min(1),
   difficulty_counts: z
     .record(z.enum(['easy', 'medium', 'hard', 'extreme']), z.number().int().min(0))
     .optional(),
   size_distribution: z.record(z.string(), z.number().int().min(0)).optional(),
+  created_at: z.string().datetime(),
 });
 
 export type PackSummaryInput = z.input<typeof PackSummarySchema>;

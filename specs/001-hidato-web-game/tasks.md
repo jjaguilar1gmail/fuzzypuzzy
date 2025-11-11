@@ -85,17 +85,17 @@ Independent Test: Navigate to `/packs`, filter by difficulty, open a pack, start
 
 ### Tests for User Story 2 (write before implementation)
 
-- [ ] T049 [P] [US2] Integration test packs index filtering by difficulty at `frontend/tests/integration/packs-index.test.tsx`
-- [ ] T050 [P] [US2] Integration test pack detail loads metadata at `frontend/tests/integration/pack-detail.test.tsx`
-- [ ] T051 [US2] Route test loads puzzle and records progress at `frontend/tests/integration/pack-puzzle-route.test.tsx`
+- [x] T049 [P] [US2] Integration test packs index filtering by difficulty at `frontend/tests/integration/packs-index.test.tsx`
+- [x] T050 [P] [US2] Integration test pack detail loads metadata at `frontend/tests/integration/pack-detail.test.tsx`
+- [x] T051 [US2] Route test loads puzzle and records progress at `frontend/tests/integration/pack-puzzle-route.test.tsx`
 
 ### Implementation for User Story 2
 
-- [ ] T023 [P] [US2] Implement packs index loader/util at `frontend/src/lib/loaders/packsIndex.ts`
-- [ ] T024 [P] [US2] Implement packs list page with filters at `frontend/src/pages/packs/index.tsx`
-- [ ] T025 [US2] Implement pack detail page at `frontend/src/pages/packs/[packId]/index.tsx`
-- [ ] T026 [US2] Implement pack puzzle route reusing game components at `frontend/src/pages/packs/[packId]/puzzles/[puzzleId].tsx`
-- [ ] T027 [US2] Implement pack progress store (last puzzle index, completion) at `frontend/src/state/progressStore.ts`
+- [x] T023 [P] [US2] Implement packs index loader/util at `frontend/src/lib/loaders/packsIndex.ts`
+- [x] T024 [P] [US2] Implement packs list page with filters at `frontend/src/pages/packs/index.tsx`
+- [x] T025 [US2] Implement pack detail page at `frontend/src/pages/packs/[packId]/index.tsx`
+- [x] T026 [US2] Implement pack puzzle route reusing game components at `frontend/src/pages/packs/[packId]/puzzles/[puzzleId].tsx`
+- [x] T027 [US2] Implement pack progress store (last puzzle index, completion) at `frontend/src/state/progressStore.ts`
 
 Checkpoint: US1 and US2 are independently functional
 

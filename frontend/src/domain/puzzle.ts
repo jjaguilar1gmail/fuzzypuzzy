@@ -56,6 +56,9 @@ export interface Pack {
 export interface PackSummary {
   id: string;
   title: string;
+  description?: string;
+  puzzle_count: number;
   difficulty_counts?: Record<Difficulty, number>;
   size_distribution?: Record<string, number>;
+  created_at: string;
 }
