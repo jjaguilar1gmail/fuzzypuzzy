@@ -54,24 +54,24 @@ Independent Test: Launch `/` to load the daily puzzle; interact with grid; place
 
 ### Tests for User Story 1 (write before implementation)
 
-- [ ] T044 [P] [US1] Unit test Hidato adjacency validation at `frontend/tests/unit/lib/validation/hidato.test.ts`
-- [ ] T045 [P] [US1] Component test SVG Grid interactions (select/place/undo) at `frontend/tests/unit/components/Grid.test.tsx`
-- [ ] T046 [P] [US1] Component test Number Palette and pencil toggle at `frontend/tests/unit/components/Palette.test.tsx`
-- [ ] T047 [US1] Integration test daily flow (load → play → complete → modal) at `frontend/tests/integration/daily-play.test.tsx`
-- [ ] T048 [US1] Persistence round-trip test (hydrate/snapshot) at `frontend/tests/integration/persistence.test.ts`
+- [x] T044 [P] [US1] Unit test Hidato adjacency validation at `frontend/tests/unit/lib/validation/hidato.test.ts`
+- [x] T045 [P] [US1] Component test SVG Grid interactions (select/place/undo) at `frontend/tests/unit/components/Grid.test.tsx`
+- [x] T046 [P] [US1] Component test Number Palette and pencil toggle at `frontend/tests/unit/components/Palette.test.tsx`
+- [x] T047 [US1] Integration test daily flow (load → play → complete → modal) at `frontend/tests/integration/daily-play.test.tsx`
+- [x] T048 [US1] Persistence round-trip test (hydrate/snapshot) at `frontend/tests/integration/persistence.test.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T013 [P] [US1] Implement SVG Grid component at `frontend/src/components/Grid/Grid.tsx`
-- [ ] T014 [P] [US1] Implement Number Palette with pencil toggle at `frontend/src/components/Palette/Palette.tsx`
-- [ ] T015 [US1] Implement daily game page at `frontend/src/pages/index.tsx` (load daily puzzle via `lib/daily.ts` + `lib/loaders/packs.ts`)
-- [ ] T016 [US1] Implement Hidato validation (adjacency, givens protection) at `frontend/src/lib/validation/hidato.ts`
-- [ ] T017 [US1] Add undo/redo stack in game store at `frontend/src/state/gameStore.ts`
-- [ ] T018 [US1] Add pencil candidates data model/UI at `frontend/src/state/gameStore.ts` and `frontend/src/components/Grid/Grid.tsx`
-- [ ] T019 [US1] Implement completion modal at `frontend/src/components/HUD/CompletionModal.tsx`
-- [ ] T020 [US1] Implement settings (sound, theme toggles) at `frontend/src/components/HUD/SettingsMenu.tsx` and `frontend/src/state/settingsStore.ts`
-- [ ] T021 [US1] Implement local persistence hydration/snapshot at `frontend/src/lib/persistence.ts` and integrate in `frontend/src/pages/index.tsx`
-- [ ] T022 [US1] Add subtle animations (≤150ms) in Grid/Palette using Framer Motion at `frontend/src/components/**`
+- [x] T013 [P] [US1] Implement SVG Grid component at `frontend/src/components/Grid/Grid.tsx`
+- [x] T014 [P] [US1] Implement Number Palette with pencil toggle at `frontend/src/components/Palette/Palette.tsx`
+- [x] T015 [US1] Implement daily game page at `frontend/src/pages/index.tsx` (load daily puzzle via `lib/daily.ts` + `lib/loaders/packs.ts`)
+- [x] T016 [US1] Implement Hidato validation (adjacency, givens protection) at `frontend/src/lib/validation/hidato.ts`
+- [x] T017 [US1] Add undo/redo stack in game store at `frontend/src/state/gameStore.ts`
+- [x] T018 [US1] Add pencil candidates data model/UI at `frontend/src/state/gameStore.ts` and `frontend/src/components/Grid/Grid.tsx`
+- [x] T019 [US1] Implement completion modal at `frontend/src/components/HUD/CompletionModal.tsx`
+- [x] T020 [US1] Implement settings (sound, theme toggles) at `frontend/src/components/HUD/SettingsMenu.tsx` and `frontend/src/state/settingsStore.ts`
+- [x] T021 [US1] Implement local persistence hydration/snapshot at `frontend/src/lib/persistence.ts` and integrate in `frontend/src/pages/index.tsx`
+- [x] T022 [US1] Add subtle animations (≤150ms) in Grid/Palette using Framer Motion at `frontend/src/components/**`
 
 Checkpoint: US1 independently functional and demoable (MVP)
 

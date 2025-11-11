@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "id": "sample",
+  "title": "Sample Pack",
+  "description": "A test pack with one easy puzzle for MVP testing",
+  "puzzles": ["0001"],
+  "difficulty_counts": {
+    "easy": 1
+  },
+  "size_distribution": {
+    "5": 1
+  },
+  "created_at": "2025-11-11T00:00:00Z"
+}
