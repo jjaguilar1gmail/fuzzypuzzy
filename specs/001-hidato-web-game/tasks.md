@@ -22,11 +22,11 @@ Tests are OPTIONAL and not explicitly requested in the spec; this plan focuses o
 
 Purpose: Initialize the frontend project and baseline structure per the implementation plan
 
-- [ ] T001 Create frontend project structure at `frontend/`
-- [ ] T002 Initialize Next.js + TypeScript app with dependencies at `frontend/package.json`
-- [ ] T003 [P] Add TailwindCSS setup at `frontend/tailwind.config.js`, `frontend/postcss.config.js`, `frontend/src/styles/globals.css`
-- [ ] T004 [P] Add linting/formatting configs at `frontend/.eslintrc.cjs`, `frontend/.prettierignore`
-- [ ] T005 [P] Create packs directory and placeholder at `frontend/public/packs/.gitkeep` and `frontend/public/packs/sample-pack/`
+- [x] T001 Create frontend project structure at `frontend/`
+- [x] T002 Initialize Next.js + TypeScript app with dependencies at `frontend/package.json`
+- [x] T003 [P] Add TailwindCSS setup at `frontend/tailwind.config.js`, `frontend/postcss.config.js`, `frontend/src/styles/globals.css`
+- [x] T004 [P] Add linting/formatting configs at `frontend/.eslintrc.cjs`, `frontend/.prettierignore`
+- [x] T005 [P] Create packs directory and placeholder at `frontend/public/packs/.gitkeep` and `frontend/public/packs/sample-pack/`
 
 ---
 
@@ -34,13 +34,13 @@ Purpose: Initialize the frontend project and baseline structure per the implemen
 
 Purpose: Core infrastructure that MUST be complete before any user story
 
-- [ ] T006 Create domain types at `frontend/src/domain/puzzle.ts`, `frontend/src/domain/grid.ts`, `frontend/src/domain/position.ts`
-- [ ] T007 [P] Create Zod schemas from contracts at `frontend/src/lib/schemas/puzzle.ts`, `frontend/src/lib/schemas/pack.ts`
-- [ ] T008 Implement pack/puzzle loaders with validation at `frontend/src/lib/loaders/packs.ts`
-- [ ] T009 Create base Zustand stores at `frontend/src/state/gameStore.ts`, `frontend/src/state/settingsStore.ts`
-- [ ] T010 Scaffold route pages at `frontend/src/pages/index.tsx`, `frontend/src/pages/packs/index.tsx`, `frontend/src/pages/packs/[packId]/index.tsx`, `frontend/src/pages/packs/[packId]/puzzles/[puzzleId].tsx`
-- [ ] T011 [P] Add base theme and accessibility styles at `frontend/src/styles/theme.css`
-- [ ] T012 Implement deterministic daily selection util at `frontend/src/lib/daily.ts`
+- [x] T006 Create domain types at `frontend/src/domain/puzzle.ts`, `frontend/src/domain/grid.ts`, `frontend/src/domain/position.ts`
+- [x] T007 [P] Create Zod schemas from contracts at `frontend/src/lib/schemas/puzzle.ts`, `frontend/src/lib/schemas/pack.ts`
+- [x] T008 Implement pack/puzzle loaders with validation at `frontend/src/lib/loaders/packs.ts`
+- [x] T009 Create base Zustand stores at `frontend/src/state/gameStore.ts`, `frontend/src/state/settingsStore.ts`
+- [x] T010 Scaffold route pages at `frontend/src/pages/index.tsx`, `frontend/src/pages/packs/index.tsx`, `frontend/src/pages/packs/[packId]/index.tsx`, `frontend/src/pages/packs/[packId]/puzzles/[puzzleId].tsx`
+- [x] T011 [P] Add base theme and accessibility styles at `frontend/src/styles/theme.css`
+- [x] T012 Implement deterministic daily selection util at `frontend/src/lib/daily.ts`
 
 Checkpoint: Foundation ready — user story implementation can now begin
 

@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import './theme.css';
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+}
+
+/* Accessibility: Focus styles */
+*:focus-visible {
+  outline: 2px solid rgb(14, 165, 233);
+  outline-offset: 2px;
+}
+
+/* Grid cell base styles */
+.cell {
+  @apply transition-colors duration-150;
+}
+
+.cell--selected {
+  @apply ring-2 ring-primary-500;
+}
+
+.cell--given {
+  @apply bg-gray-200 dark:bg-gray-700;
+}
+
+.cell--invalid {
+  @apply bg-red-100 dark:bg-red-900/30;
+}
