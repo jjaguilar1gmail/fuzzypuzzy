@@ -1,0 +1,64 @@
+/**
+ * Theme utilities and CSS custom properties for accessibility.
+ * Applied on top of globals.css Tailwind base.
+ */
+
+:root {
+  /* Light theme colors */
+  --color-primary: 14 165 233;
+  --color-surface: 255 255 255;
+  --color-text: 0 0 0;
+  --color-text-muted: 115 115 115;
+  --color-border: 229 231 235;
+  --color-error: 239 68 68;
+  --color-success: 34 197 94;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-surface: 17 24 39;
+    --color-text: 255 255 255;
+    --color-text-muted: 156 163 175;
+    --color-border: 55 65 81;
+  }
+}
+
+[data-theme='light'] {
+  --color-surface: 255 255 255;
+  --color-text: 0 0 0;
+  --color-text-muted: 115 115 115;
+  --color-border: 229 231 235;
+}
+
+[data-theme='dark'] {
+  --color-surface: 17 24 39;
+  --color-text: 255 255 255;
+  --color-text-muted: 156 163 175;
+  --color-border: 55 65 81;
+}
+
+/* Accessibility: High contrast focus indicators (WCAG AA) */
+*:focus-visible {
+  outline: 2px solid rgb(var(--color-primary));
+  outline-offset: 2px;
+}
+
+/* Interactive elements min touch target */
+button,
+a,
+[role='button'],
+[role='link'] {
+  min-width: 40px;
+  min-height: 40px;
+}
+
+/* Animation preference: respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

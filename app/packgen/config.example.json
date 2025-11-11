@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Pack Generator Configuration",
+  "description": "Configuration file for automated pack generation",
+  "type": "object",
+  "properties": {
+    "outdir": {
+      "type": "string",
+      "description": "Output directory for pack files",
+      "example": "frontend/public/packs/daily-2025"
+    },
+    "sizes": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 5,
+        "maximum": 10
+      },
+      "description": "Grid sizes to generate"
+    },
+    "difficulties": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["easy", "medium", "hard", "extreme"]
+      },
+      "description": "Difficulty levels to generate"
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of puzzles to generate"
+    },
+    "seed": {
+      "type": "integer",
+      "description": "Random seed for reproducibility (optional)"
+    },
+    "retries": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 5,
+      "description": "Max retry attempts per puzzle"
+    },
+    "title": {
+      "type": "string",
+      "description": "Pack title (optional, auto-generated if omitted)"
+    },
+    "description": {
+      "type": "string",
+      "description": "Pack description (optional)"
+    },
+    "include_solution": {
+      "type": "boolean",
+      "default": false,
+      "description": "Include full solution in exports"
+    }
+  },
+  "required": ["outdir", "sizes", "difficulties", "count"],
+  "examples": [
+    {
+      "outdir": "frontend/public/packs/beginner",
+      "sizes": [5, 6],
+      "difficulties": ["easy"],
+      "count": 20,
+      "title": "Beginner Pack",
+      "description": "Easy puzzles for new players"
+    },
+    {
+      "outdir": "frontend/public/packs/mixed-2025",
+      "sizes": [5, 7, 9],
+      "difficulties": ["easy", "medium", "hard"],
+      "count": 100,
+      "seed": 20250101,
+      "retries": 10,
+      "title": "Mixed Pack 2025",
+      "description": "A variety of puzzles for all skill levels"
+    }
+  ]
+}
