@@ -4,24 +4,33 @@ Removal scoring and heuristics for clue removal during generation.
 """
 
 
-def score_candidates(givens, path, anchors, grid):
+def score_candidates(givens, path, anchors, grid, enable_spacing=False):
     """Score removable clue candidates.
     
     Scores based on:
     - Distance from nearest anchor (higher score = further from anchors)
     - Local redundancy (number of alternative adjacency paths)
     - Inverse strategic value (avoid removing corridor bottlenecks)
+    - Spacing impact (T018: US2 - optional spacing score)
     
     Args:
         givens: Set of current given positions
         path: Full solution path (list of positions)
         anchors: Set of anchor positions (must keep)
         grid: Grid object
+        enable_spacing: Enable spacing score calculation (T018)
         
     Returns:
         List of (position, score) tuples, sorted by score descending
     """
     from core.position import Position
+    
+    # T018: Compute baseline spacing if enabled
+    baseline_spacing = 0.0
+    if enable_spacing:
+        from .spacing import spacing_score
+        clues = [(pos.row, pos.col) for pos in givens]
+        baseline_spacing = spacing_score(clues, grid.rows)
     
     candidates = []
     
@@ -68,6 +77,16 @@ def score_candidates(givens, path, anchors, grid):
                     total_neighbors += 1
         
         score += (total_neighbors / 8.0) * 0.3
+        
+        # 4. T018: Spacing improvement (optional)
+        if enable_spacing:
+            # Calculate spacing after removing this clue
+            test_givens = givens - {pos}
+            test_clues = [(p.row, p.col) for p in test_givens]
+            test_spacing = spacing_score(test_clues, grid.rows)
+            # Positive delta = removing improves spacing
+            spacing_delta = test_spacing - baseline_spacing
+            score += spacing_delta * 0.2  # Weight spacing contribution
         
         candidates.append((pos, score))
     

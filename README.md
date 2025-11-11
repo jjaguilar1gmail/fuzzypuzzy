@@ -30,6 +30,10 @@ python hidato.py --generate --size 8 --path-mode backbite_v1 --path-time-ms 5000
 # Partial Coverage Acceptance (for challenging configurations)
 python hidato.py --generate --size 9 --allow-partial-paths --min-cover 0.85 --path-time-ms 4000 --seed 42
 
+# NEW: Pack Generation with Anti-Branch Uniqueness (Enhanced Quality)
+python -m app.packgen.cli --outdir output/packs/test --sizes 8 --difficulties hard --count 10 --enable-anti-branch
+python -m app.packgen.cli --outdir output/enhanced --sizes 6,8,10 --difficulties medium,hard --count 30 --enable-anti-branch --seed 42
+
 # Alternative entry points
 python app/api.py              # Direct REPL access
 python complete_demo.py        # Comprehensive feature showcase
@@ -58,6 +62,13 @@ quit                  # Exit
 
 ### ✨ Features
 
+- **Anti-Branch Uniqueness (NEW)**: Enhanced multi-probe verification for zero false-unique puzzles
+  - **US1 - Tighter Verification**: 2-3 randomized probes with shuffled tie-breaks per removal
+  - **US2 - Reduced Clustering**: Size/difficulty-aware anchors, dynamic density floors, spacing-aware removal, de-chunk pass
+  - **US3 - Rich Telemetry**: Probe outcomes, spacing metrics, generation statistics
+  - **Path Mode Support**: backbite_v1 and random_v2 (other modes use traditional checking)
+  - **Success Criteria**: 0% false-unique, ≥95% definitive, avg spacing ≥2.5, clusters ≤4, ≤2s generation
+  - **CLI Flag**: `--enable-anti-branch` (see pack generation examples above)
 - **Uniqueness-Preserving Generator**: Generate puzzles with guaranteed single solutions
   - **Difficulty Bands**: Easy, medium, hard, extreme with automatic assessment
   - **Smart Path Modes**: Choose from 4 path-building algorithms (see below)

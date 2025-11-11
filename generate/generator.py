@@ -15,6 +15,47 @@ from util.rng import RNG
 from .anchor_policy import get_policy, select_anchors, ANCHOR_KIND_HARD, ANCHOR_KIND_SOFT, ANCHOR_KIND_REPAIR, ANCHOR_KIND_ENDPOINT
 
 
+def _get_density_floor(difficulty: str, size: int) -> float:
+    """
+    Get minimum clue density based on difficulty and size tier.
+    
+    Per research.md D8: Dynamic floors prevent over-constraint on small boards
+    while maintaining solvability.
+    
+    Args:
+        difficulty: easy|medium|hard
+        size: Board dimension (e.g., 5 for 5x5)
+        
+    Returns:
+        Minimum density ratio (0.0-1.0)
+    """
+    cells = size * size
+    
+    # Determine size tier
+    if cells <= 25:
+        size_tier = "small"
+    elif cells <= 64:
+        size_tier = "medium"
+    else:
+        size_tier = "large"
+    
+    # Density floors by (difficulty, size_tier)
+    floors = {
+        ("easy", "small"): 0.34,
+        ("easy", "medium"): 0.30,
+        ("easy", "large"): 0.26,
+        ("medium", "small"): 0.30,
+        ("medium", "medium"): 0.26,
+        ("medium", "large"): 0.22,
+        ("hard", "small"): 0.26,
+        ("hard", "medium"): 0.22,
+        ("hard", "large"): 0.18,
+    }
+    
+    difficulty_lower = difficulty.lower() if difficulty else "medium"
+    return floors.get((difficulty_lower, size_tier), 0.22)
+
+
 class Generator:
     """Orchestrates the puzzle generation pipeline."""
     
@@ -304,7 +345,11 @@ class Generator:
             target_clues = max(len(anchors), int(total_cells * percent_fill))
         elif difficulty:
             band = DIFFICULTY_BANDS.get(difficulty, DIFFICULTY_BANDS["medium"])
-            target_clues = max(len(anchors), int(total_cells * band["clue_density_min"]))
+            # T017: Apply density floor (US2)
+            density_floor = _get_density_floor(difficulty, size)
+            min_clues_floor = int(total_cells * density_floor)
+            band_min_clues = int(total_cells * band["clue_density_min"])
+            target_clues = max(len(anchors), band_min_clues, min_clues_floor)
         else:
             target_clues = len(anchors) + (total_cells // 4)  # Default
         
@@ -366,8 +411,9 @@ class Generator:
                 if (time.time() - start_time) * 1000 > timeout_ms:
                     break
                 
-                # Score removal candidates
-                candidates = score_candidates(current_givens, path, anchors, grid)
+                # Score removal candidates (T018: enable spacing for US2)
+                enable_spacing = enable_anti_branch and path_mode in {"backbite_v1", "random_v2"}
+                candidates = score_candidates(current_givens, path, anchors, grid, enable_spacing)
                 
                 if not candidates:
                     break
@@ -438,6 +484,87 @@ class Generator:
                     removals_accepted += 1
                 
                 attempts_used += 1
+        
+        # T019: De-chunk pass (US2) - run after target density reached
+        if enable_anti_branch and path_mode in {"backbite_v1", "random_v2"}:
+            from .spacing import detect_clusters, spacing_score
+            from solve.uniqueness_probe import run_anti_branch_probe, UniquenessProbeConfig
+            from util.logging_uniqueness import get_size_tier_policy
+            
+            max_dechunk_passes = 3
+            dechunk_removals = 0
+            
+            for pass_idx in range(max_dechunk_passes):
+                # Compute current clusters
+                clues = [(pos.row, pos.col) for pos in current_givens]
+                clusters = detect_clusters(clues)
+                
+                if not clusters:
+                    break
+                
+                # Find largest cluster
+                largest_cluster = max(clusters, key=len)
+                
+                # Stop if largest cluster is small enough (≤3 clues)
+                if len(largest_cluster) <= 3:
+                    break
+                
+                # Calculate baseline spacing
+                baseline_spacing = spacing_score(clues, size)
+                
+                # Try removing clues from largest cluster
+                improved = False
+                for clue_pos in largest_cluster:
+                    pos_obj = Position(clue_pos[0], clue_pos[1])
+                    
+                    # Skip if anchor
+                    if pos_obj in anchors:
+                        continue
+                    
+                    # Test removal
+                    test_givens = current_givens - {pos_obj}
+                    test_clues = [(p.row, p.col) for p in test_givens]
+                    test_spacing = spacing_score(test_clues, size)
+                    
+                    # Skip if doesn't improve spacing
+                    if test_spacing <= baseline_spacing:
+                        continue
+                    
+                    # Create test puzzle
+                    test_grid = Grid(size, size, allow_diagonal=allow_diagonal)
+                    for r, c in all_blocked:
+                        test_grid.get_cell(Position(r, c)).blocked = True
+                    for pos in path:
+                        test_grid.get_cell(pos).value = grid.get_cell(pos).value
+                    for pos in test_givens:
+                        test_grid.get_cell(pos).given = True
+                    for pos in path:
+                        if pos not in test_givens:
+                            test_grid.get_cell(pos).value = None
+                    test_puzzle = Puzzle(test_grid, constraints)
+                    
+                    # Run uniqueness probe
+                    tier_policy = get_size_tier_policy(total_cells)
+                    probe_config = UniquenessProbeConfig(
+                        seed=rng.rng.randint(0, 2**31 - 1),
+                        size_tier=tier_policy.tier_name,
+                        max_nodes=tier_policy.max_nodes,
+                        timeout_ms=tier_policy.timeout_ms,
+                        probe_count=tier_policy.probe_count,
+                        extended_factor=tier_policy.extended_factor
+                    )
+                    probe_result = run_anti_branch_probe(test_puzzle, probe_config, logger=None)
+                    
+                    # Accept if unique
+                    if probe_result.final_decision == "ACCEPT":
+                        current_givens = test_givens
+                        dechunk_removals += 1
+                        improved = True
+                        break  # Try next pass with updated cluster
+                
+                # Stop if no improvement in this pass
+                if not improved:
+                    break
         
         # Check if we achieved a viable clue density
         final_density = len(current_givens) / total_cells
@@ -519,6 +646,42 @@ class Generator:
                  for pos in current_givens]
         
         end_time = time.time()
+        
+        # T020-T021: Prepare telemetry summary (US3)
+        generation_summary = {
+            "puzzle_id": f"{size}x{size}_{difficulty}_{actual_seed}",
+            "size": size,
+            "difficulty": difficulty,
+            "path_mode": path_mode,
+            "total_cells": total_cells,
+            "final_clue_count": len(current_givens),
+            "final_density": len(current_givens) / total_cells,
+            "removals_accepted": removals_accepted,
+            "attempts_used": attempts_used,
+            "generation_time_ms": int((end_time - start_time) * 1000),
+            "path_build_ms": path_build_ms,
+            "anti_branch_enabled": enable_anti_branch,
+            "assessed_difficulty": assessed_label,
+            "assessed_score": assessed_score,
+        }
+        
+        # Add de-chunk stats if applicable
+        if enable_anti_branch and path_mode in {"backbite_v1", "random_v2"}:
+            generation_summary["dechunk_removals"] = dechunk_removals if 'dechunk_removals' in locals() else 0
+            
+            # Calculate final spacing metrics
+            from .spacing import spacing_score, detect_clusters
+            final_clues = [(pos.row, pos.col) for pos in current_givens]
+            final_spacing = spacing_score(final_clues, size)
+            final_clusters = detect_clusters(final_clues)
+            largest_cluster_size = max((len(c) for c in final_clusters), default=0)
+            
+            generation_summary["spacing_score"] = final_spacing
+            generation_summary["largest_cluster_size"] = largest_cluster_size
+            generation_summary["cluster_count"] = len(final_clusters)
+        
+        # T021: Optionally emit summary (placeholder - no logger instance yet)
+        # When logger is wired: logger.log_summary(generation_summary)
         
         # Create result (T023: Include mask cells in blocked_cells)
         return GeneratedPuzzle(

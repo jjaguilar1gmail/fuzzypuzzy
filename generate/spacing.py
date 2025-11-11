@@ -43,8 +43,29 @@ def quadrant_variance(clues: List[Tuple[int, int]], size: int) -> float:
     if not clues:
         return 0.0
     
-    # TODO: Implement quadrant counting and variance
-    return 0.0
+    # Divide board into 4 quadrants
+    mid = size // 2
+    quadrants = [0, 0, 0, 0]  # TL, TR, BL, BR
+    
+    for r, c in clues:
+        if r < mid and c < mid:
+            quadrants[0] += 1  # Top-left
+        elif r < mid and c >= mid:
+            quadrants[1] += 1  # Top-right
+        elif r >= mid and c < mid:
+            quadrants[2] += 1  # Bottom-left
+        else:
+            quadrants[3] += 1  # Bottom-right
+    
+    # Calculate variance
+    mean = len(clues) / 4.0
+    variance = sum((q - mean) ** 2 for q in quadrants) / 4.0
+    
+    # Normalize to 0-1 scale (max variance is when all clues in one quadrant)
+    max_variance = (len(clues) - mean) ** 2 + 3 * (mean ** 2)
+    max_variance /= 4.0
+    
+    return variance / max_variance if max_variance > 0 else 0.0
 
 
 def detect_clusters(clues: List[Tuple[int, int]], max_distance: int = 2) -> List[List[Tuple[int, int]]]:
@@ -53,13 +74,52 @@ def detect_clusters(clues: List[Tuple[int, int]], max_distance: int = 2) -> List
     
     Args:
         clues: List of (row, col) positions
-        max_distance: Maximum distance for cluster membership
+        max_distance: Maximum distance for cluster membership (unused, kept for compatibility)
         
     Returns:
         List of clusters (each cluster is a list of positions)
     """
-    # TODO: Implement cluster detection
-    return []
+    if not clues:
+        return []
+    
+    clue_set = set(clues)
+    visited = set()
+    clusters = []
+    
+    def get_8_neighbors(pos):
+        """Get 8-connected neighbors of a position."""
+        r, c = pos
+        neighbors = []
+        for dr in [-1, 0, 1]:
+            for dc in [-1, 0, 1]:
+                if dr == 0 and dc == 0:
+                    continue
+                neighbors.append((r + dr, c + dc))
+        return neighbors
+    
+    def bfs_cluster(start):
+        """BFS to find all clues in same cluster."""
+        cluster = [start]
+        queue = [start]
+        visited.add(start)
+        
+        while queue:
+            current = queue.pop(0)
+            for neighbor in get_8_neighbors(current):
+                if neighbor in clue_set and neighbor not in visited:
+                    visited.add(neighbor)
+                    cluster.append(neighbor)
+                    queue.append(neighbor)
+        
+        return cluster
+    
+    # Find all clusters
+    for clue in clues:
+        if clue not in visited:
+            cluster = bfs_cluster(clue)
+            clusters.append(cluster)
+    
+    return clusters
 
 
 def spacing_score(clues: List[Tuple[int, int]], size: int, w1: float = 1.0, w2: float = 0.5) -> float:

@@ -26,22 +26,22 @@
 
 ## Phase 4: [US2] Reduce Clue Clustering (P2)
 
-- [ ] T016 [US2] Implement size/difficulty anchor policy in generate/anchors_policy.py (endpoints always; Easy spaced turns; Medium at most one soft turn; Hard endpoints only + repair)
-- [ ] T017 [US2] Implement dynamic density floors by size & difficulty in generate/generator.py
-- [ ] T018 [US2] Add spacing score term to removal candidate scorer in generate/spacing.py and integrate in generate/generator.py
-- [ ] T019 [US2] Implement de-chunk pass post-target-density with uniqueness probe re-check in generate/generator.py
+- [x] T016 [US2] Implement size/difficulty anchor policy in generate/anchors_policy.py (endpoints always; Easy spaced turns; Medium at most one soft turn; Hard endpoints only + repair)
+- [x] T017 [US2] Implement dynamic density floors by size & difficulty in generate/generator.py
+- [x] T018 [US2] Add spacing score term to removal candidate scorer in generate/spacing.py and integrate in generate/generator.py
+- [x] T019 [US2] Implement de-chunk pass post-target-density with uniqueness probe re-check in generate/generator.py
 
 ## Phase 5: [US3] Actionable Logging & Metrics (P3)
 
-- [ ] T020 [US3] Record per (mode,size,difficulty) rollup: accepted/reverted removals, probe outcomes, final density, spacing metrics, solve stats in util/logging_uniqueness.py
-- [ ] T021 [US3] Emit final summary JSON block at end of generation in util/logging_uniqueness.py
+- [x] T020 [US3] Record per (mode,size,difficulty) rollup: accepted/reverted removals, probe outcomes, final density, spacing metrics, solve stats in util/logging_uniqueness.py
+- [x] T021 [US3] Emit final summary JSON block at end of generation in util/logging_uniqueness.py
 
 ## Final Phase: Polish & Cross-Cutting
 
-- [ ] T022 Add configuration docs updates in specs/001-anti-branch-uniqueness/quickstart.md
-- [ ] T023 Add property/contract tests for probe classification and spacing metrics in tests/ (placeholders if test suite exists)
-- [ ] T024 Add seeds/examples to benchmarks/ for before/after comparison
-- [ ] T025 Update README.md with brief feature summary and flags
+- [x] T022 Add configuration docs updates in specs/001-anti-branch-uniqueness/quickstart.md
+- [x] T023 Add property/contract tests for probe classification and spacing metrics in tests/ (placeholders if test suite exists)
+- [x] T024 Add seeds/examples to benchmarks/ for before/after comparison
+- [x] T025 Update README.md with brief feature summary and flags
 
 ## Dependencies
 
