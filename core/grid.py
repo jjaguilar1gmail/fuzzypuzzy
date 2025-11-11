@@ -70,12 +70,16 @@ class Grid:
         Use hidato_io.exporters.ascii_print(puzzle) instead."""
         raise NotImplementedError("Use hidato_io.exporters.ascii_print(puzzle) instead")
     def neighbors_of(self, pos: Position):
-        """Returns a list of neighboring positions based on the grid's adjacency rules."""
+        """Returns a list of neighboring positions based on the grid's adjacency rules.
+        Blocked cells are excluded from neighbors."""
         # Utilize the Adjacency class to get raw neighbors
         raw_neighbors = self.adjacency.get_neighbors(pos)
-        # Filter neighbors to ensure they are within grid bounds
+        # Filter neighbors to ensure they are within grid bounds and not blocked
         valid_neighbors = []
         for r, c in raw_neighbors:
             if 0 <= r < self.rows and 0 <= c < self.cols:
-                valid_neighbors.append(Position(r, c))
-        return valid_neighbors  
+                neighbor_pos = Position(r, c)
+                # Skip blocked cells
+                if not self.get_cell(neighbor_pos).blocked:
+                    valid_neighbors.append(neighbor_pos)
+        return valid_neighbors

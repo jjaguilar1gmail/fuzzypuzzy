@@ -163,7 +163,7 @@ def generate_cross_pattern(size: int, rng: RNG, seed: int, attempt_idx: int) -> 
     """Generate central cross/plus pattern with chokepoints.
     
     Creates a plus shape near the center with gaps that force specific
-    path routing.
+    path routing. Keeps density under 10% cap.
     
     Args:
         size: Grid size (NxN)
@@ -177,15 +177,18 @@ def generate_cross_pattern(size: int, rng: RNG, seed: int, attempt_idx: int) -> 
     cells = set()
     
     center = size // 2
+    max_cells = int(size * size * 0.09)  # Stay under 10%
     
-    # Vertical bar
-    for row in range(1, size - 1):
-        if row % 2 == 0:  # Gaps every other row
+    # Vertical bar (sparse)
+    for offset in [-1, 0, 1]:
+        row = center + offset
+        if 0 < row < size - 1 and len(cells) < max_cells:
             cells.add((row, center))
     
-    # Horizontal bar
-    for col in range(1, size - 1):
-        if col % 2 == 1:  # Offset gaps
+    # Horizontal bar (sparse)
+    for offset in [-1, 1]:  # Skip center (already added)
+        col = center + offset
+        if 0 < col < size - 1 and len(cells) < max_cells:
             cells.add((center, col))
     
     density = len(cells) / (size * size)

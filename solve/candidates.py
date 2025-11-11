@@ -40,6 +40,9 @@ class CandidateModel:
         # Find candidates for each empty cell, but only track positions 
         # that could potentially hold unplaced values
         for cell in puzzle.grid.iter_cells():
+            # Skip blocked cells - they cannot hold values
+            if cell.blocked:
+                continue
             if cell.is_empty():
                 candidates = self._compute_candidates_for_position(puzzle, cell.pos)
                 # Filter to only unplaced values

@@ -114,8 +114,10 @@ class Solver:
         
         def is_complete(puzzle_state) -> bool:
             """Check if puzzle is completely filled and valid."""
-            # All cells must have values
+            # All non-blocked cells must have values
             for cell in puzzle_state.grid.iter_cells():
+                if cell.blocked:
+                    continue
                 if cell.is_empty():
                     return False
             # Verify it's a valid solution
@@ -128,19 +130,26 @@ class Solver:
                 for col in range(puzzle_state.grid.cols):
                     pos = Position(row, col)
                     cell = puzzle_state.grid.get_cell(pos)
+                    # Skip blocked cells
+                    if cell.blocked:
+                        continue
                     if cell.is_empty():
                         return pos
             return None
         
         def get_possible_values(puzzle_state, pos):
             """Get possible values for a position based on Hidato adjacency rules."""
-            # Position must be empty
-            if not puzzle_state.grid.get_cell(pos).is_empty():
+            # Position must be empty and not blocked
+            cell = puzzle_state.grid.get_cell(pos)
+            if not cell.is_empty() or cell.blocked:
                 return []
             
             # Find which values are already placed and their positions
             placed_values = {}
             for cell in puzzle_state.grid.iter_cells():
+                # Skip blocked cells
+                if cell.blocked:
+                    continue
                 if cell.value is not None:
                     placed_values[cell.value] = cell.pos
             

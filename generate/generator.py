@@ -146,10 +146,33 @@ class Generator:
             cell = grid.get_cell(pos)
             cell.blocked = True
         
-        # Build path (T032: now returns PathBuildResult)
-        path_result = PathBuilder.build(grid, mode=path_mode, rng=rng, blocked=config.blocked)
+        # Build path (T032: now returns PathBuildResult) with all blocked cells
+        path_result = PathBuilder.build(grid, mode=path_mode, rng=rng, blocked=all_blocked)
         path = path_result.positions
         path_build_ms = path_result.metrics.get("path_build_ms", 0)
+        
+        # Check if path generation failed (empty path)
+        if not path or len(path) == 0:
+            import sys
+            print(f"WARNING: Path generation failed with {path_mode} - blocked cells incompatible", file=sys.stderr)
+            
+            # Try falling back to random_walk_v2 which can handle blocked cells
+            if path_mode != 'random_walk_v2' and mask_cells:
+                print(f"         Falling back to random_walk_v2 mode", file=sys.stderr)
+                grid = Grid(size, size, allow_diagonal=allow_diagonal)
+                for r, c in all_blocked:
+                    pos = Position(r, c)
+                    grid.get_cell(pos).blocked = True
+                path_result = PathBuilder.build(grid, mode='random_walk_v2', rng=rng, blocked=all_blocked)
+                path = path_result.positions
+                path_build_ms = path_result.metrics.get("path_build_ms", 0)
+                
+                if not path or len(path) == 0:
+                    print(f"ERROR: Even random_walk_v2 failed - mask configuration too restrictive", file=sys.stderr)
+                    return None
+            else:
+                print(f"       Try a different path mode or mask configuration", file=sys.stderr)
+                return None
         
         # T032: Handle partial coverage if enabled
         if allow_partial_paths and path_result.coverage < 1.0:
@@ -179,10 +202,10 @@ class Generator:
                 print(f"         Falling back to serpentine mode", file=sys.stderr)
                 # Rebuild with serpentine
                 grid = Grid(size, size, allow_diagonal=allow_diagonal)
-                for r, c in config.blocked:
+                for r, c in all_blocked:
                     pos = Position(r, c)
                     grid.get_cell(pos).blocked = True
-                path_result = PathBuilder.build(grid, mode="serpentine", rng=rng, blocked=config.blocked)
+                path_result = PathBuilder.build(grid, mode="serpentine", rng=rng, blocked=all_blocked)
                 path = path_result.positions
         
         # T034: Create constraints based on actual path length
@@ -289,7 +312,7 @@ class Generator:
             
             # Build initial puzzle with all path cells as givens
             prune_grid = Grid(size, size, allow_diagonal=allow_diagonal)
-            for r, c in config.blocked:
+            for r, c in all_blocked:
                 pos = Position(r, c)
                 prune_grid.get_cell(pos).blocked = True
             for pos in path:
@@ -354,7 +377,7 @@ class Generator:
                 test_grid = Grid(size, size, allow_diagonal=allow_diagonal)
                 
                 # Mark blocked cells in test grid
-                for r, c in config.blocked:
+                for r, c in all_blocked:
                     pos = Position(r, c)
                     test_grid.get_cell(pos).blocked = True
                 
@@ -418,7 +441,7 @@ class Generator:
         final_grid = Grid(size, size, allow_diagonal=allow_diagonal)
         
         # Mark blocked cells in final grid
-        for r, c in config.blocked:
+        for r, c in all_blocked:
             pos = Position(r, c)
             final_grid.get_cell(pos).blocked = True
         
@@ -471,11 +494,11 @@ class Generator:
         
         end_time = time.time()
         
-        # Create result
+        # Create result (T023: Include mask cells in blocked_cells)
         return GeneratedPuzzle(
             size=size,
             allow_diagonal=allow_diagonal,
-            blocked_cells=list(config.blocked),
+            blocked_cells=all_blocked,  # Include mask cells
             givens=sorted(givens),
             solution=sorted(solution),
             difficulty_label=assessed_label,  # T019: Use assessed difficulty
