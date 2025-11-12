@@ -3,6 +3,7 @@
 Interval reduction and frequency-based uniqueness repair for minimal clue counts.
 """
 from dataclasses import dataclass, field
+from random import random
 from typing import Optional, TYPE_CHECKING
 from enum import Enum
 
@@ -303,7 +304,7 @@ def _find_given_clusters(puzzle: Puzzle, allow_diagonal: bool = True) -> list[li
     return clusters
 
 
-def _cluster_interior_candidates(puzzle: Puzzle, cluster: list[Position], allow_diagonal: bool = True) -> list[Position]:
+def _cluster_interior_candidates(puzzle: Puzzle, cluster: list[Position], allow_diagonal: bool = True, reverse=False) -> list[Position]:
     """Return interior given positions within a cluster prioritized for removal.
 
     Interior heuristic: cells with the most given neighbors first.
@@ -327,7 +328,7 @@ def _cluster_interior_candidates(puzzle: Puzzle, cluster: list[Position], allow_
         return cnt
 
     # Sort by descending neighbor count (more interior first)
-    candidates = sorted(cluster, key=given_neighbor_count, reverse=True)
+    candidates = sorted(cluster, key=given_neighbor_count, reverse=reverse)
     return candidates
 
 
@@ -408,6 +409,7 @@ def dechunk_given_clusters(
     solver_mode: str,
     max_cluster_size: int = 8,
     removal_budget: int = 10,
+    reverse: bool = False,
 ) -> int:
     """Reduce overly large contiguous clusters of givens while preserving uniqueness.
 
@@ -417,6 +419,10 @@ def dechunk_given_clusters(
     Returns the number of clues removed.
     """
     removed = 0
+  
+    # Exclude endpoints
+    endpoints = [path[0], path[-1]]
+
     clusters = _find_given_clusters(puzzle, allow_diagonal=puzzle.constraints.allow_diagonal)
     # Process largest clusters first
     clusters.sort(key=len, reverse=True)
@@ -425,12 +431,12 @@ def dechunk_given_clusters(
             break
         if len(cluster) <= max_cluster_size:
             continue
-        candidates = _cluster_interior_candidates(puzzle, cluster, allow_diagonal=puzzle.constraints.allow_diagonal)
+        candidates = _cluster_interior_candidates(puzzle, cluster, allow_diagonal=puzzle.constraints.allow_diagonal,reverse=reverse)
         for pos in candidates:
             if removed >= removal_budget:
                 break
             cell = puzzle.grid.get_cell(pos)
-            if not cell.given or cell.blocked:
+            if not cell.given or cell.blocked or pos in endpoints:
                 continue
             # Tentatively remove and test
             cell.given = False
@@ -838,8 +844,8 @@ def check_puzzle_uniqueness(puzzle: Puzzle, solver_mode: str) -> bool:
         timeout_ms = 5000
         # Increase budgets for sparse diagonal puzzles
         if puzzle.constraints.allow_diagonal and density < SPARSE_DENSITY_THRESHOLD:
-            node_cap = 20000
-            timeout_ms = 10000
+            node_cap = 40000
+            timeout_ms = 20000
         fallback_result = count_solutions(puzzle, cap=2, node_cap=node_cap, timeout_ms=timeout_ms)
         if not fallback_result.is_unique and fallback_result.solutions_found >= 2:
             return False
@@ -1739,11 +1745,19 @@ def prune_puzzle(
     # 1) De-chunk: reduce large contiguous clusters
     # 2) Iterative thinning: smart removal targeting density while preserving gaps
     # Only for diagonal 9x9+ boards
-    if puzzle.constraints.allow_diagonal and puzzle.grid.rows >= 9:
+    if puzzle.constraints.allow_diagonal and puzzle.grid.rows >= 5:
+        # Removal budget on minimum density target minus whatever has been removed so far
+        base_removal_budget = (1.0-min_density)*len(path)
+        cells_already_removed_during_pruning = sum(
+            1 for row in puzzle.grid.cells for cell in row 
+            if not cell.blocked and not cell.given
+        )
+        removal_budget = base_removal_budget - cells_already_removed_during_pruning
         # De-chunk pass
         removed_dechunk = dechunk_given_clusters(
-            puzzle, path, solver_mode, max_cluster_size=8, removal_budget=10
+            puzzle, path, solver_mode, max_cluster_size=8, removal_budget=removal_budget, reverse=False
         )
+        
         if removed_dechunk > 0:
             final_status = PruningStatus.SUCCESS_WITH_REPAIRS
         
