@@ -3,6 +3,7 @@
 Contains the Generator class for overall puzzle generation pipeline.
 """
 import time
+from core import puzzle
 from core.grid import Grid
 from core.constraints import Constraints
 from core.puzzle import Puzzle
@@ -13,7 +14,20 @@ from .validator import Validator
 from .models import GenerationConfig, GeneratedPuzzle
 from util.rng import RNG
 from .anchor_policy import get_policy, select_anchors, ANCHOR_KIND_HARD, ANCHOR_KIND_SOFT, ANCHOR_KIND_REPAIR, ANCHOR_KIND_ENDPOINT
+from hidato_io.exporters import ascii_print
 
+def show_current_puzzle(puzzle_size,cells):
+    """Utility to display the current puzzle state for debugging using the hidato_io ascii render tool"""
+    temp_puzzle = puzzle.Puzzle(
+        grid=puzzle.Grid(puzzle_size, puzzle_size),
+        constraints=puzzle.Constraints(1, puzzle_size * puzzle_size)
+    )
+    for (r, c, v) in cells:
+        cell = temp_puzzle.grid.get_cell(puzzle.Position(r, c))
+        cell.value = v
+        cell.given = True
+
+    ascii_print(temp_puzzle)
 
 class Generator:
     """Orchestrates the puzzle generation pipeline."""
@@ -323,10 +337,10 @@ class Generator:
             # Run pruning
             prune_result = prune_puzzle(
                 prune_puzzle_obj, path, config, 
-                solver_mode="logic_v2",
+                solver_mode="logic_v3",
                 difficulty=difficulty
             )
-            
+
             # Extract final givens from pruned puzzle
             current_givens = {
                 pos for pos in path

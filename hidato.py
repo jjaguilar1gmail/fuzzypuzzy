@@ -291,7 +291,7 @@ Interactive Commands:
                 allow_diagonal=args.allow_diagonal,
                 blocked=blocked or None,
                 symmetry=args.symmetry,
-                path_mode=args.path_mode if hasattr(args, 'path_mode') else 'serpentine',
+                path_mode=args.path_mode if hasattr(args, 'path_mode') else 'backbite_v1',
                 # T007: Pass smart path config
                 allow_partial_paths=args.allow_partial_paths if hasattr(args, 'allow_partial_paths') else False,
                 min_cover_ratio=args.min_cover if hasattr(args, 'min_cover') else 0.85,

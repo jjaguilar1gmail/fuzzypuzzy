@@ -9,7 +9,7 @@ from core.puzzle import Puzzle
 from solve.corridors import CorridorMap
 from solve.degree import DegreeIndex
 from solve.regions import RegionCache, EmptyRegion
-
+from hidato_io.exporters import ascii_print
 if TYPE_CHECKING:
     from solve.candidates import CandidateModel
 
@@ -108,7 +108,12 @@ class Solver:
         solutions_found = 0
         timed_out = False
         exhausted = False
-        
+        def clear_nongivens(puzzle_state: Puzzle) -> None:
+            """Clear all non-given cell values in the puzzle state."""
+            for cell in puzzle_state.grid.iter_cells():
+                if not cell.given and not cell.blocked:
+                    cell.value = None
+
         def is_timeout() -> bool:
             return (time.time() - start_time) * 1000 > timeout_ms
         
@@ -248,8 +253,10 @@ class Solver:
         
         # Create a working copy of the puzzle
         solver = Solver(puzzle)
-        search_recursive(solver.puzzle, 0)
-        
+        new_puzzle = solver._copy_puzzle(puzzle)
+        clear_nongivens(new_puzzle)
+        search_recursive(new_puzzle, 0)
+
         return {
             'solutions_found': solutions_found,
             'nodes': nodes_explored,
