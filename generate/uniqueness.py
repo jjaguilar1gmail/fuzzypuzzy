@@ -5,7 +5,7 @@ Contains functions for checking puzzle uniqueness during generation.
 import time
 from solve.solver import Solver
 from .models import UniquenessCheckResult
-
+from hidato_io.exporters import ascii_print
 
 def count_solutions(puzzle, cap=2, node_cap=1000, timeout_ms=5000):
     """Count solutions up to a cap (early abort).
@@ -50,7 +50,7 @@ def count_solutions(puzzle, cap=2, node_cap=1000, timeout_ms=5000):
         elapsed_ms = int((time.time() - start_time) * 1000)
         
         return UniquenessCheckResult(
-            is_unique=(result['solutions_found'] == 1),
+            is_unique=(result['solutions_found'] == 1 and not result['timed_out'] and not result['exhausted']),
             solutions_found=result['solutions_found'],
             nodes=result['nodes'],
             depth=result['depth'],
@@ -71,7 +71,7 @@ def count_solutions(puzzle, cap=2, node_cap=1000, timeout_ms=5000):
     
     # Return actual solution count, not assumption
     return UniquenessCheckResult(
-        is_unique=(result['solutions_found'] == 1),
+        is_unique=(result['solutions_found'] == 1 and not result['timed_out'] and not result['exhausted']),
         solutions_found=result['solutions_found'],
         nodes=result['nodes'],
         depth=result['depth'],
