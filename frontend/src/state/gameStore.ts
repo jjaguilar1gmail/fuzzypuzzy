@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Grid, createEmptyGrid, getCell } from '@/domain/grid';
 import { Puzzle } from '@/domain/puzzle';
 import { positionKey } from '@/domain/position';
+import type { SequenceState, BoardCell as SequenceBoardCell, MistakeEvent } from '@/sequence/types';
 
 /**
  * Action representing a single game move for undo/redo.
@@ -17,6 +18,11 @@ interface GameState {
   // Current puzzle
   puzzle: Puzzle | null;
   grid: Grid;
+  
+  // Guided sequence flow state (for integration)
+  sequenceState: SequenceState | null;
+  sequenceBoard: SequenceBoardCell[][] | null;
+  recentMistakes: MistakeEvent[];
   
   // Interaction state
   selectedCell: { row: number; col: number } | null;
@@ -43,11 +49,17 @@ interface GameState {
   redo: () => void;
   resetPuzzle: () => void;
   checkCompletion: () => void;
+  
+  // Guided sequence flow actions
+  updateSequenceState: (state: SequenceState, board: SequenceBoardCell[][], mistakes: MistakeEvent[]) => void;
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
   puzzle: null,
   grid: createEmptyGrid(5),
+  sequenceState: null,
+  sequenceBoard: null,
+  recentMistakes: [],
   selectedCell: null,
   pencilMode: false,
   undoStack: [],
@@ -265,5 +277,13 @@ export const useGameStore = create<GameState>((set, get) => ({
     
     // TODO: Full validation (adjacency, contiguity)
     set({ isComplete: true });
+  },
+  
+  updateSequenceState: (state: SequenceState, board: SequenceBoardCell[][], mistakes: MistakeEvent[]) => {
+    set({ 
+      sequenceState: state, 
+      sequenceBoard: board,
+      recentMistakes: mistakes,
+    });
   },
 }));
