@@ -29,3 +29,4 @@ export { computeChain, buildValuesMap } from './chain';
 export { deriveNextTarget, computeLegalTargets } from './nextTarget';
 export { classifyRemoval } from './removal';
 export { UndoRedoStack, createSequenceSnapshot, restoreSequenceSnapshot } from './undoRedo';
+export { validatePlacement, validateRemoval, isInvalidEmptyCellClick } from './mistakes';

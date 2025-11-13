@@ -22,6 +22,7 @@ import {
   applyUndo,
   applyRedo,
 } from './transitions';
+import { validatePlacement, isInvalidEmptyCellClick } from './mistakes';
 
 const MISTAKE_BUFFER_SIZE = 20;
 
@@ -115,6 +116,15 @@ export function useGuidedSequenceFlow(
   // Place next value
   const placeNext = useCallback(
     (pos: Position) => {
+      // Validate placement first
+      const mistake = validatePlacement(pos, state.nextTarget, state.anchorPos, board);
+      
+      if (mistake) {
+        // Record mistake but don't change board
+        addMistake(mistake);
+        return;
+      }
+
       const result = placeNextTransition(state, board, maxValue, pos);
       
       if (result.undoAction) {
