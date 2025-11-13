@@ -15,6 +15,8 @@ Auto-generated from all feature plans. Last updated: 2025-11-04
 - N/A (in-memory puzzle state; optional JSON export) (001-solver-driven-pruning)
 - Python 3.11 (stdlib only per constitution) + Standard library (time, heapq, dataclasses, random); optional external SAT/CP via hook (disabled by default). (001-staged-uniqueness-validation)
 - N/A (in-memory puzzle objects) (001-staged-uniqueness-validation)
+- TypeScript (React frontend) + Python 3.11 (existing puzzle generation only, unchanged). + React, existing internal hooks/context; no new global state lib (decision: no Redux/Recoil). (001-guided-sequence-flow)
+- In-memory board state only (no persistence added). (001-guided-sequence-flow)
 
 - Python 3.11+ + Standard library only for v0 (json, dataclasses optional); future YAML/SVG optional later (001-hidato-terminal-mvp)
 
@@ -34,9 +36,9 @@ cd src; pytest; ruff check .
 Python 3.11+: Follow standard conventions
 
 ## Recent Changes
+- 001-guided-sequence-flow: Added TypeScript (React frontend) + Python 3.11 (existing puzzle generation only, unchanged). + React, existing internal hooks/context; no new global state lib (decision: no Redux/Recoil).
 - 001-staged-uniqueness-validation: Added Python 3.11 (stdlib only per constitution) + Standard library (time, heapq, dataclasses, random); optional external SAT/CP via hook (disabled by default).
 - 001-solver-driven-pruning: Added Python 3.11 (stdlib only; dataclasses optional) + Internal modules only (core.*, generate.*, solve.*, util.*)
-- 001-adaptive-turn-anchors: Added Python 3.11 (stdlib only) + Internal modules only (core.grid, core.position, generate.generator, solve.solver)
 
 
 <!-- MANUAL ADDITIONS START -->
