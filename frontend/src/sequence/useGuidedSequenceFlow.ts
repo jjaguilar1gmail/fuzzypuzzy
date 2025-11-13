@@ -133,6 +133,42 @@ export function useGuidedSequenceFlow(
     return computeChain(board, maxValue);
   }, [board, maxValue]);
 
+  // Update board cell visual states (highlighted, anchor) based on current state
+  useEffect(() => {
+    setBoard((currentBoard) => {
+      const updatedBoard = currentBoard.map((row) =>
+        row.map((cell) => {
+          const isAnchor =
+            state.anchorPos !== null &&
+            cell.position.row === state.anchorPos.row &&
+            cell.position.col === state.anchorPos.col;
+
+          const isHighlighted = state.legalTargets.some(
+            (target) =>
+              target.row === cell.position.row && target.col === cell.position.col
+          );
+
+          // Only create new object if something changed
+          if (cell.anchor !== isAnchor || cell.highlighted !== isHighlighted) {
+            const updated = {
+              ...cell,
+              anchor: isAnchor,
+              highlighted: isHighlighted,
+            };
+            // Debug: Check if value is preserved
+            if (cell.value !== null && updated.value !== cell.value) {
+              console.error(`Value lost for cell [${cell.position.row},${cell.position.col}]:`, cell.value, '→', updated.value);
+            }
+            return updated;
+          }
+          return cell;
+        })
+      );
+
+      return updatedBoard;
+    });
+  }, [state.anchorPos, state.legalTargets]);
+
   /**
    * Select a cell value as the anchor for guided placement
    * Recomputes legal targets based on the new anchor

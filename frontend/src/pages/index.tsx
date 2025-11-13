@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { useGameStore } from '@/state/gameStore';
 import { getDailyPuzzle } from '@/lib/daily';
 import { loadGameState, saveGameState } from '@/lib/persistence';
-import Grid from '@/components/Grid/Grid';
+import GuidedGrid from '@/components/Grid/GuidedGrid';
 import Palette from '@/components/Palette/Palette';
 import BottomSheet from '@/components/Palette/BottomSheet';
 import CompletionModal from '@/components/HUD/CompletionModal';
 import SettingsMenu from '@/components/HUD/SettingsMenu';
+import { SequenceAnnouncer } from '@/sequence/components';
 
 /**
  * Daily puzzle page (US1 implementation).
@@ -18,6 +19,9 @@ export default function HomePage() {
   const loadPuzzle = useGameStore((state) => state.loadPuzzle);
   const puzzle = useGameStore((state) => state.puzzle);
   const isComplete = useGameStore((state) => state.isComplete);
+  const sequenceState = useGameStore((state) => state.sequenceState);
+  const sequenceBoard = useGameStore((state) => state.sequenceBoard);
+  const recentMistakes = useGameStore((state) => state.recentMistakes);
 
   useEffect(() => {
     getDailyPuzzle()
@@ -84,15 +88,25 @@ export default function HomePage() {
         </p>
       </div>
 
-      <Grid />
-      <BottomSheet>
+      <GuidedGrid />
+      
+      {/* Old number palette hidden - using guided sequence flow instead */}
+      {/* <BottomSheet>
         <Palette />
-      </BottomSheet>
+      </BottomSheet> */}
 
       <CompletionModal
         isOpen={showCompletion}
         onClose={() => setShowCompletion(false)}
       />
+      
+      {/* Screen reader announcements for accessibility */}
+      {sequenceState && (
+        <SequenceAnnouncer
+          state={sequenceState}
+          recentMistakes={recentMistakes}
+        />
+      )}
     </main>
   );
 }

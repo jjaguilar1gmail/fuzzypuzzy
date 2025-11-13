@@ -23,6 +23,8 @@ export type {
   GuidedSequenceFlowAPI,
 } from './types';
 
+export type { NextTargetResult } from './nextTarget';
+
 // Utilities (for testing and advanced usage)
 export { getAdjacents, getLegalAdjacents, positionsEqual, areAdjacent } from './adjacency';
 export { computeChain, buildValuesMap } from './chain';

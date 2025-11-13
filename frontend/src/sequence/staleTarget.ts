@@ -74,25 +74,29 @@ export function detectStaleTarget(
   }
 
   // Recompute what the next target should be
-  const actualNextTarget = deriveNextTarget(
+  const targetResult = deriveNextTarget(
     state.anchorValue,
     state.anchorPos,
     board
   );
 
   // If computed target differs from state, we're stale
-  if (actualNextTarget !== state.nextTarget) {
+  if (targetResult.nextTarget !== state.nextTarget) {
     const chainInfo = computeChain(board, maxValue);
-    const legalTargets = actualNextTarget !== null
-      ? computeLegalTargets(state.anchorPos, board)
+    const finalAnchorValue = targetResult.newAnchorValue ?? state.anchorValue;
+    const finalAnchorPos = targetResult.newAnchorPos ?? state.anchorPos;
+    const legalTargets = targetResult.nextTarget !== null
+      ? computeLegalTargets(finalAnchorPos, board)
       : [];
 
     return {
       isStale: true,
-      reason: actualNextTarget === null ? 'target-unreachable' : 'chain-mutated',
+      reason: targetResult.nextTarget === null ? 'target-unreachable' : 'chain-mutated',
       recoveredState: {
         ...state,
-        nextTarget: actualNextTarget,
+        anchorValue: finalAnchorValue,
+        anchorPos: finalAnchorPos,
+        nextTarget: targetResult.nextTarget,
         legalTargets,
         chainEndValue: chainInfo.chainEndValue,
         chainLength: chainInfo.chainLength,

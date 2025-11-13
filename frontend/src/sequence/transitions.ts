@@ -39,14 +39,16 @@ export function selectAnchor(
   const anchorPos = { ...pos };
 
   // Recompute next target and legal targets
-  const nextTarget = deriveNextTarget(anchorValue, anchorPos, board);
-  const legalTargets = computeLegalTargets(anchorPos, board);
+  const targetResult = deriveNextTarget(anchorValue, anchorPos, board);
+  const finalAnchorValue = targetResult.newAnchorValue ?? anchorValue;
+  const finalAnchorPos = targetResult.newAnchorPos ?? anchorPos;
+  const legalTargets = computeLegalTargets(finalAnchorPos, board);
 
   const newState: SequenceState = {
     ...state,
-    anchorValue,
-    anchorPos,
-    nextTarget,
+    anchorValue: finalAnchorValue,
+    anchorPos: finalAnchorPos,
+    nextTarget: targetResult.nextTarget,
     legalTargets,
     nextTargetChangeReason: 'anchor-change',
   };
@@ -105,14 +107,16 @@ export function placeNext(
   const chainInfo = computeChain(newBoard, maxValue);
 
   // Recompute next target and legal targets
-  const nextTarget = deriveNextTarget(anchorValue, anchorPos, newBoard);
-  const legalTargets = computeLegalTargets(anchorPos, newBoard);
+  const targetResult = deriveNextTarget(anchorValue, anchorPos, newBoard);
+  const finalAnchorValue = targetResult.newAnchorValue ?? anchorValue;
+  const finalAnchorPos = targetResult.newAnchorPos ?? anchorPos;
+  const legalTargets = computeLegalTargets(finalAnchorPos, newBoard);
 
   const newState: SequenceState = {
     ...state,
-    anchorValue,
-    anchorPos,
-    nextTarget,
+    anchorValue: finalAnchorValue,
+    anchorPos: finalAnchorPos,
+    nextTarget: targetResult.nextTarget,
     legalTargets,
     chainEndValue: chainInfo.chainEndValue,
     chainLength: chainInfo.chainLength,
@@ -188,16 +192,20 @@ export function removeCell(
     };
   } else {
     // Keep anchor but recompute next target
-    const nextTarget = deriveNextTarget(
+    const targetResult = deriveNextTarget(
       state.anchorValue,
       state.anchorPos,
       newBoard
     );
-    const legalTargets = computeLegalTargets(state.anchorPos, newBoard);
+    const finalAnchorValue = targetResult.newAnchorValue ?? state.anchorValue;
+    const finalAnchorPos = targetResult.newAnchorPos ?? state.anchorPos;
+    const legalTargets = computeLegalTargets(finalAnchorPos, newBoard);
 
     newState = {
       ...state,
-      nextTarget,
+      anchorValue: finalAnchorValue,
+      anchorPos: finalAnchorPos,
+      nextTarget: targetResult.nextTarget,
       legalTargets,
       chainEndValue: chainInfo.chainEndValue,
       chainLength: chainInfo.chainLength,
@@ -296,14 +304,16 @@ export function applyRedo(
   if (action.type === 'PLACE') {
     const anchorValue = action.value;
     const anchorPos = { ...action.position };
-    const nextTarget = deriveNextTarget(anchorValue, anchorPos, newBoard);
-    const legalTargets = computeLegalTargets(anchorPos, newBoard);
+    const targetResult = deriveNextTarget(anchorValue, anchorPos, newBoard);
+    const finalAnchorValue = targetResult.newAnchorValue ?? anchorValue;
+    const finalAnchorPos = targetResult.newAnchorPos ?? anchorPos;
+    const legalTargets = computeLegalTargets(finalAnchorPos, newBoard);
 
     newState = {
       ...state,
-      anchorValue,
-      anchorPos,
-      nextTarget,
+      anchorValue: finalAnchorValue,
+      anchorPos: finalAnchorPos,
+      nextTarget: targetResult.nextTarget,
       legalTargets,
       chainEndValue: chainInfo.chainEndValue,
       chainLength: chainInfo.chainLength,
@@ -329,16 +339,20 @@ export function applyRedo(
         newBoard[state.anchorPos.row][state.anchorPos.col].value !== null;
 
       if (anchorStillValid) {
-        const nextTarget = deriveNextTarget(
+        const targetResult = deriveNextTarget(
           state.anchorValue,
           state.anchorPos,
           newBoard
         );
-        const legalTargets = computeLegalTargets(state.anchorPos, newBoard);
+        const finalAnchorValue = targetResult.newAnchorValue ?? state.anchorValue;
+        const finalAnchorPos = targetResult.newAnchorPos ?? state.anchorPos;
+        const legalTargets = computeLegalTargets(finalAnchorPos, newBoard);
 
         newState = {
           ...state,
-          nextTarget,
+          anchorValue: finalAnchorValue,
+          anchorPos: finalAnchorPos,
+          nextTarget: targetResult.nextTarget,
           legalTargets,
           chainEndValue: chainInfo.chainEndValue,
           chainLength: chainInfo.chainLength,

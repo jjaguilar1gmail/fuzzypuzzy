@@ -1,8 +1,8 @@
 # Implementation Status: Guided Sequence Flow
 
 **Feature:** 001-guided-sequence-flow  
-**Last Updated:** 2025-11-13  
-**Status:** Phase 4 Complete (4/5 phases) - 57/57 tests passing
+**Last Updated:** 2025-01-XX  
+**Status:** Phase 5 Complete (5/6 phases) - 69/69 tests passing
 
 ---
 
@@ -20,9 +20,10 @@ The Guided Sequence Flow feature provides intelligent placement guidance for Hid
 | **Phase 2: Mistake Feedback** | T013-T016 | ✅ Complete | 12/12 | Validation + UI components |
 | **Phase 3: Robust State** | T017-T020 | ✅ Complete | 19/19 | Stale detection + recovery |
 | **Phase 4: Polish** | T021-T023 | ✅ Complete | 57/57 | Performance + accessibility |
-| **Phase 5: Release** | T024-T027 | ⏳ Pending | 0/? | Integration tests + docs |
+| **Phase 5: Integration** | T024-T026 | ✅ Complete | 69/69 | Integration tests (12 new) |
+| **Phase 6: Release** | T027 | ⏳ Pending | 69/69 | User guide + validation |
 
-**Overall Progress:** 23/27 tasks (85%) | 57 passing tests
+**Overall Progress:** 24/27 tasks (90%) | 69 passing tests
 
 ---
 
@@ -114,27 +115,41 @@ Validated per `stale-target-test.md`:
 
 ## Pending Work
 
-### ⏳ Phase 5: Integration & Release (T024-T027)
+### ⏳ Phase 6: Final Release (T027)
 
-**Integration Tests:**
-- [ ] Full flow: Start → place sequence → undo → resume → complete
-- [ ] Edge cases: Multi-chain boards, boundary conditions, complex removals
-- [ ] Browser testing: Chrome, Firefox, Safari
+**User Guide:**
+- [ ] Getting started guide with setup instructions
+- [ ] Basic usage patterns with code examples
+- [ ] Advanced scenarios (edge cases, error handling)
+- [ ] API usage examples
+- [ ] Troubleshooting common issues
 
-**Documentation:**
-- [x] ~~Update CHANGELOG with feature details~~ ✅
-- [x] ~~API documentation: Hook usage, types reference~~ ✅
-- [ ] User guide: How to use guided flow UI
-- [x] ~~Code comments: JSDoc for all public APIs~~ ✅
-
-**Regression Testing:**
-- [ ] Verify existing puzzle generation unaffected
-- [ ] Test with various board sizes (5x5, 10x10, 15x15)
-- [ ] Validate undo/redo stack limits (50 actions)
+**Final Validation:**
+- [ ] Regression testing: 5x5, 10x10, 15x15 boards
+- [ ] Browser testing: Chrome, Firefox, Safari, Edge
+- [ ] Performance profiling on large boards
+- [ ] Verify undo/redo stack limits (50 actions)
 
 ---
 
 ## Completed Work
+
+### ✅ Phase 5: Integration Testing (T024-T026)
+
+**Integration Test Suite:**
+- ✅ `integration.test.ts` (352 lines, 12 scenarios)
+- ✅ Complete placement sequences (2 tests)
+- ✅ Undo/redo flows (1 test)
+- ✅ Removal and resume flows (2 tests)
+- ✅ Edge cases (4 tests): surrounded anchor, large boards, max value, multi-chain
+- ✅ Boundary conditions (3 tests): corners, single cell, empty boards
+
+**Key Discoveries:**
+- ✅ Chain computation checks value existence, not positional adjacency
+- ✅ Test data setup requires careful handling of "given" flags
+- ✅ State flow between multiple actions validated
+
+**Tests:** 69/69 passing (57 unit + 12 integration)
 
 ### ✅ Phase 4: Performance & Accessibility (T021-T023)
 
@@ -177,7 +192,8 @@ Validated per `stale-target-test.md`:
 | Mistakes | `mistakes.test.ts` | 12 | ✅ |
 | Stale Detection | `staleTarget.test.ts` | 13 | ✅ |
 | Neutral Resume | `neutralResume.test.ts` | 6 | ✅ |
-| **Total** | **6 files** | **57** | **✅ All Passing** |
+| **Integration** | **`integration.test.ts`** | **12** | **✅** |
+| **Total** | **7 files** | **69** | **✅ All Passing** |
 
 ---
 
@@ -211,11 +227,12 @@ frontend/src/sequence/
     ├── undoRedo.test.ts
     ├── mistakes.test.ts
     ├── staleTarget.test.ts
-    └── neutralResume.test.ts
+    ├── neutralResume.test.ts
+    └── integration.test.ts        # NEW: 12 integration tests
 ```
 
-**Total Lines:** ~2,400 (including 800 lines of tests)  
-**Test Coverage:** 57 unit + integration tests
+**Total Lines:** ~2,750 (including 1,050 lines of tests)  
+**Test Coverage:** 57 unit + 12 integration = 69 tests
 
 ---
 
@@ -300,24 +317,23 @@ type MistakeReason = 'no-target' | 'occupied-cell' | 'not-adjacent';
 
 ## Known Limitations
 
-1. **Performance:** `computeChain` runs on every state change (optimization pending in Phase 4)
-2. **Multi-chain:** Only tracks longest chain from value 1 (by design per spec)
-3. **Diagonal adjacency:** Currently disabled (4-directional only)
-4. **Undo limit:** 50 actions (configurable constant)
+1. **Multi-chain:** Only tracks longest chain from value 1 (by design per spec)
+2. **Diagonal adjacency:** Currently disabled (4-directional only)
+3. **Undo limit:** 50 actions (configurable constant)
 
 ---
 
-## Next Steps (Phases 4-5)
+## Next Steps (Phase 6)
 
-1. **Immediate (Phase 4):**
-   - Add `useMemo` to `computeChain` in hook
-   - Implement `aria-live` announcements
-   - Profile render performance on 15x15 boards
+1. **User Guide:**
+   - Write comprehensive guide with setup and usage examples
+   - Document advanced scenarios and error handling
+   - Add troubleshooting section
 
-2. **Short-term (Phase 5):**
-   - Write full flow integration tests
-   - Update CHANGELOG and API docs
-   - Cross-browser testing
+2. **Final Validation:**
+   - Test on various board sizes (5x5, 10x10, 15x15)
+   - Cross-browser testing (Chrome, Firefox, Safari, Edge)
+   - Performance profiling on large boards
 
 3. **Future Enhancements:**
    - Configurable highlight colors (player settings)
