@@ -77,7 +77,29 @@ function initializeSequenceState(): SequenceState {
 }
 
 /**
- * Main hook for guided sequence flow
+ * Main hook for guided sequence flow with intelligent placement assistance
+ * 
+ * @param rows - Board height
+ * @param cols - Board width
+ * @param givens - Map of given cell values (key: "row,col", value: number)
+ * @param maxValue - Maximum value in the puzzle (typically rows * cols)
+ * @returns API object with state, board, and action methods
+ * 
+ * @example
+ * ```tsx
+ * const {
+ *   state,
+ *   board,
+ *   selectAnchor,
+ *   placeNext,
+ *   removeCell,
+ *   undo,
+ *   redo,
+ *   canUndo,
+ *   canRedo,
+ *   recentMistakes
+ * } = useGuidedSequenceFlow(5, 5, givensMap, 25);
+ * ```
  */
 export function useGuidedSequenceFlow(
   rows: number,
@@ -105,7 +127,16 @@ export function useGuidedSequenceFlow(
   // Mistake buffer (ring buffer)
   const [mistakes, setMistakes] = useState<MistakeEvent[]>([]);
 
-  // Select anchor
+  // Memoize chain computation to avoid redundant calculations
+  // Only recompute when board actually changes
+  const chainInfo = useMemo(() => {
+    return computeChain(board, maxValue);
+  }, [board, maxValue]);
+
+  /**
+   * Select a cell value as the anchor for guided placement
+   * Recomputes legal targets based on the new anchor
+   */
   const selectAnchor = useCallback(
     (pos: Position) => {
       const result = selectAnchorTransition(state, board, maxValue, pos);
@@ -114,7 +145,11 @@ export function useGuidedSequenceFlow(
     [state, board, maxValue]
   );
 
-  // Place next value
+  /**
+   * Place the next sequential value at the specified position
+   * Validates placement before mutation; records mistakes if invalid
+   * Automatically advances anchor to newly placed value
+   */
   const placeNext = useCallback(
     (pos: Position) => {
       // Validate placement first
@@ -139,7 +174,11 @@ export function useGuidedSequenceFlow(
     [state, board, maxValue]
   );
 
-  // Remove cell
+  /**
+   * Remove a player-placed cell value
+   * Handles tail removal (enters neutral state) vs non-tail removal
+   * Cannot remove given values or empty cells
+   */
   const removeCell = useCallback(
     (pos: Position) => {
       const result = removeCellTransition(state, board, maxValue, pos);
@@ -155,7 +194,10 @@ export function useGuidedSequenceFlow(
     [state, board, maxValue]
   );
 
-  // Toggle guide
+  /**
+   * Toggle visual guidance highlights
+   * @param enabled - Whether to show legal target highlights
+   */
   const toggleGuide = useCallback(
     (enabled: boolean) => {
       const newState = toggleGuideTransition(state, enabled);
@@ -164,7 +206,10 @@ export function useGuidedSequenceFlow(
     [state]
   );
 
-  // Undo
+  /**
+   * Undo the last placement or removal action
+   * Restores full state snapshot from undo stack
+   */
   const undo = useCallback(() => {
     const action = undoRedoRef.current.undo();
     if (action) {
@@ -175,7 +220,10 @@ export function useGuidedSequenceFlow(
     }
   }, [state, board, maxValue]);
 
-  // Redo
+  /**
+   * Redo the last undone action
+   * Replays action from redo stack
+   */
   const redo = useCallback(() => {
     const action = undoRedoRef.current.redo();
     if (action) {
@@ -190,7 +238,11 @@ export function useGuidedSequenceFlow(
   const canUndo = undoRedoRef.current.canUndo();
   const canRedo = undoRedoRef.current.canRedo();
 
-  // Stale target detection and recovery
+  /**
+   * Detect and recover from stale target states
+   * Stale states occur when board changes invalidate displayed nextTarget
+   * @internal Auto-invoked by useEffect on state changes
+   */
   const checkAndRecoverStale = useCallback(() => {
     const check = detectStaleTarget(state, board, maxValue);
     if (check.isStale && check.recoveredState) {
@@ -203,7 +255,11 @@ export function useGuidedSequenceFlow(
     return false;
   }, [state, board, maxValue]);
 
-  // Add mistake
+  /**
+   * Add a mistake event to the ring buffer
+   * Maintains last 20 mistakes for UI feedback
+   * @internal Called automatically by placeNext validation
+   */
   const addMistake = useCallback((mistake: MistakeEvent) => {
     setMistakes((prev) => {
       const updated = [...prev, mistake];

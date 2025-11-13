@@ -32,3 +32,4 @@ export { UndoRedoStack, createSequenceSnapshot, restoreSequenceSnapshot } from '
 export { validatePlacement, validateRemoval, isInvalidEmptyCellClick } from './mistakes';
 export { detectStaleTarget, recoverFromStaleState, isNeutralState, canResumeFromNeutral } from './staleTarget';
 export { getChangeReasonStyle, CHANGE_REASON_CSS } from './visualEffects';
+export { useKeyboardNavigation, isFocusedPosition } from './keyboardNavigation';
