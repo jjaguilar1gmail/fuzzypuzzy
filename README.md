@@ -1,9 +1,14 @@
 # fuzzypuzzy
 A collection of puzzle games with terminal interfaces and solving capabilities.
 
-## Current Feature: Hidato Terminal MVP ✅
+## Current Features
 
+### 🎮 Hidato Terminal MVP ✅
 A fully functional terminal-playable Hidato puzzle game with generation, solving, and ASCII rendering.
+
+### 🎯 Guided Sequence Flow (Frontend - In Development)
+React-based guided placement interface with intelligent highlighting, undo/redo, and chain-aware removal logic.
+See [Guided Sequence Flow Spec](specs/001-guided-sequence-flow/spec.md) for details.
 
 ### 🚀 Quick Start
 
@@ -262,7 +267,9 @@ tests/         # Contract tests for core functionality
 ```
 - **NEW**: [Generator Quickstart](specs/001-unique-puzzle-gen/quickstart.md) - How to generate puzzles
 - **NEW**: [Smart Path Modes Quickstart](specs/001-smart-path-modes/quickstart.md) - Path mode options and examples
- - **NEW**: [Uniqueness Improvements](docs/uniqueness_improvements.md) - Structural guardrails & pruning strategy
+- **NEW**: [Uniqueness Improvements](docs/uniqueness_improvements.md) - Structural guardrails & pruning strategy
+- **NEW**: [Guided Sequence Flow](specs/001-guided-sequence-flow/spec.md) - Frontend guided placement specification
+- **NEW**: [Guided Flow Implementation](specs/001-guided-sequence-flow/IMPLEMENTATION_SUMMARY.md) - MVP implementation status
 
 ### 🧪 Uniqueness & Guardrail Tests
 
