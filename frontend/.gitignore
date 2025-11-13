@@ -4,3 +4,7 @@ dist
 build
 coverage
 .env*.local
+
+# Generated puzzle packs
+public/packs/
+public/index.json

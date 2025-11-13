@@ -10,6 +10,16 @@
     "description": "Easy puzzles for November"
   },
   {
+    "id": "hard_5x5",
+    "title": "5x5 Hard Verified",
+    "puzzle_count": 20,
+    "difficulty_counts": {
+      "hard": 20
+    },
+    "created_at": "2025-11-12T17:57:48.648535Z",
+    "description": "Initial set of 5x5 hard puzzles"
+  },
+  {
     "id": "sample",
     "title": "Sample Pack",
     "description": "A test pack with one easy puzzle for MVP testing",
