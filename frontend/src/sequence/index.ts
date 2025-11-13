@@ -30,3 +30,5 @@ export { deriveNextTarget, computeLegalTargets } from './nextTarget';
 export { classifyRemoval } from './removal';
 export { UndoRedoStack, createSequenceSnapshot, restoreSequenceSnapshot } from './undoRedo';
 export { validatePlacement, validateRemoval, isInvalidEmptyCellClick } from './mistakes';
+export { detectStaleTarget, recoverFromStaleState, isNeutralState, canResumeFromNeutral } from './staleTarget';
+export { getChangeReasonStyle, CHANGE_REASON_CSS } from './visualEffects';

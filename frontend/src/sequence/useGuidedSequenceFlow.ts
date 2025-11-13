@@ -3,7 +3,7 @@
  * Based on specs/001-guided-sequence-flow/data-model.md
  */
 
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import type {
   BoardCell,
   Position,
@@ -23,6 +23,7 @@ import {
   applyRedo,
 } from './transitions';
 import { validatePlacement, isInvalidEmptyCellClick } from './mistakes';
+import { detectStaleTarget, recoverFromStaleState } from './staleTarget';
 
 const MISTAKE_BUFFER_SIZE = 20;
 
@@ -189,6 +190,19 @@ export function useGuidedSequenceFlow(
   const canUndo = undoRedoRef.current.canUndo();
   const canRedo = undoRedoRef.current.canRedo();
 
+  // Stale target detection and recovery
+  const checkAndRecoverStale = useCallback(() => {
+    const check = detectStaleTarget(state, board, maxValue);
+    if (check.isStale && check.recoveredState) {
+      console.warn(
+        `[GuidedSequenceFlow] Detected stale target: ${check.reason}. Recovering...`
+      );
+      setState(check.recoveredState);
+      return true;
+    }
+    return false;
+  }, [state, board, maxValue]);
+
   // Add mistake
   const addMistake = useCallback((mistake: MistakeEvent) => {
     setMistakes((prev) => {
@@ -200,6 +214,11 @@ export function useGuidedSequenceFlow(
       return updated;
     });
   }, []);
+
+  // Auto-recover from stale state after board/state changes
+  useEffect(() => {
+    checkAndRecoverStale();
+  }, [board, state.anchorValue, state.anchorPos, state.nextTarget]);
 
   return {
     state,
