@@ -401,7 +401,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   dismissCompletionStatus: () => {
-    set({ completionStatus: null });
+    set((state) =>
+      state.completionStatus === 'success'
+        ? { completionStatus: null }
+        : { completionStatus: null, isComplete: false }
+    );
   },
 
   startTimer: () => {
@@ -446,11 +450,13 @@ export const useGameStore = create<GameState>((set, get) => ({
       let lastTick = current.lastTick;
       let moveCount = current.moveCount;
 
+      const alreadySolved =
+        current.completionStatus === 'success' || current.isComplete;
       const isNewPlacement =
-        current.sequenceState?.nextTargetChangeReason !== state.nextTargetChangeReason &&
-        state.nextTargetChangeReason === 'placement';
+        state.nextTargetChangeReason === 'placement' &&
+        current.sequenceState?.nextTargetChangeReason !== state.nextTargetChangeReason;
 
-      if (isNewPlacement) {
+      if (isNewPlacement && !alreadySolved) {
         moveCount += 1;
       }
 

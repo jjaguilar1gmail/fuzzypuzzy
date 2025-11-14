@@ -74,17 +74,17 @@ export default function HomePage() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 gap-8">
-      <div className="text-center">
-        <div className="flex items-center justify-center gap-4 mb-2">
-          <h1 className="text-3xl font-bold">Hidato Daily Puzzle</h1>
-          <SettingsMenu />
+      <div className="flex flex-col items-center gap-2 text-center">
+        <div className="flex items-center justify-center gap-4">
+          <h1
+            className="text-3xl font-bold"
+            style={{ fontFamily: 'IowanTitle, serif' }}
+          >
+            Flowgrid Daily
+          </h1>
+          {/* <SettingsMenu /> */}
         </div>
-        <p className="text-gray-600">
-          {puzzle.size}x{puzzle.size} - {puzzle.difficulty}
-        </p>
-        <div className="mt-4">
-          <SessionStats />
-        </div>
+        <SessionStats />
       </div>
 
       <GuidedGrid />
