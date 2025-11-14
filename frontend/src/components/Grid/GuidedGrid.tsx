@@ -9,6 +9,7 @@ import type { Position } from '@/sequence/types';
  */
 const GuidedGrid = memo(function GuidedGrid() {
   const puzzle = useGameStore((state) => state.puzzle);
+  const puzzleInstance = useGameStore((state) => state.puzzleInstance);
   const updateSequenceState = useGameStore((state) => state.updateSequenceState);
 
   // Convert puzzle givens to Map format
@@ -43,7 +44,8 @@ const GuidedGrid = memo(function GuidedGrid() {
     puzzle?.size || 5,
     puzzle?.size || 5,
     givensMap,
-    maxValue
+    maxValue,
+    puzzleInstance
   );
 
   // Sync sequence state with game store

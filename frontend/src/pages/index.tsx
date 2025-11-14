@@ -6,6 +6,7 @@ import GuidedGrid from '@/components/Grid/GuidedGrid';
 import Palette from '@/components/Palette/Palette';
 import BottomSheet from '@/components/Palette/BottomSheet';
 import CompletionModal from '@/components/HUD/CompletionModal';
+import { SessionStats } from '@/components/HUD/SessionStats';
 import SettingsMenu from '@/components/HUD/SettingsMenu';
 import { SequenceAnnouncer } from '@/sequence/components';
 
@@ -15,10 +16,12 @@ import { SequenceAnnouncer } from '@/sequence/components';
 export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showCompletion, setShowCompletion] = useState(false);
   const loadPuzzle = useGameStore((state) => state.loadPuzzle);
   const puzzle = useGameStore((state) => state.puzzle);
-  const isComplete = useGameStore((state) => state.isComplete);
+  const completionStatus = useGameStore((state) => state.completionStatus);
+  const dismissCompletionStatus = useGameStore(
+    (state) => state.dismissCompletionStatus
+  );
   const sequenceState = useGameStore((state) => state.sequenceState);
   const sequenceBoard = useGameStore((state) => state.sequenceBoard);
   const recentMistakes = useGameStore((state) => state.recentMistakes);
@@ -50,13 +53,6 @@ export default function HomePage() {
     }
   }, [puzzle, loading, useGameStore((state) => state.grid)]);
 
-  // Show completion modal
-  useEffect(() => {
-    if (isComplete) {
-      setShowCompletion(true);
-    }
-  }, [isComplete]);
-
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -84,8 +80,11 @@ export default function HomePage() {
           <SettingsMenu />
         </div>
         <p className="text-gray-600">
-          {puzzle.size}×{puzzle.size} · {puzzle.difficulty}
+          {puzzle.size}x{puzzle.size} - {puzzle.difficulty}
         </p>
+        <div className="mt-4">
+          <SessionStats />
+        </div>
       </div>
 
       <GuidedGrid />
@@ -96,8 +95,8 @@ export default function HomePage() {
       </BottomSheet> */}
 
       <CompletionModal
-        isOpen={showCompletion}
-        onClose={() => setShowCompletion(false)}
+        isOpen={completionStatus !== null}
+        onClose={dismissCompletionStatus}
       />
       
       {/* Screen reader announcements for accessibility */}

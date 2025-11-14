@@ -103,7 +103,7 @@ export default function PackDetailPage() {
                   <div className="flex flex-wrap gap-2 text-sm">
                     {Object.entries(pack.size_distribution).map(([size, count]) => (
                       <span key={size} className="bg-blue-100 text-blue-800 px-3 py-1 rounded">
-                        {count}× {size}×{size}
+                        {count} puzzles - {size}x{size}
                       </span>
                     ))}
                   </div>

@@ -73,8 +73,8 @@ describe('Pack Detail Page', () => {
     render(<PackDetailPage />);
     
     await waitFor(() => {
-      expect(screen.getByText(/5×5/)).toBeInTheDocument();
-      expect(screen.getByText(/7×7/)).toBeInTheDocument();
+      expect(screen.getByText(/3 puzzles - 5x5/)).toBeInTheDocument();
+      expect(screen.getByText(/2 puzzles - 7x7/)).toBeInTheDocument();
     });
   });
 

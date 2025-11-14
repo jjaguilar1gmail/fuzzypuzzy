@@ -156,7 +156,8 @@ export function useGuidedSequenceFlow(
   rows: number,
   cols: number,
   givens: Map<string, number>,
-  maxValue: number
+  maxValue: number,
+  resetKey = 0
 ): GuidedSequenceFlowAPI {
   // Initialize board and state
   const [board, setBoard] = useState(() => initializeBoard(rows, cols, givens));
@@ -177,6 +178,24 @@ export function useGuidedSequenceFlow(
 
   // Mistake buffer (ring buffer)
   const [mistakes, setMistakes] = useState<MistakeEvent[]>([]);
+
+  // Reset board/state whenever puzzle inputs or reset key change
+  useEffect(() => {
+    const newBoard = initializeBoard(rows, cols, givens);
+    const baseState = initializeSequenceState();
+    const chainInfo = computeChain(newBoard, maxValue);
+
+    setBoard(newBoard);
+    setState({
+      ...baseState,
+      chainEndValue: chainInfo.chainEndValue,
+      chainLength: chainInfo.chainLength,
+    });
+
+    undoRedoRef.current = new UndoRedoStack();
+    setUndoRedoVersion(0);
+    setMistakes([]);
+  }, [rows, cols, maxValue, givens, resetKey]);
 
   // Memoize chain computation to avoid redundant calculations
   // Only recompute when board actually changes

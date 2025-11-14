@@ -2,7 +2,53 @@ import { create } from 'zustand';
 import { Grid, createEmptyGrid, getCell } from '@/domain/grid';
 import { Puzzle } from '@/domain/puzzle';
 import { positionKey } from '@/domain/position';
-import type { SequenceState, BoardCell as SequenceBoardCell, MistakeEvent } from '@/sequence/types';
+import type {
+  SequenceState,
+  BoardCell as SequenceBoardCell,
+  MistakeEvent,
+} from '@/sequence/types';
+
+type CompletionStatus = 'success' | 'incorrect' | null;
+
+function deriveCompletionStatusFromBoard(
+  board: SequenceBoardCell[][] | null,
+  puzzle: Puzzle | null
+): CompletionStatus {
+  if (!board || !puzzle) return null;
+  if (board.length === 0 || board[0].length === 0) return null;
+
+  // Ensure board is completely filled
+  for (let row = 0; row < board.length; row++) {
+    for (let col = 0; col < board[row].length; col++) {
+      const cell = board[row][col];
+      if (!cell || cell.value === null) {
+        return null;
+      }
+    }
+  }
+
+  const solution = puzzle.solution;
+  if (!solution || solution.length === 0) {
+    return 'success';
+  }
+
+  const solutionMap = new Map<string, number>();
+  solution.forEach(({ row, col, value }) => {
+    solutionMap.set(positionKey({ row, col }), value);
+  });
+
+  for (let row = 0; row < board.length; row++) {
+    for (let col = 0; col < board[row].length; col++) {
+      const cell = board[row][col];
+      const expected = solutionMap.get(positionKey(cell.position));
+      if (typeof expected !== 'number' || cell.value !== expected) {
+        return 'incorrect';
+      }
+    }
+  }
+
+  return 'success';
+}
 
 /**
  * Action representing a single game move for undo/redo.
@@ -18,6 +64,11 @@ interface GameState {
   // Current puzzle
   puzzle: Puzzle | null;
   grid: Grid;
+  completionStatus: CompletionStatus;
+  puzzleInstance: number;
+  moveCount: number;
+  timerRunning: boolean;
+  lastTick: number | null;
   
   // Guided sequence flow state (for integration)
   sequenceState: SequenceState | null;
@@ -35,7 +86,6 @@ interface GameState {
   // Game status
   isComplete: boolean;
   elapsedMs: number;
-  mistakes: number;
   
   // Actions
   loadPuzzle: (puzzle: Puzzle) => void;
@@ -49,14 +99,27 @@ interface GameState {
   redo: () => void;
   resetPuzzle: () => void;
   checkCompletion: () => void;
+  dismissCompletionStatus: () => void;
+  startTimer: () => void;
+  stopTimer: () => void;
+  tickTimer: () => void;
   
   // Guided sequence flow actions
-  updateSequenceState: (state: SequenceState, board: SequenceBoardCell[][], mistakes: MistakeEvent[]) => void;
+  updateSequenceState: (
+    state: SequenceState,
+    board: SequenceBoardCell[][],
+    mistakes: MistakeEvent[]
+  ) => void;
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
   puzzle: null,
   grid: createEmptyGrid(5),
+  completionStatus: null,
+  puzzleInstance: 0,
+  moveCount: 0,
+  timerRunning: false,
+  lastTick: null,
   sequenceState: null,
   sequenceBoard: null,
   recentMistakes: [],
@@ -66,29 +129,33 @@ export const useGameStore = create<GameState>((set, get) => ({
   redoStack: [],
   isComplete: false,
   elapsedMs: 0,
-  mistakes: 0,
 
   loadPuzzle: (puzzle: Puzzle) => {
-    const grid = createEmptyGrid(puzzle.size);
-    
-    // Place givens
-    puzzle.givens.forEach(({ row, col, value }) => {
-      const cell = getCell(grid, row, col);
-      if (cell) {
-        cell.value = value;
-        cell.given = true;
-      }
-    });
-    
-    set({
-      puzzle,
-      grid,
+    set((state) => {
+      const grid = createEmptyGrid(puzzle.size);
+      
+      puzzle.givens.forEach(({ row, col, value }) => {
+        const cell = getCell(grid, row, col);
+        if (cell) {
+          cell.value = value;
+          cell.given = true;
+        }
+      });
+      
+      return {
+        puzzle,
+        grid,
       selectedCell: null,
       undoStack: [],
       redoStack: [],
       isComplete: false,
       elapsedMs: 0,
-      mistakes: 0,
+      moveCount: 0,
+      timerRunning: true,
+      lastTick: Date.now(),
+      completionStatus: null,
+      puzzleInstance: state.puzzleInstance + 1,
+      };
     });
   },
 
@@ -120,11 +187,12 @@ export const useGameStore = create<GameState>((set, get) => ({
     cell.value = value;
     cell.candidates = [];
     
-    set({
+    set((state) => ({
       grid: { ...grid },
       undoStack: [...undoStack, action],
       redoStack: [],
-    });
+      moveCount: state.moveCount + 1,
+    }));
     
     get().checkCompletion();
   },
@@ -147,6 +215,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       grid: { ...grid },
       undoStack: [...undoStack, action],
       redoStack: [],
+      completionStatus: null,
+      isComplete: false,
     });
   },
 
@@ -256,34 +326,167 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   resetPuzzle: () => {
-    const { puzzle } = get();
-    if (puzzle) get().loadPuzzle(puzzle);
+    const { puzzle, loadPuzzle } = get();
+    if (puzzle) {
+      const puzzleClone: Puzzle = {
+        ...puzzle,
+        givens: puzzle.givens.map((given) => ({ ...given })),
+        solution: puzzle.solution
+          ? puzzle.solution.map((cell) => ({ ...cell }))
+          : puzzle.solution ?? null,
+      };
+      loadPuzzle(puzzleClone);
+    }
   },
 
   checkCompletion: () => {
     const { grid, puzzle } = get();
     if (!puzzle) return;
+
+    const applySuccess = () => {
+      set((state) => {
+        const now = Date.now();
+        const delta =
+          state.timerRunning && state.lastTick !== null ? now - state.lastTick : 0;
+        return {
+          isComplete: true,
+          completionStatus: 'success',
+          timerRunning: false,
+          lastTick: null,
+          elapsedMs: state.elapsedMs + delta,
+        };
+      });
+    };
     
     // Check if all cells filled
     for (let row = 0; row < grid.size; row++) {
       for (let col = 0; col < grid.size; col++) {
         const cell = getCell(grid, row, col);
         if (!cell || cell.value === null) {
-          set({ isComplete: false });
+          set({ isComplete: false, completionStatus: null });
           return;
         }
       }
     }
     
-    // TODO: Full validation (adjacency, contiguity)
-    set({ isComplete: true });
+    const solution = puzzle.solution;
+    if (!solution || solution.length === 0) {
+      applySuccess();
+      return;
+    }
+
+    const solutionMap = new Map<string, number>();
+    solution.forEach(({ row, col, value }) => {
+      solutionMap.set(positionKey({ row, col }), value);
+    });
+
+    let matchesSolution = true;
+    for (let row = 0; row < grid.size && matchesSolution; row++) {
+      for (let col = 0; col < grid.size; col++) {
+        const cell = getCell(grid, row, col);
+        const key = positionKey({ row, col });
+        const expected = solutionMap.get(key);
+        if (!cell || typeof expected !== 'number' || cell.value !== expected) {
+          matchesSolution = false;
+          break;
+        }
+      }
+    }
+
+    if (matchesSolution) {
+      applySuccess();
+    } else {
+      set({ isComplete: false, completionStatus: 'incorrect' });
+    }
+  },
+
+  dismissCompletionStatus: () => {
+    set({ completionStatus: null });
+  },
+
+  startTimer: () => {
+    set({ timerRunning: true, lastTick: Date.now() });
+  },
+
+  stopTimer: () => {
+    set((state) => {
+      if (!state.timerRunning) {
+        return { timerRunning: false, lastTick: null };
+      }
+      const now = Date.now();
+      const delta = state.lastTick !== null ? now - state.lastTick : 0;
+      return {
+        timerRunning: false,
+        lastTick: null,
+        elapsedMs: state.elapsedMs + delta,
+      };
+    });
+  },
+
+  tickTimer: () => {
+    set((state) => {
+      if (!state.timerRunning || state.lastTick === null) {
+        return {};
+      }
+      const now = Date.now();
+      return {
+        elapsedMs: state.elapsedMs + (now - state.lastTick),
+        lastTick: now,
+      };
+    });
   },
   
   updateSequenceState: (state: SequenceState, board: SequenceBoardCell[][], mistakes: MistakeEvent[]) => {
-    set({ 
-      sequenceState: state, 
-      sequenceBoard: board,
-      recentMistakes: mistakes,
+    set((current) => {
+      const evaluatedStatus = deriveCompletionStatusFromBoard(board, current.puzzle);
+      let completionStatus = current.completionStatus;
+      let isComplete = current.isComplete;
+      let elapsedMs = current.elapsedMs;
+      let timerRunning = current.timerRunning;
+      let lastTick = current.lastTick;
+      let moveCount = current.moveCount;
+
+      const isNewPlacement =
+        current.sequenceState?.nextTargetChangeReason !== state.nextTargetChangeReason &&
+        state.nextTargetChangeReason === 'placement';
+
+      if (isNewPlacement) {
+        moveCount += 1;
+      }
+
+      if (evaluatedStatus === 'success') {
+        completionStatus = 'success';
+        isComplete = true;
+        if (timerRunning && lastTick !== null) {
+          const now = Date.now();
+          elapsedMs += now - lastTick;
+        }
+        timerRunning = false;
+        lastTick = null;
+      } else if (evaluatedStatus === 'incorrect') {
+        completionStatus = 'incorrect';
+        isComplete = false;
+      } else if (completionStatus !== null) {
+        // Board is no longer complete - clear any stale status
+        completionStatus = null;
+        isComplete = false;
+        if (!timerRunning) {
+          timerRunning = true;
+          lastTick = Date.now();
+        }
+      }
+
+      return {
+        sequenceState: state,
+        sequenceBoard: board,
+        recentMistakes: mistakes,
+        completionStatus,
+        isComplete,
+        moveCount,
+        elapsedMs,
+        timerRunning,
+        lastTick,
+      };
     });
   },
 }));

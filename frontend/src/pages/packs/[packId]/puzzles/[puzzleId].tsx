@@ -10,6 +10,7 @@ import Grid from '@/components/Grid/Grid';
 import Palette from '@/components/Palette/Palette';
 import BottomSheet from '@/components/Palette/BottomSheet';
 import CompletionModal from '@/components/HUD/CompletionModal';
+import { SessionStats } from '@/components/HUD/SessionStats';
 
 /**
  * Individual puzzle page within a pack (US2).
@@ -23,13 +24,14 @@ export default function PackPuzzlePage() {
   const [error, setError] = useState<string | null>(null);
   const [pack, setPack] = useState<Pack | null>(null);
   const [currentIndex, setCurrentIndex] = useState<number>(-1);
-  const [showCompletion, setShowCompletion] = useState(false);
   
   const loadPuzzleToStore = useGameStore((state) => state.loadPuzzle);
-  const isComplete = useGameStore((state) => state.isComplete);
+  const completionStatus = useGameStore((state) => state.completionStatus);
+  const dismissCompletionStatus = useGameStore(
+    (state) => state.dismissCompletionStatus
+  );
   const elapsedMs = useGameStore((state) => state.elapsedMs);
-  const mistakes = useGameStore((state) => state.mistakes);
-  const undoStack = useGameStore((state) => state.undoStack);
+  const moveCount = useGameStore((state) => state.moveCount);
   
   const recordCompletion = useProgressStore((state) => state.recordCompletion);
   const recordProgress = useProgressStore((state) => state.recordProgress);
@@ -65,14 +67,17 @@ export default function PackPuzzlePage() {
     loadData();
   }, [packId, puzzleId, loadPuzzleToStore, recordProgress]);
 
-  // Record completion when puzzle is solved
   useEffect(() => {
-    if (isComplete && packId && typeof packId === 'string' && puzzleId && typeof puzzleId === 'string') {
-      const moves = undoStack.length;
-      recordCompletion(packId, puzzleId, moves, elapsedMs);
-      setShowCompletion(true);
+    if (
+      completionStatus === 'success' &&
+      packId &&
+      typeof packId === 'string' &&
+      puzzleId &&
+      typeof puzzleId === 'string'
+    ) {
+      recordCompletion(packId, puzzleId, moveCount, elapsedMs);
     }
-  }, [isComplete, packId, puzzleId, elapsedMs, undoStack.length, recordCompletion]);
+  }, [completionStatus, packId, puzzleId, elapsedMs, moveCount, recordCompletion]);
 
   const handleNavigate = useCallback((direction: 'prev' | 'next') => {
     if (!pack || currentIndex === -1) return;
@@ -138,6 +143,10 @@ export default function PackPuzzlePage() {
           </div>
         </div>
 
+        <div className="mb-6 flex justify-center">
+          <SessionStats />
+        </div>
+
         {/* Main game area */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -179,8 +188,8 @@ export default function PackPuzzlePage() {
 
         {/* Completion modal */}
         <CompletionModal
-          isOpen={showCompletion}
-          onClose={() => setShowCompletion(false)}
+          isOpen={completionStatus !== null}
+          onClose={dismissCompletionStatus}
         />
       </div>
     </main>
