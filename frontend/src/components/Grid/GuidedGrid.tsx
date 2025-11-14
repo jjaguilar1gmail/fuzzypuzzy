@@ -1,4 +1,4 @@
-import { useGameStore } from '@/state/gameStore';
+﻿import { useGameStore } from '@/state/gameStore';
 import { motion } from 'framer-motion';
 import { memo, useMemo, useEffect, useState } from 'react';
 import { useGuidedSequenceFlow } from '@/sequence';
@@ -56,21 +56,24 @@ const GuidedGrid = memo(function GuidedGrid() {
   // Track focused cell for keyboard navigation
   const [focusedCell, setFocusedCell] = useState<Position | null>(null);
 
-  // Auto-dismiss mistakes after 3 seconds
-  const [visibleMistakes, setVisibleMistakes] = useState<typeof recentMistakes>([]);
+  // Auto-dismiss the latest mistake after 3 seconds
+  const [visibleMistake, setVisibleMistake] = useState<MistakeEvent | null>(null);
 
   useEffect(() => {
-    if (recentMistakes.length > 0) {
-      setVisibleMistakes(recentMistakes);
-      const latestMistake = recentMistakes[0];
-      const timer = setTimeout(() => {
-        setVisibleMistakes((current) =>
-          current.filter((m) => m.timestamp !== latestMistake.timestamp)
-        );
-      }, 3000); // Dismiss after 3 seconds
-
-      return () => clearTimeout(timer);
+    if (recentMistakes.length === 0) {
+      return;
     }
+
+    const latest = recentMistakes[recentMistakes.length - 1];
+    setVisibleMistake(latest);
+
+    const timer = setTimeout(() => {
+      setVisibleMistake((current) =>
+        current?.timestamp === latest.timestamp ? null : current
+      );
+    }, 3000);
+
+    return () => clearTimeout(timer);
   }, [recentMistakes]);
 
   // Memoize grid dimensions to prevent recalculation
@@ -125,6 +128,11 @@ const GuidedGrid = memo(function GuidedGrid() {
   if (!puzzle || !board || !dimensions) return null;
 
   const { cellSize, gap, totalSize } = dimensions;
+
+  const nextIndicatorLabel =
+    state.nextTarget !== null
+      ? `Next number: ${state.nextTarget}`
+      : 'Select a clue to continue';
 
   return (
     <div className="relative">
@@ -267,14 +275,11 @@ const GuidedGrid = memo(function GuidedGrid() {
       </svg>
 
       {/* Next target indicator */}
-      {state.nextTarget !== null && (
-        <div className="mt-4 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 rounded-lg border-2 border-blue-500">
-            <span className="text-sm font-medium text-gray-700">Next number:</span>
-            <span className="text-2xl font-bold text-blue-600">{state.nextTarget}</span>
-          </div>
+      <div className="mt-4 flex justify-center">
+        <div className="inline-flex min-h-[48px] items-center rounded-full border border-blue-200 bg-blue-50 px-5 py-2 text-sm font-semibold text-blue-700 shadow-sm">
+          {nextIndicatorLabel}
         </div>
-      )}
+      </div>
 
       {/* Undo/Redo buttons */}
       <div className="mt-4 flex justify-center gap-2">
@@ -287,7 +292,7 @@ const GuidedGrid = memo(function GuidedGrid() {
           }`}
           aria-label={state.guideEnabled ? 'Hide guide highlights' : 'Show guide highlights'}
         >
-          {state.guideEnabled ? '👁️ Guide On' : '👁️‍🗨️ Guide Off'}
+          {state.guideEnabled ? 'Guide On' : 'Guide Off'}
         </button>
         <button
           onClick={undo}
@@ -308,7 +313,7 @@ const GuidedGrid = memo(function GuidedGrid() {
       </div>
 
       {/* Mistake indicator */}
-      {visibleMistakes.length > 0 && (
+      {visibleMistake && (
         <motion.div
           className="mt-4 p-3 bg-red-100 border-2 border-red-500 rounded-lg text-center"
           initial={{ opacity: 0, y: -10 }}
@@ -316,11 +321,11 @@ const GuidedGrid = memo(function GuidedGrid() {
           exit={{ opacity: 0, y: -10 }}
         >
           <p className="text-sm font-medium text-red-700">
-            {visibleMistakes[0].reason === 'no-target'
+            {visibleMistake.reason === 'no-target'
               ? 'No anchor selected! Click a number first.'
-              : visibleMistakes[0].reason === 'occupied'
+              : visibleMistake.reason === 'occupied'
               ? 'Cell already has a value!'
-              : visibleMistakes[0].reason === 'not-adjacent'
+              : visibleMistake.reason === 'not-adjacent'
               ? 'Must place next to the anchor!'
               : 'Invalid move!'}
           </p>
@@ -340,3 +345,4 @@ const GuidedGrid = memo(function GuidedGrid() {
 });
 
 export default GuidedGrid;
+
