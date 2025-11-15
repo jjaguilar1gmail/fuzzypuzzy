@@ -1,25 +1,5 @@
 [
   {
-    "id": "daily-nov",
-    "title": "Daily November",
-    "puzzle_count": 5,
-    "difficulty_counts": {
-      "easy": 5
-    },
-    "created_at": "2025-11-11T20:15:10.104964Z",
-    "description": "Easy puzzles for November"
-  },
-  {
-    "id": "hard_5x5",
-    "title": "5x5 Hard Verified",
-    "puzzle_count": 20,
-    "difficulty_counts": {
-      "hard": 20
-    },
-    "created_at": "2025-11-12T17:57:48.648535Z",
-    "description": "Initial set of 5x5 hard puzzles"
-  },
-  {
     "id": "hard_5x5_soln",
     "title": "5x5 Hard Verified Solutions",
     "puzzle_count": 20,
