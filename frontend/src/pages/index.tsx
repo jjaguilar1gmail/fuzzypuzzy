@@ -80,7 +80,7 @@ export default function HomePage() {
             className="text-3xl font-bold"
             style={{ fontFamily: 'IowanTitle, serif' }}
           >
-            Flowgrid Daily
+            NumberFlow
           </h1>
           {/* <SettingsMenu /> */}
         </div>
