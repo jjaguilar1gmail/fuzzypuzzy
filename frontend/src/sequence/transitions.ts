@@ -42,7 +42,10 @@ export function selectAnchor(
   const targetResult = deriveNextTarget(anchorValue, anchorPos, board);
   const finalAnchorValue = targetResult.newAnchorValue ?? anchorValue;
   const finalAnchorPos = targetResult.newAnchorPos ?? anchorPos;
-  const legalTargets = computeLegalTargets(finalAnchorPos, board);
+  const legalTargets =
+    targetResult.nextTarget !== null && finalAnchorPos
+      ? computeLegalTargets(finalAnchorPos, board)
+      : [];
 
   const newState: SequenceState = {
     ...state,
@@ -110,7 +113,10 @@ export function placeNext(
   const targetResult = deriveNextTarget(anchorValue, anchorPos, newBoard);
   const finalAnchorValue = targetResult.newAnchorValue ?? anchorValue;
   const finalAnchorPos = targetResult.newAnchorPos ?? anchorPos;
-  const legalTargets = computeLegalTargets(finalAnchorPos, newBoard);
+  const legalTargets =
+    targetResult.nextTarget !== null && finalAnchorPos
+      ? computeLegalTargets(finalAnchorPos, newBoard)
+      : [];
 
   const newState: SequenceState = {
     ...state,
@@ -265,7 +271,10 @@ export function applyUndo(
   };
 
   // Recompute legal targets if anchor exists
-  const legalTargets = computeLegalTargets(restoredState.anchorPos, newBoard);
+  const legalTargets =
+    restoredState.nextTarget !== null && restoredState.anchorPos
+      ? computeLegalTargets(restoredState.anchorPos, newBoard)
+      : [];
 
   const newState: SequenceState = {
     ...restoredState,
@@ -307,7 +316,10 @@ export function applyRedo(
     const targetResult = deriveNextTarget(anchorValue, anchorPos, newBoard);
     const finalAnchorValue = targetResult.newAnchorValue ?? anchorValue;
     const finalAnchorPos = targetResult.newAnchorPos ?? anchorPos;
-    const legalTargets = computeLegalTargets(finalAnchorPos, newBoard);
+    const legalTargets =
+      targetResult.nextTarget !== null && finalAnchorPos
+        ? computeLegalTargets(finalAnchorPos, newBoard)
+        : [];
 
     newState = {
       ...state,
@@ -346,7 +358,10 @@ export function applyRedo(
         );
         const finalAnchorValue = targetResult.newAnchorValue ?? state.anchorValue;
         const finalAnchorPos = targetResult.newAnchorPos ?? state.anchorPos;
-        const legalTargets = computeLegalTargets(finalAnchorPos, newBoard);
+        const legalTargets =
+          targetResult.nextTarget !== null && finalAnchorPos
+            ? computeLegalTargets(finalAnchorPos, newBoard)
+            : [];
 
         newState = {
           ...state,

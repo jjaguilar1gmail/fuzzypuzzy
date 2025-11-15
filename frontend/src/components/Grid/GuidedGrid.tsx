@@ -1,14 +1,18 @@
-import { useGameStore } from '@/state/gameStore';
+﻿import { useGameStore } from '@/state/gameStore';
 import { motion } from 'framer-motion';
-import { memo, useMemo, useEffect, useState } from 'react';
+import { memo, useMemo, useEffect, useState, useRef } from 'react';
 import { useGuidedSequenceFlow } from '@/sequence';
-import type { Position } from '@/sequence/types';
+import type { Position, MistakeEvent } from '@/sequence/types';
+
+const HOLD_DURATION_MS = 650;
+const BOARD_PADDING = 8;
 
 /**
  * Grid component integrated with guided sequence flow
  */
 const GuidedGrid = memo(function GuidedGrid() {
   const puzzle = useGameStore((state) => state.puzzle);
+  const puzzleInstance = useGameStore((state) => state.puzzleInstance);
   const updateSequenceState = useGameStore((state) => state.updateSequenceState);
 
   // Convert puzzle givens to Map format
@@ -43,8 +47,12 @@ const GuidedGrid = memo(function GuidedGrid() {
     puzzle?.size || 5,
     puzzle?.size || 5,
     givensMap,
-    maxValue
+    maxValue,
+    puzzleInstance
   );
+  const globalSequenceState = useGameStore((store) => store.sequenceState);
+  const completionStatus = useGameStore((store) => store.completionStatus);
+  const isComplete = useGameStore((store) => store.isComplete);
 
   // Sync sequence state with game store
   useEffect(() => {
@@ -54,22 +62,118 @@ const GuidedGrid = memo(function GuidedGrid() {
   // Track focused cell for keyboard navigation
   const [focusedCell, setFocusedCell] = useState<Position | null>(null);
 
-  // Auto-dismiss mistakes after 3 seconds
-  const [visibleMistakes, setVisibleMistakes] = useState<typeof recentMistakes>([]);
+  // Auto-dismiss the latest mistake after 3 seconds
+  const [visibleMistake, setVisibleMistake] = useState<MistakeEvent | null>(null);
+  const [pillPulseId, setPillPulseId] = useState<number | null>(null);
 
   useEffect(() => {
-    if (recentMistakes.length > 0) {
-      setVisibleMistakes(recentMistakes);
-      const latestMistake = recentMistakes[0];
-      const timer = setTimeout(() => {
-        setVisibleMistakes((current) =>
-          current.filter((m) => m.timestamp !== latestMistake.timestamp)
-        );
-      }, 3000); // Dismiss after 3 seconds
-
-      return () => clearTimeout(timer);
+    if (recentMistakes.length === 0) {
+      return;
     }
+
+    const latest = recentMistakes[recentMistakes.length - 1];
+    setVisibleMistake(latest);
+
+    const timer = setTimeout(() => {
+      setVisibleMistake((current) =>
+        current?.timestamp === latest.timestamp ? null : current
+      );
+    }, 3000);
+
+    return () => clearTimeout(timer);
   }, [recentMistakes]);
+
+  useEffect(() => {
+    if (!visibleMistake) return;
+    setPillPulseId(visibleMistake.timestamp);
+    const timer = setTimeout(() => setPillPulseId(null), 450);
+    return () => clearTimeout(timer);
+  }, [visibleMistake]);
+
+  const [holdIndicator, setHoldIndicator] = useState<{
+    pos: Position;
+    progress: number;
+  } | null>(null);
+  const holdTimeoutRef = useRef<number | null>(null);
+  const holdRafRef = useRef<number | null>(null);
+  const holdStartRef = useRef<number>(0);
+  const skipNextClickRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (holdTimeoutRef.current) {
+        clearTimeout(holdTimeoutRef.current);
+        holdTimeoutRef.current = null;
+      }
+      if (holdRafRef.current) {
+        cancelAnimationFrame(holdRafRef.current);
+        holdRafRef.current = null;
+      }
+    };
+  }, []);
+
+  const clearHoldState = () => {
+    if (holdTimeoutRef.current !== null) {
+      clearTimeout(holdTimeoutRef.current);
+      holdTimeoutRef.current = null;
+    }
+    if (holdRafRef.current !== null) {
+      cancelAnimationFrame(holdRafRef.current);
+      holdRafRef.current = null;
+    }
+    setHoldIndicator(null);
+  };
+
+  const executeHoldRemoval = (pos: Position) => {
+    clearHoldState();
+    skipNextClickRef.current = true;
+    removeCell(pos);
+  };
+
+  const startHold = (pos: Position) => {
+    clearHoldState();
+    holdStartRef.current = performance.now();
+    setHoldIndicator({ pos, progress: 0 });
+
+    const updateProgress = () => {
+      const elapsed = performance.now() - holdStartRef.current;
+      const progress = Math.min(elapsed / HOLD_DURATION_MS, 1);
+      setHoldIndicator((current) =>
+        current && current.pos.row === pos.row && current.pos.col === pos.col
+          ? { ...current, progress }
+          : current
+      );
+      if (progress < 1 && holdTimeoutRef.current !== null) {
+        holdRafRef.current = requestAnimationFrame(updateProgress);
+      }
+    };
+
+    holdRafRef.current = requestAnimationFrame(updateProgress);
+    holdTimeoutRef.current = window.setTimeout(
+      () => executeHoldRemoval(pos),
+      HOLD_DURATION_MS
+    );
+  };
+
+  const cancelHold = () => {
+    clearHoldState();
+  };
+
+  const handlePointerDown = (
+    e: React.PointerEvent<SVGRectElement>,
+    cell: (typeof board)[number][number]
+  ) => {
+    if (cell.value !== null && !cell.given) {
+      e.preventDefault();
+      startHold(cell.position);
+    }
+  };
+
+  const handlePointerEnd = () => {
+    if (holdTimeoutRef.current !== null) {
+      cancelHold();
+    }
+  };
 
   // Memoize grid dimensions to prevent recalculation
   const dimensions = useMemo(() => {
@@ -81,22 +185,20 @@ const GuidedGrid = memo(function GuidedGrid() {
   }, [board?.length]);
 
   const handleCellClick = (row: number, col: number) => {
+    if (skipNextClickRef.current) {
+      skipNextClickRef.current = false;
+      return;
+    }
+
     const pos: Position = { row, col };
     const cell = board[row][col];
 
     // If cell has a value
     if (cell.value !== null) {
-      // If it's a given (immutable), select as anchor
-      if (cell.given) {
-        selectAnchor(pos);
-      }
-      // If it's player-placed, remove it
-      else {
-        removeCell(pos);
-      }
+      selectAnchor(pos);
     }
-    // If cell is empty and is a legal target, place next value
-    else if (state.legalTargets.some((t) => t.row === row && t.col === col)) {
+    // If cell is empty, attempt placement (validate within hook)
+    else {
       placeNext(pos);
     }
   };
@@ -124,21 +226,43 @@ const GuidedGrid = memo(function GuidedGrid() {
 
   const { cellSize, gap, totalSize } = dimensions;
 
+  let nextIndicatorLabel: string;
+  if (isComplete) {
+    nextIndicatorLabel = 'Puzzle complete!';
+  } else {
+    const nextTargetValue =
+      state.nextTarget ?? globalSequenceState?.nextTarget ?? null;
+    nextIndicatorLabel =
+      nextTargetValue !== null
+        ? `Next number: ${nextTargetValue}`
+        : 'Select a clue to continue';
+  }
+
   return (
-    <div className="relative">
+    <div className="flex flex-col items-center">
       <style>{`
         .cell-rect:focus {
           outline: none;
         }
       `}</style>
-      <svg
-        width={totalSize}
-        height={totalSize}
-        viewBox={`0 0 ${totalSize} ${totalSize}`}
-        className="mx-auto"
-        role="grid"
-        aria-label="Hidato puzzle grid"
+      <div
+        className={`mb-2 inline-flex min-h-[28px] items-center rounded-full border px-4 py-1 text-sm font-semibold shadow transition-colors ${
+          pillPulseId
+            ? 'border-red-200 bg-red-50 text-red-600'
+            : 'border-blue-200 bg-blue-50 text-blue-700'
+        }`}
       >
+        {nextIndicatorLabel}
+      </div>
+      <div className="relative">
+        <svg
+          width={totalSize}
+          height={totalSize}
+          viewBox={`${-BOARD_PADDING} ${-BOARD_PADDING} ${totalSize + BOARD_PADDING * 2} ${totalSize + BOARD_PADDING * 2}`}
+          className="mx-auto"
+          role="grid"
+          aria-label="Hidato puzzle grid"
+        >
         {board.map((row, r) =>
           row.map((cell, c) => {
             const x = c * (cellSize + gap);
@@ -149,6 +273,17 @@ const GuidedGrid = memo(function GuidedGrid() {
             const isGiven = cell.given;
             const hasValue = cell.value !== null;
             const isFocused = focusedCell?.row === r && focusedCell?.col === c;
+            const isMistakeTarget =
+              visibleMistake &&
+              visibleMistake.position.row === r &&
+              visibleMistake.position.col === c;
+            const isHoldTarget =
+              holdIndicator &&
+              holdIndicator.pos.row === r &&
+              holdIndicator.pos.col === c;
+            const holdProgress = isHoldTarget ? holdIndicator.progress : 0;
+            const holdRadius = cellSize / 2 - 6;
+            const holdCircumference = 2 * Math.PI * holdRadius;
 
             // Determine fill color based on cell state
             let fillColor = 'white';
@@ -160,6 +295,8 @@ const GuidedGrid = memo(function GuidedGrid() {
             // Determine stroke color
             let strokeColor = 'rgb(203, 213, 225)'; // slate-300
             let strokeWidth = 1;
+            const showAnchorWarning = isAnchor && !!visibleMistake;
+
             if (isAnchor) {
               strokeColor = 'rgb(234, 179, 8)'; // yellow-600
               strokeWidth = 3;
@@ -196,6 +333,10 @@ const GuidedGrid = memo(function GuidedGrid() {
                   transition={{ duration: 0.15, delay: (r + c) * 0.02 }}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
+                  onPointerDown={(e) => handlePointerDown(e, cell)}
+                  onPointerUp={handlePointerEnd}
+                  onPointerLeave={handlePointerEnd}
+                  onPointerCancel={handlePointerEnd}
                 />
 
                 {/* Focus ring (visible only when focused via keyboard) */}
@@ -258,21 +399,47 @@ const GuidedGrid = memo(function GuidedGrid() {
                     }}
                   />
                 )}
+
+                {/* Long-press progress */}
+                {isHoldTarget && (
+                  <circle
+                    cx={x + cellSize / 2}
+                    cy={y + cellSize / 2}
+                    r={holdRadius}
+                    fill="none"
+                    stroke="rgba(239,68,68,0.85)"
+                    strokeWidth={3}
+                    strokeDasharray={holdCircumference}
+                    strokeDashoffset={holdCircumference * (1 - holdProgress)}
+                    strokeLinecap="round"
+                    pointerEvents="none"
+                  />
+                )}
+
+                {/* Subtle invalid indicator */}
+                {isMistakeTarget && (
+                  <motion.rect
+                    key={visibleMistake?.timestamp ?? 'mistake'}
+                    x={x + 2}
+                    y={y + 2}
+                    width={cellSize - 4}
+                    height={cellSize - 4}
+                    rx={4}
+                    fill="rgba(239,68,68,0.12)"
+                    stroke="rgba(239,68,68,0.35)"
+                    strokeWidth={2}
+                    pointerEvents="none"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: [0, 1, 0] }}
+                    transition={{ duration: 0.45, ease: 'easeOut' }}
+                  />
+                )}
               </g>
             );
           })
         )}
       </svg>
-
-      {/* Next target indicator */}
-      {state.nextTarget !== null && (
-        <div className="mt-4 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 rounded-lg border-2 border-blue-500">
-            <span className="text-sm font-medium text-gray-700">Next number:</span>
-            <span className="text-2xl font-bold text-blue-600">{state.nextTarget}</span>
-          </div>
-        </div>
-      )}
+      </div>
 
       {/* Undo/Redo buttons */}
       <div className="mt-4 flex justify-center gap-2">
@@ -285,7 +452,7 @@ const GuidedGrid = memo(function GuidedGrid() {
           }`}
           aria-label={state.guideEnabled ? 'Hide guide highlights' : 'Show guide highlights'}
         >
-          {state.guideEnabled ? '👁️ Guide On' : '👁️‍🗨️ Guide Off'}
+          {state.guideEnabled ? 'Guide On' : 'Guide Off'}
         </button>
         <button
           onClick={undo}
@@ -305,26 +472,6 @@ const GuidedGrid = memo(function GuidedGrid() {
         </button>
       </div>
 
-      {/* Mistake indicator */}
-      {visibleMistakes.length > 0 && (
-        <motion.div
-          className="mt-4 p-3 bg-red-100 border-2 border-red-500 rounded-lg text-center"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-        >
-          <p className="text-sm font-medium text-red-700">
-            {visibleMistakes[0].reason === 'no-target'
-              ? 'No anchor selected! Click a number first.'
-              : visibleMistakes[0].reason === 'occupied'
-              ? 'Cell already has a value!'
-              : visibleMistakes[0].reason === 'not-adjacent'
-              ? 'Must place next to the anchor!'
-              : 'Invalid move!'}
-          </p>
-        </motion.div>
-      )}
-
       {/* Instructions */}
       {state.anchorValue === null && (
         <div className="mt-4 p-3 bg-gray-100 rounded-lg text-center">
@@ -338,3 +485,4 @@ const GuidedGrid = memo(function GuidedGrid() {
 });
 
 export default GuidedGrid;
+

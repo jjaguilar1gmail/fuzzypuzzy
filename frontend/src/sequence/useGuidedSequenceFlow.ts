@@ -77,6 +77,57 @@ function initializeSequenceState(): SequenceState {
 }
 
 /**
+ * Find the lowest-value anchor that can immediately expose legal targets.
+ * Considers contiguous chain skipping logic by reusing next-target derivation.
+ */
+function findLowestAnchorWithCandidates(
+  board: BoardCell[][]
+): Position | null {
+  let bestCandidate:
+    | { pos: Position; value: number; legalCount: number; sourceValue: number }
+    | null = null;
+
+  for (const row of board) {
+    for (const cell of row) {
+      const cellValue = cell.value;
+      if (cellValue === null) continue;
+
+      const targetResult = deriveNextTarget(cellValue, cell.position, board);
+      const anchorValue = targetResult.newAnchorValue ?? cellValue;
+      const anchorPos = targetResult.newAnchorPos ?? cell.position;
+
+      if (targetResult.nextTarget === null || anchorPos === null) {
+        continue;
+      }
+
+      const legalTargets = computeLegalTargets(anchorPos, board);
+      if (legalTargets.length === 0) {
+        continue;
+      }
+
+      if (
+        bestCandidate === null ||
+        anchorValue < bestCandidate.value ||
+        (anchorValue === bestCandidate.value &&
+          legalTargets.length > bestCandidate.legalCount) ||
+        (anchorValue === bestCandidate.value &&
+          legalTargets.length === bestCandidate.legalCount &&
+          cellValue < bestCandidate.sourceValue)
+      ) {
+        bestCandidate = {
+          pos: { ...anchorPos },
+          value: anchorValue,
+          legalCount: legalTargets.length,
+          sourceValue: cellValue,
+        };
+      }
+    }
+  }
+
+  return bestCandidate ? bestCandidate.pos : null;
+}
+
+/**
  * Main hook for guided sequence flow with intelligent placement assistance
  * 
  * @param rows - Board height
@@ -105,7 +156,8 @@ export function useGuidedSequenceFlow(
   rows: number,
   cols: number,
   givens: Map<string, number>,
-  maxValue: number
+  maxValue: number,
+  resetKey = 0
 ): GuidedSequenceFlowAPI {
   // Initialize board and state
   const [board, setBoard] = useState(() => initializeBoard(rows, cols, givens));
@@ -126,6 +178,24 @@ export function useGuidedSequenceFlow(
 
   // Mistake buffer (ring buffer)
   const [mistakes, setMistakes] = useState<MistakeEvent[]>([]);
+
+  // Reset board/state whenever puzzle inputs or reset key change
+  useEffect(() => {
+    const newBoard = initializeBoard(rows, cols, givens);
+    const baseState = initializeSequenceState();
+    const chainInfo = computeChain(newBoard, maxValue);
+
+    setBoard(newBoard);
+    setState({
+      ...baseState,
+      chainEndValue: chainInfo.chainEndValue,
+      chainLength: chainInfo.chainLength,
+    });
+
+    undoRedoRef.current = new UndoRedoStack();
+    setUndoRedoVersion(0);
+    setMistakes([]);
+  }, [rows, cols, maxValue, givens, resetKey]);
 
   // Memoize chain computation to avoid redundant calculations
   // Only recompute when board actually changes
@@ -168,6 +238,21 @@ export function useGuidedSequenceFlow(
       return updatedBoard;
     });
   }, [state.anchorPos, state.legalTargets]);
+
+  // Automatically pick the lowest-value anchor with legal targets on load
+  useEffect(() => {
+    if (state.anchorPos !== null) {
+      return;
+    }
+
+    const autoAnchorPos = findLowestAnchorWithCandidates(board);
+    if (!autoAnchorPos) {
+      return;
+    }
+
+    const result = selectAnchorTransition(state, board, maxValue, autoAnchorPos);
+    setState(result.state);
+  }, [board, maxValue, state]);
 
   /**
    * Select a cell value as the anchor for guided placement

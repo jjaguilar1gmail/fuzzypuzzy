@@ -5,11 +5,7 @@ import { useState } from 'react';
 export default function SettingsMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const theme = useSettingsStore((state) => state.theme);
-  const soundEnabled = useSettingsStore((state) => state.soundEnabled);
-  const pencilModeDefault = useSettingsStore((state) => state.pencilModeDefault);
   const setTheme = useSettingsStore((state) => state.setTheme);
-  const toggleSound = useSettingsStore((state) => state.toggleSound);
-  const togglePencilModeDefault = useSettingsStore((state) => state.togglePencilModeDefault);
 
   return (
     <div className="relative">
@@ -67,47 +63,6 @@ export default function SettingsMenu() {
                 </div>
               </div>
 
-              {/* Sound */}
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-gray-700">
-                  Sound Effects
-                </label>
-                <button
-                  onClick={toggleSound}
-                  className={`relative inline-flex min-h-[44px] min-w-[44px] h-10 w-16 items-center rounded-full transition-colors ${
-                    soundEnabled ? 'bg-blue-500' : 'bg-gray-300'
-                  }`}
-                  role="switch"
-                  aria-checked={soundEnabled}
-                >
-                  <span
-                    className={`inline-block h-8 w-8 transform rounded-full bg-white transition-transform ${
-                      soundEnabled ? 'translate-x-7' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {/* Pencil mode default */}
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-gray-700">
-                  Start with Pencil Mode
-                </label>
-                <button
-                  onClick={togglePencilModeDefault}
-                  className={`relative inline-flex min-h-[44px] min-w-[44px] h-10 w-16 items-center rounded-full transition-colors ${
-                    pencilModeDefault ? 'bg-blue-500' : 'bg-gray-300'
-                  }`}
-                  role="switch"
-                  aria-checked={pencilModeDefault}
-                >
-                  <span
-                    className={`inline-block h-8 w-8 transform rounded-full bg-white transition-transform ${
-                      pencilModeDefault ? 'translate-x-7' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
             </div>
           </motion.div>
         </>

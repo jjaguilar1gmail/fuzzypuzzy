@@ -4,6 +4,13 @@
 
 @import './theme.css';
 
+@font-face {
+  font-family: 'IowanTitle';
+  src: url('/fonts/bitstream-iowan-old-style.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;

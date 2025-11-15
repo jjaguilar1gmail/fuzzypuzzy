@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '@/state/gameStore';
+import { formatDuration } from '@/components/HUD/SessionStats';
 
 interface CompletionModalProps {
   isOpen: boolean;
@@ -10,26 +11,26 @@ interface CompletionModalProps {
 export default function CompletionModal({ isOpen, onClose }: CompletionModalProps) {
   const puzzle = useGameStore((state) => state.puzzle);
   const elapsedMs = useGameStore((state) => state.elapsedMs);
-  const mistakes = useGameStore((state) => state.mistakes);
-  const undoStack = useGameStore((state) => state.undoStack);
+  const moveCount = useGameStore((state) => state.moveCount);
+  const completionStatus = useGameStore((state) => state.completionStatus);
+  const isCorrect = completionStatus !== 'incorrect';
 
-  // Memoize format function to prevent recreation
-  const formatTime = useCallback((ms: number) => {
-    const seconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  }, []);
-
-  // Memoize reset handler
-  const handleReset = useCallback(() => {
-    useGameStore.getState().resetPuzzle();
+  const handlePrimaryAction = useCallback(() => {
+    if (isCorrect) {
+      useGameStore.getState().resetPuzzle();
+    }
     onClose();
-  }, [onClose]);
+  }, [isCorrect, onClose]);
+
+  const handleSecondaryAction = useCallback(() => {
+    if (!isCorrect) {
+      useGameStore.getState().resetPuzzle();
+    }
+    onClose();
+  }, [isCorrect, onClose]);
 
   useEffect(() => {
     if (isOpen) {
-      // Optional: play completion sound
       const handleEscape = (e: KeyboardEvent) => {
         if (e.key === 'Escape') onClose();
       };
@@ -42,7 +43,6 @@ export default function CompletionModal({ isOpen, onClose }: CompletionModalProp
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
             className="fixed inset-0 bg-black/50 z-40"
             initial={{ opacity: 0 }}
@@ -51,7 +51,6 @@ export default function CompletionModal({ isOpen, onClose }: CompletionModalProp
             onClick={onClose}
           />
 
-          {/* Modal */}
           <motion.div
             className="fixed inset-0 flex items-center justify-center z-50 p-4"
             initial={{ opacity: 0, scale: 0.8 }}
@@ -68,52 +67,63 @@ export default function CompletionModal({ isOpen, onClose }: CompletionModalProp
             >
               <h2
                 id="completion-title"
-                className="text-3xl font-bold text-center mb-6 text-green-600"
+                className={`text-3xl font-bold text-center mb-4 ${
+                  isCorrect ? 'text-green-600' : 'text-red-600'
+                }`}
               >
-                🎉 Puzzle Complete!
+                {isCorrect ? 'Puzzle Complete!' : 'Incorrect Solution'}
               </h2>
+
+              <p
+                className={`text-center mb-6 ${
+                  isCorrect ? 'text-gray-600' : 'text-red-600'
+                }`}
+              >
+                {isCorrect
+                  ? 'Great job! Every cell matches the official solution.'
+                  : 'Your filled board does not match the official solution. Review the numbers and try again.'}
+              </p>
 
               <div className="space-y-4 mb-8">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Puzzle:</span>
                   <span className="font-semibold">
-                    {puzzle?.size}×{puzzle?.size} · {puzzle?.difficulty}
+                    {puzzle ? `${puzzle.size}x${puzzle.size} - ${puzzle.difficulty}` : 'N/A'}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Time:</span>
-                  <span className="font-semibold">{formatTime(elapsedMs)}</span>
+                  <span className="font-semibold">{formatDuration(elapsedMs)}</span>
                 </div>
 
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Moves:</span>
-                  <span className="font-semibold">{undoStack.length}</span>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Mistakes:</span>
-                  <span className="font-semibold">{mistakes}</span>
+                  <span className="font-semibold">{moveCount}</span>
                 </div>
               </div>
 
               <div className="flex gap-3">
                 <motion.button
-                  onClick={handleReset}
+                  onClick={handlePrimaryAction}
                   className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  Play Again
+                  {isCorrect ? 'Play Again' : 'Keep Editing'}
                 </motion.button>
 
                 <motion.button
-                  onClick={onClose}
-                  className="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors"
+                  onClick={handleSecondaryAction}
+                  className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
+                    isCorrect
+                      ? 'bg-blue-500 text-white hover:bg-blue-600'
+                      : 'bg-red-500 text-white hover:bg-red-600'
+                  }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  Close
+                  {isCorrect ? 'Close' : 'Reset Puzzle'}
                 </motion.button>
               </div>
             </div>
