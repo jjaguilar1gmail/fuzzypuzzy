@@ -73,9 +73,9 @@ export default function HomePage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 gap-8">
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 gap-6">
       <div className="flex flex-col items-center gap-2 text-center">
-        <div className="flex items-center justify-center gap-4">
+        <div className="flex items-center justify-center gap-4 mb-2">
           <h1
             className="text-3xl font-bold"
             style={{ fontFamily: 'IowanTitle, serif' }}
