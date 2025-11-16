@@ -274,9 +274,11 @@ export const useGameStore = create<GameState>((set, get) => ({
     // Reverse the action
     switch (action.type) {
       case 'place':
-        cell.value = action.value ?? null;
+        // Undo a placement means removing the value
+        cell.value = null;
         break;
       case 'remove':
+        // Undo a removal means restoring the value
         cell.value = action.value ?? null;
         break;
       case 'candidate_add':

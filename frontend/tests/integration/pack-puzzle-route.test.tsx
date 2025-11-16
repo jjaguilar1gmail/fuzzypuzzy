@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import PackPuzzlePage from '@/pages/packs/[packId]/puzzles/[puzzleId]';
 import { useRouter } from 'next/router';
+import { loadPuzzle, loadPack } from '@/lib/loaders/packs';
 
 // Mock Next.js router
 vi.mock('next/router', () => ({
@@ -20,7 +21,7 @@ const mockPuzzle = {
   id: '0003',
   pack_id: 'test-pack',
   size: 5,
-  difficulty: 'medium',
+  difficulty: 'medium' as const,
   seed: 12345,
   clue_count: 8,
   max_gap: 8,
@@ -33,16 +34,20 @@ const mockPuzzle = {
 };
 
 const mockPack = {
+  schema_version: '1.0',
   id: 'test-pack',
   title: 'Test Pack',
+  description: 'Test pack description',
   puzzles: ['0001', '0002', '0003', '0004', '0005'],
+  difficulty_counts: { easy: 2, medium: 2, hard: 1, extreme: 0 },
+  size_distribution: { '5': 5 },
+  created_at: '2025-01-01T00:00:00Z',
 };
 
 describe('Pack Puzzle Route with Progress', () => {
   beforeEach(() => {
-    const { loadPuzzle, loadPack } = require('@/lib/loaders/packs');
-    loadPuzzle.mockResolvedValue(mockPuzzle);
-    loadPack.mockResolvedValue(mockPack);
+    vi.mocked(loadPuzzle).mockResolvedValue(mockPuzzle);
+    vi.mocked(loadPack).mockResolvedValue(mockPack);
     
     (useRouter as any).mockReturnValue({
       query: { packId: 'test-pack', puzzleId: '0003' },

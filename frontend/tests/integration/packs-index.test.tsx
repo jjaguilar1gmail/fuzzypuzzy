@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import PacksIndexPage from '@/pages/packs/index';
+import { loadPacksList } from '@/lib/loaders/packs';
 
 // Mock the loaders
 vi.mock('@/lib/loaders/packs', () => ({
@@ -14,7 +15,7 @@ const mockPacks = [
     title: 'Easy Puzzles',
     description: 'Beginner-friendly puzzles',
     puzzle_count: 10,
-    difficulty_counts: { easy: 10 },
+    difficulty_counts: { easy: 10, medium: 0, hard: 0, extreme: 0 },
     created_at: '2025-01-01T00:00:00Z',
   },
   {
@@ -22,7 +23,7 @@ const mockPacks = [
     title: 'Mixed Challenge',
     description: 'Variety of difficulties',
     puzzle_count: 20,
-    difficulty_counts: { easy: 5, medium: 10, hard: 5 },
+    difficulty_counts: { easy: 5, medium: 10, hard: 5, extreme: 0 },
     created_at: '2025-01-02T00:00:00Z',
   },
   {
@@ -30,15 +31,14 @@ const mockPacks = [
     title: 'Expert Only',
     description: 'Advanced puzzles',
     puzzle_count: 8,
-    difficulty_counts: { hard: 5, extreme: 3 },
+    difficulty_counts: { easy: 0, medium: 0, hard: 5, extreme: 3 },
     created_at: '2025-01-03T00:00:00Z',
   },
 ];
 
 describe('Packs Index Filtering', () => {
   beforeEach(() => {
-    const { loadPacksList } = require('@/lib/loaders/packs');
-    loadPacksList.mockResolvedValue(mockPacks);
+    vi.mocked(loadPacksList).mockResolvedValue(mockPacks);
   });
 
   it('should render all packs by default', async () => {
@@ -112,16 +112,14 @@ describe('Packs Index Filtering', () => {
   });
 
   it('should handle loading state', () => {
-    const { loadPacksList } = require('@/lib/loaders/packs');
-    loadPacksList.mockReturnValue(new Promise(() => {})); // Never resolves
+    vi.mocked(loadPacksList).mockReturnValue(new Promise(() => {})); // Never resolves
     
     render(<PacksIndexPage />);
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
   });
 
   it('should handle error state', async () => {
-    const { loadPacksList } = require('@/lib/loaders/packs');
-    loadPacksList.mockRejectedValue(new Error('Failed to load packs'));
+    vi.mocked(loadPacksList).mockRejectedValue(new Error('Failed to load packs'));
     
     render(<PacksIndexPage />);
     

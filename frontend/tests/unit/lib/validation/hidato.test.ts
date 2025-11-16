@@ -80,13 +80,14 @@ describe('Hidato Validation', () => {
     it('should return true for valid complete puzzle', () => {
       const grid = createEmptyGrid(3);
       
-      // Create a valid path: 1-2-3
-      //                       4-5-6
-      //                       7-8-9
+      // Create a valid path with proper adjacency: 
+      // 1-2-3
+      // 9-8-4
+      // 7-6-5
       const values = [
         [1, 2, 3],
-        [4, 5, 6],
-        [7, 8, 9],
+        [9, 8, 4],
+        [7, 6, 5],
       ];
       
       for (let r = 0; r < 3; r++) {

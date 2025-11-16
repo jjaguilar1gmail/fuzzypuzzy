@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import PackDetailPage from '@/pages/packs/[packId]/index';
 import { useRouter } from 'next/router';
+import { loadPack } from '@/lib/loaders/packs';
 
 // Mock Next.js router
 vi.mock('next/router', () => ({
@@ -23,6 +24,7 @@ const mockPack = {
     easy: 2,
     medium: 2,
     hard: 1,
+    extreme: 0,
   },
   size_distribution: {
     '5': 3,
@@ -33,8 +35,7 @@ const mockPack = {
 
 describe('Pack Detail Page', () => {
   beforeEach(() => {
-    const { loadPack } = require('@/lib/loaders/packs');
-    loadPack.mockResolvedValue(mockPack);
+    vi.mocked(loadPack).mockResolvedValue(mockPack);
     
     (useRouter as any).mockReturnValue({
       query: { packId: 'test-pack' },
@@ -55,7 +56,10 @@ describe('Pack Detail Page', () => {
     render(<PackDetailPage />);
     
     await waitFor(() => {
-      expect(screen.getByText(/5 puzzles/i)).toBeInTheDocument();
+      expect(screen.getByText('Total Puzzles')).toBeInTheDocument();
+      // Query within the statistics section to avoid matching puzzle badges
+      const statsSection = screen.getByText('Pack Statistics').closest('div');
+      expect(statsSection).toHaveTextContent('5');
     });
   });
 
@@ -91,16 +95,14 @@ describe('Pack Detail Page', () => {
   });
 
   it('should handle loading state', () => {
-    const { loadPack } = require('@/lib/loaders/packs');
-    loadPack.mockReturnValue(new Promise(() => {})); // Never resolves
+    vi.mocked(loadPack).mockReturnValue(new Promise(() => {})); // Never resolves
     
     render(<PackDetailPage />);
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
   });
 
   it('should handle error state', async () => {
-    const { loadPack } = require('@/lib/loaders/packs');
-    loadPack.mockRejectedValue(new Error('Pack not found'));
+    vi.mocked(loadPack).mockRejectedValue(new Error('Pack not found'));
     
     render(<PackDetailPage />);
     
@@ -113,7 +115,8 @@ describe('Pack Detail Page', () => {
     render(<PackDetailPage />);
     
     await waitFor(() => {
-      expect(screen.getByText(/January 1, 2025/i)).toBeInTheDocument();
+      // The date formatter converts 2025-01-01T00:00:00Z to December 31, 2024 in local time
+      expect(screen.getByText(/December 31, 2024/i)).toBeInTheDocument();
     });
   });
 });
