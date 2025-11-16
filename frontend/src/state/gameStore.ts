@@ -88,6 +88,11 @@ function cloneSequenceBoard(
 ): SequenceBoardCell[][] | null {
   if (!board) return null;
 
+  // The guided flow reuses and mutates a single board reference between
+  // updates. We snapshot every cell so subsequent diffs compare against the
+  // exact state that triggered the last store update instead of the mutated
+  // reference. Without this clone we'd under-count placements because the
+  // stored "previous" board would silently change underneath us.
   return board.map((row) =>
     row.map((cell) => ({
       ...cell,

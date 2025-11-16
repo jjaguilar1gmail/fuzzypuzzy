@@ -80,6 +80,9 @@ describe('gameStore move count tracking', () => {
       [createCell(1, 0, null), createCell(1, 1, null)],
     ];
 
+    // The production sequence engine mutates this shared structure between
+    // updates, so the store must diff against an immutable snapshot to detect
+    // each new placement. This regression test locks in that behavior.
     const baseSequenceState: SequenceState = {
       anchorValue: null,
       anchorPos: null,
