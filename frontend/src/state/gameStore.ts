@@ -83,6 +83,19 @@ function countNewPlacements(
   return placements;
 }
 
+function cloneSequenceBoard(
+  board: SequenceBoardCell[][] | null
+): SequenceBoardCell[][] | null {
+  if (!board) return null;
+
+  return board.map((row) =>
+    row.map((cell) => ({
+      ...cell,
+      position: { ...cell.position },
+    }))
+  );
+}
+
 /**
  * Action representing a single game move for undo/redo.
  */
@@ -517,7 +530,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       return {
         sequenceState: state,
-        sequenceBoard: board,
+        sequenceBoard: cloneSequenceBoard(board),
         recentMistakes: mistakes,
         completionStatus,
         isComplete,

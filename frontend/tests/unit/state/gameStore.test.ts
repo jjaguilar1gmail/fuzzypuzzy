@@ -73,4 +73,43 @@ describe('gameStore move count tracking', () => {
     useGameStore.getState().updateSequenceState(placementState, boardAfterSecond, []);
     expect(useGameStore.getState().moveCount).toBe(2);
   });
+
+  it('counts placements even if the guided board is mutated in place', () => {
+    const sharedBoard: BoardCell[][] = [
+      [createCell(0, 0, null), createCell(0, 1, null)],
+      [createCell(1, 0, null), createCell(1, 1, null)],
+    ];
+
+    const baseSequenceState: SequenceState = {
+      anchorValue: null,
+      anchorPos: null,
+      nextTarget: null,
+      legalTargets: [],
+      guideEnabled: true,
+      chainEndValue: null,
+      chainLength: 0,
+      nextTargetChangeReason: 'neutral',
+    };
+
+    useGameStore.getState().updateSequenceState(baseSequenceState, sharedBoard, []);
+    expect(useGameStore.getState().moveCount).toBe(0);
+
+    sharedBoard[0][0] = { ...sharedBoard[0][0], value: 1 };
+
+    useGameStore.getState().updateSequenceState(
+      { ...baseSequenceState, nextTargetChangeReason: 'placement' },
+      sharedBoard,
+      []
+    );
+    expect(useGameStore.getState().moveCount).toBe(1);
+
+    sharedBoard[1][1] = { ...sharedBoard[1][1], value: 2 };
+
+    useGameStore.getState().updateSequenceState(
+      { ...baseSequenceState, nextTargetChangeReason: 'placement' },
+      sharedBoard,
+      []
+    );
+    expect(useGameStore.getState().moveCount).toBe(2);
+  });
 });
