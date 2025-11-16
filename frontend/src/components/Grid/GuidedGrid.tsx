@@ -6,6 +6,7 @@ import type { Position, MistakeEvent } from '@/sequence/types';
 
 const HOLD_DURATION_MS = 650;
 const BOARD_PADDING = 8;
+const GRID_SAFE_MARGIN = 32;
 
 /**
  * Grid component integrated with guided sequence flow
@@ -100,6 +101,17 @@ const GuidedGrid = memo(function GuidedGrid() {
   const holdRafRef = useRef<number | null>(null);
   const holdStartRef = useRef<number>(0);
   const skipNextClickRef = useRef(false);
+
+  const [viewportWidth, setViewportWidth] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 1024
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -227,6 +239,15 @@ const GuidedGrid = memo(function GuidedGrid() {
   if (!puzzle || !board || !dimensions) return null;
 
   const { cellSize, gap, totalSize } = dimensions;
+  const baseRenderSize = totalSize;
+  const availableWidth =
+    viewportWidth > GRID_SAFE_MARGIN
+      ? viewportWidth - GRID_SAFE_MARGIN
+      : viewportWidth;
+  const renderSize =
+    availableWidth && availableWidth > 0
+      ? Math.min(baseRenderSize, availableWidth)
+      : baseRenderSize;
 
   let nextIndicatorLabel: string;
   if (isComplete) {
@@ -256,14 +277,21 @@ const GuidedGrid = memo(function GuidedGrid() {
       >
         {nextIndicatorLabel}
       </div>
-      <div className="relative">
+      <div
+        className="relative"
+        style={{
+          width: renderSize,
+          height: renderSize,
+        }}
+      >
         <svg
-          width={totalSize}
-          height={totalSize}
+          width="100%"
+          height="100%"
           viewBox={`${-BOARD_PADDING} ${-BOARD_PADDING} ${totalSize + BOARD_PADDING * 2} ${totalSize + BOARD_PADDING * 2}`}
           className="mx-auto"
           role="grid"
           aria-label="Hidato puzzle grid"
+          preserveAspectRatio="xMidYMid meet"
         >
         {board.map((row, r) =>
           row.map((cell, c) => {

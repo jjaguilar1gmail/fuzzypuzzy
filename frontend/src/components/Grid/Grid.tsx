@@ -1,12 +1,24 @@
 import { useGameStore } from '@/state/gameStore';
-import { getCell } from '@/domain/grid';
 import { motion } from 'framer-motion';
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState, useEffect } from 'react';
+
+const GRID_SAFE_MARGIN = 32;
 
 const Grid = memo(function Grid() {
   const grid = useGameStore((state) => state.grid);
   const selectedCell = useGameStore((state) => state.selectedCell);
   const selectCell = useGameStore((state) => state.selectCell);
+
+  const [viewportWidth, setViewportWidth] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 1024
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Memoize grid dimensions to prevent recalculation
   const dimensions = useMemo(() => {
@@ -21,15 +33,33 @@ const Grid = memo(function Grid() {
 
   const { cellSize, gap, totalSize } = dimensions;
 
+  const baseRenderSize = totalSize;
+  const availableWidth =
+    viewportWidth > GRID_SAFE_MARGIN
+      ? viewportWidth - GRID_SAFE_MARGIN
+      : viewportWidth;
+  const renderSize =
+    availableWidth && availableWidth > 0
+      ? Math.min(baseRenderSize, availableWidth)
+      : baseRenderSize;
+
   return (
-    <svg
-      width={totalSize}
-      height={totalSize}
-      viewBox={`0 0 ${totalSize} ${totalSize}`}
-      className="mx-auto"
-      role="grid"
-      aria-label="Hidato puzzle grid"
+    <div
+      className="relative"
+      style={{
+        width: renderSize,
+        height: renderSize,
+      }}
     >
+      <svg
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${totalSize} ${totalSize}`}
+        className="mx-auto"
+        role="grid"
+        aria-label="Hidato puzzle grid"
+        preserveAspectRatio="xMidYMid meet"
+      >
       {grid.cells.map((row, r) =>
         row.map((cell, c) => {
           const x = c * (cellSize + gap);
@@ -126,7 +156,8 @@ const Grid = memo(function Grid() {
           );
         })
       )}
-    </svg>
+      </svg>
+    </div>
   );
 });
 
