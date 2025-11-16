@@ -157,7 +157,8 @@ export function useGuidedSequenceFlow(
   cols: number,
   givens: Map<string, number>,
   maxValue: number,
-  resetKey = 0
+  resetKey = 0,
+  callbacks?: { onPlacement?: () => void }
 ): GuidedSequenceFlowAPI {
   // Initialize board and state
   const [board, setBoard] = useState(() => initializeBoard(rows, cols, givens));
@@ -178,6 +179,7 @@ export function useGuidedSequenceFlow(
 
   // Mistake buffer (ring buffer)
   const [mistakes, setMistakes] = useState<MistakeEvent[]>([]);
+  const placementCallback = callbacks?.onPlacement;
 
   // Reset board/state whenever puzzle inputs or reset key change
   useEffect(() => {
@@ -287,12 +289,13 @@ export function useGuidedSequenceFlow(
       if (result.undoAction) {
         undoRedoRef.current.push(result.undoAction);
         setUndoRedoVersion((v) => v + 1);
+        placementCallback?.();
       }
       
       setState(result.state);
       setBoard(result.board);
     },
-    [state, board, maxValue]
+    [state, board, maxValue, placementCallback]
   );
 
   /**

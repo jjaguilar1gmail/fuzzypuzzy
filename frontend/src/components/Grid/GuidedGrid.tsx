@@ -14,6 +14,7 @@ const GuidedGrid = memo(function GuidedGrid() {
   const puzzle = useGameStore((state) => state.puzzle);
   const puzzleInstance = useGameStore((state) => state.puzzleInstance);
   const updateSequenceState = useGameStore((state) => state.updateSequenceState);
+  const incrementMoveCount = useGameStore((state) => state.incrementMoveCount);
 
   // Convert puzzle givens to Map format
   const givensMap = useMemo(() => {
@@ -48,7 +49,8 @@ const GuidedGrid = memo(function GuidedGrid() {
     puzzle?.size || 5,
     givensMap,
     maxValue,
-    puzzleInstance
+    puzzleInstance,
+    { onPlacement: incrementMoveCount }
   );
   const globalSequenceState = useGameStore((store) => store.sequenceState);
   const completionStatus = useGameStore((store) => store.completionStatus);

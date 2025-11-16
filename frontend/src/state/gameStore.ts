@@ -103,6 +103,7 @@ interface GameState {
   startTimer: () => void;
   stopTimer: () => void;
   tickTimer: () => void;
+  incrementMoveCount: () => void;
   
   // Guided sequence flow actions
   updateSequenceState: (
@@ -187,12 +188,13 @@ export const useGameStore = create<GameState>((set, get) => ({
     cell.value = value;
     cell.candidates = [];
     
-    set((state) => ({
+    set({
       grid: { ...grid },
       undoStack: [...undoStack, action],
       redoStack: [],
-      moveCount: state.moveCount + 1,
-    }));
+    });
+    
+    get().incrementMoveCount();
     
     get().checkCompletion();
   },
@@ -440,6 +442,15 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
   },
   
+  incrementMoveCount: () => {
+    set((state) => {
+      if (state.isComplete || state.completionStatus === 'success') {
+        return {};
+      }
+      return { moveCount: state.moveCount + 1 };
+    });
+  },
+  
   updateSequenceState: (state: SequenceState, board: SequenceBoardCell[][], mistakes: MistakeEvent[]) => {
     set((current) => {
       const evaluatedStatus = deriveCompletionStatusFromBoard(board, current.puzzle);
@@ -448,18 +459,6 @@ export const useGameStore = create<GameState>((set, get) => ({
       let elapsedMs = current.elapsedMs;
       let timerRunning = current.timerRunning;
       let lastTick = current.lastTick;
-      let moveCount = current.moveCount;
-
-      const alreadySolved =
-        current.completionStatus === 'success' || current.isComplete;
-      const isNewPlacement =
-        state.nextTargetChangeReason === 'placement' &&
-        current.sequenceState?.nextTargetChangeReason !== state.nextTargetChangeReason;
-
-      if (isNewPlacement && !alreadySolved) {
-        moveCount += 1;
-      }
-
       if (evaluatedStatus === 'success') {
         completionStatus = 'success';
         isComplete = true;
@@ -488,7 +487,6 @@ export const useGameStore = create<GameState>((set, get) => ({
         recentMistakes: mistakes,
         completionStatus,
         isComplete,
-        moveCount,
         elapsedMs,
         timerRunning,
         lastTick,
