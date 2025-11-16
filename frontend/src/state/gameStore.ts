@@ -50,6 +50,39 @@ function deriveCompletionStatusFromBoard(
   return 'success';
 }
 
+function countNewPlacements(
+  previous: SequenceBoardCell[][] | null,
+  next: SequenceBoardCell[][] | null
+): number {
+  if (!previous || !next) return 0;
+
+  let placements = 0;
+
+  for (let row = 0; row < next.length; row++) {
+    const nextRow = next[row];
+    const prevRow = previous[row];
+    if (!nextRow || !prevRow) continue;
+
+    for (let col = 0; col < nextRow.length; col++) {
+      const nextCell = nextRow[col];
+      const prevCell = prevRow[col];
+      if (
+        !nextCell ||
+        !prevCell ||
+        nextCell.given ||
+        prevCell.value !== null ||
+        typeof nextCell.value !== 'number'
+      ) {
+        continue;
+      }
+
+      placements += 1;
+    }
+  }
+
+  return placements;
+}
+
 /**
  * Action representing a single game move for undo/redo.
  */
@@ -452,12 +485,12 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       const alreadySolved =
         current.completionStatus === 'success' || current.isComplete;
-      const isNewPlacement =
-        state.nextTargetChangeReason === 'placement' &&
-        current.sequenceState?.nextTargetChangeReason !== state.nextTargetChangeReason;
 
-      if (isNewPlacement && !alreadySolved) {
-        moveCount += 1;
+      if (!alreadySolved) {
+        const placementDelta = countNewPlacements(current.sequenceBoard, board);
+        if (placementDelta > 0) {
+          moveCount += placementDelta;
+        }
       }
 
       if (evaluatedStatus === 'success') {
