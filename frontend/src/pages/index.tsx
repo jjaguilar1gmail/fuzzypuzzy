@@ -72,6 +72,7 @@ export default function HomePage() {
   const sequenceState = useGameStore((state) => state.sequenceState);
   const sequenceBoard = useGameStore((state) => state.sequenceBoard);
   const recentMistakes = useGameStore((state) => state.recentMistakes);
+  const pageViewportStyle = { minHeight: 'var(--app-viewport-height)' };
 
   // Handle "Play Again" - clear saved state and reset puzzle
   const handlePlayAgain = useCallback(() => {
@@ -150,7 +151,10 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div
+        className="flex min-h-screen items-center justify-center"
+        style={pageViewportStyle}
+      >
         <p>Loading daily puzzle...</p>
       </div>
     );
@@ -158,7 +162,10 @@ export default function HomePage() {
 
   if (error || !puzzle) {
     return (
-      <div className="flex min-h-screen items-center justify-center flex-col gap-4">
+      <div
+        className="flex min-h-screen items-center justify-center flex-col gap-4"
+        style={pageViewportStyle}
+      >
         <p className="text-red-600">Error: {error || 'Failed to load puzzle'}</p>
         <a href="/packs" className="text-blue-600 hover:underline">
           Browse puzzle packs →
@@ -168,7 +175,10 @@ export default function HomePage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 gap-6">
+    <main
+      className="flex min-h-screen flex-col items-center justify-center p-4 gap-6"
+      style={pageViewportStyle}
+    >
       <div className="flex flex-col items-center gap-2 text-center">
         <div className="flex items-center justify-center gap-4 mb-2">
           <h1
