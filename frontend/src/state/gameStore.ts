@@ -10,6 +10,12 @@ import type {
 
 type CompletionStatus = 'success' | 'incorrect' | null;
 
+export function getPuzzleIdentity(puzzle: Puzzle | null): string | null {
+  if (!puzzle) return null;
+  const packPart = puzzle.pack_id ?? 'standalone';
+  return `${packPart}:${puzzle.id}`;
+}
+
 function deriveCompletionStatusFromBoard(
   board: SequenceBoardCell[][] | null,
   puzzle: Puzzle | null
@@ -73,6 +79,7 @@ interface GameState {
   // Guided sequence flow state (for integration)
   sequenceState: SequenceState | null;
   sequenceBoard: SequenceBoardCell[][] | null;
+  sequenceBoardKey: string | null;
   recentMistakes: MistakeEvent[];
   
   // Interaction state
@@ -123,6 +130,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   lastTick: null,
   sequenceState: null,
   sequenceBoard: null,
+  sequenceBoardKey: null,
   recentMistakes: [],
   selectedCell: null,
   pencilMode: false,
@@ -146,6 +154,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       return {
         puzzle,
         grid,
+      sequenceState: null,
+      sequenceBoard: null,
+      sequenceBoardKey: null,
+      recentMistakes: [],
       selectedCell: null,
       undoStack: [],
       redoStack: [],
@@ -486,6 +498,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       return {
         sequenceState: state,
         sequenceBoard: board,
+        sequenceBoardKey: getPuzzleIdentity(current.puzzle),
         recentMistakes: mistakes,
         completionStatus,
         isComplete,

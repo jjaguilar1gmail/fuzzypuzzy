@@ -1,4 +1,4 @@
-﻿import { useGameStore } from '@/state/gameStore';
+﻿import { useGameStore, getPuzzleIdentity } from '@/state/gameStore';
 import { motion } from 'framer-motion';
 import { memo, useMemo, useEffect, useState, useRef } from 'react';
 import { useGuidedSequenceFlow } from '@/sequence';
@@ -16,7 +16,14 @@ const GuidedGrid = memo(function GuidedGrid() {
   const puzzleInstance = useGameStore((state) => state.puzzleInstance);
   const updateSequenceState = useGameStore((state) => state.updateSequenceState);
   const incrementMoveCount = useGameStore((state) => state.incrementMoveCount);
-  const restoredSequenceBoard = useGameStore((state) => state.sequenceBoard);
+  const rawSequenceBoard = useGameStore((state) => state.sequenceBoard);
+  const sequenceBoardKey = useGameStore((state) => state.sequenceBoardKey);
+  const puzzleIdentity = useMemo(() => getPuzzleIdentity(puzzle), [puzzle]);
+  const restoredSequenceBoard = useMemo(() => {
+    if (!rawSequenceBoard || !puzzleIdentity) return null;
+    if (sequenceBoardKey !== puzzleIdentity) return null;
+    return rawSequenceBoard;
+  }, [rawSequenceBoard, sequenceBoardKey, puzzleIdentity]);
 
   // Convert puzzle givens to Map format
   const givensMap = useMemo(() => {

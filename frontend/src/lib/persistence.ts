@@ -1,4 +1,4 @@
-import { useGameStore } from '@/state/gameStore';
+import { useGameStore, getPuzzleIdentity } from '@/state/gameStore';
 import { Puzzle } from '@/domain/puzzle';
 import { getCell } from '@/domain/grid';
 import type { DailySizeId } from '@/lib/daily';
@@ -171,6 +171,7 @@ export function loadGameState(
       moveCount: persistedState.move_count ?? 0,
       timerRunning: persistedState.timer_running ?? true, // Default to true for old saves
       sequenceBoard: restoredSequenceBoard,
+      sequenceBoardKey: restoredSequenceBoard ? getPuzzleIdentity(puzzle) : null,
     });
     
     // If we restored a sequenceBoard, derive completion status from it

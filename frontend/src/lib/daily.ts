@@ -83,6 +83,13 @@ export async function getDailyPuzzle(sizeId?: DailySizeId): Promise<Puzzle | nul
 
     if (allPuzzleRefs.length === 0) return null;
 
+    allPuzzleRefs.sort((a, b) => {
+      if (a.packId === b.packId) {
+        return a.puzzleId.localeCompare(b.puzzleId);
+      }
+      return a.packId.localeCompare(b.packId);
+    });
+
     // Deterministic selection per (date, size)
     const today = new Date();
     const hash = sizeId ? hashDateAndSize(today, sizeId) : hashDate(today);
