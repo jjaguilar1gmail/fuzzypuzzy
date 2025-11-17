@@ -83,7 +83,7 @@ export default function HomePage() {
       clearGameState(dailyKey);
       
       // Clear sequenceBoard from store so it won't be used as initialBoard
-      useGameStore.setState({ sequenceBoard: null });
+      useGameStore.setState({ sequenceBoard: null, sequenceBoardKey: null });
       
       // Reset the puzzle (will call loadPuzzle)
       useGameStore.getState().resetPuzzle();
