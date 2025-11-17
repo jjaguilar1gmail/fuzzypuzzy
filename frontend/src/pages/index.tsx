@@ -137,7 +137,8 @@ export default function HomePage() {
 
   // Auto-save on state changes
   useEffect(() => {
-    if (puzzle && !loading) {
+    // Only auto-save if puzzle size matches selected size (prevents saving wrong board to wrong key during transitions)
+    if (puzzle && !loading && puzzle.size === DAILY_SIZE_OPTIONS[selectedSize].rows) {
       const timer = setTimeout(() => {
         // Use date-based key for daily puzzles
         const dailyKey = getDailyPuzzleKey(selectedSize);

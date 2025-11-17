@@ -103,7 +103,9 @@ export function loadGameState(
   const key = getStorageKey(puzzleId, sizeId);
   const data = localStorage.getItem(key);
   
-  if (!data) return false;
+  if (!data) {
+    return false;
+  }
 
   try {
     const persistedState: PersistedState = JSON.parse(data);
@@ -141,6 +143,11 @@ export function loadGameState(
     // Restore sequenceBoard if it exists (for guided mode)
     let restoredSequenceBoard: any = null;
     if (persistedState.sequence_board) {
+      // SAFETY CHECK: Ensure restored board size matches current puzzle size
+      if (persistedState.sequence_board.length !== puzzle.size) {
+        return false; // Don't restore incompatible board
+      }
+      
       // Convert saved format back to full BoardCell format
       restoredSequenceBoard = persistedState.sequence_board.map((row, r) =>
         row.map((savedCell, c) => ({
