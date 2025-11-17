@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useGameStore } from '@/state/gameStore';
 import { 
   getDailyPuzzle, 
+  getDailyPuzzleKey,
   DAILY_SIZE_OPTIONS, 
   DEFAULT_DAILY_SIZE,
   type DailySizeId 
 } from '@/lib/daily';
-import { loadGameState, saveGameState } from '@/lib/persistence';
+import { loadGameState, saveGameState, clearGameState } from '@/lib/persistence';
 import GuidedGrid from '@/components/Grid/GuidedGrid';
 import Palette from '@/components/Palette/Palette';
 import BottomSheet from '@/components/Palette/BottomSheet';
@@ -21,6 +22,11 @@ const DAILY_SIZE_PREFERENCE_KEY = 'hpz:daily:size-preference';
  * Load saved size preference from localStorage.
  */
 function loadSizePreference(): DailySizeId {
+  // Check if we're in browser context (not SSR)
+  if (typeof window === 'undefined') {
+    return DEFAULT_DAILY_SIZE;
+  }
+  
   try {
     const saved = localStorage.getItem(DAILY_SIZE_PREFERENCE_KEY);
     if (saved && (saved === 'small' || saved === 'medium' || saved === 'large')) {
@@ -36,6 +42,11 @@ function loadSizePreference(): DailySizeId {
  * Save size preference to localStorage.
  */
 function saveSizePreference(sizeId: DailySizeId): void {
+  // Check if we're in browser context (not SSR)
+  if (typeof window === 'undefined') {
+    return;
+  }
+  
   try {
     localStorage.setItem(DAILY_SIZE_PREFERENCE_KEY, sizeId);
   } catch (err) {
@@ -50,6 +61,8 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedSize, setSelectedSize] = useState<DailySizeId>(() => loadSizePreference());
+  const previousSizeRef = useRef<DailySizeId>(selectedSize);
+  
   const loadPuzzle = useGameStore((state) => state.loadPuzzle);
   const puzzle = useGameStore((state) => state.puzzle);
   const completionStatus = useGameStore((state) => state.completionStatus);
@@ -60,8 +73,30 @@ export default function HomePage() {
   const sequenceBoard = useGameStore((state) => state.sequenceBoard);
   const recentMistakes = useGameStore((state) => state.recentMistakes);
 
+  // Handle "Play Again" - clear saved state and reset puzzle
+  const handlePlayAgain = useCallback(() => {
+    if (puzzle) {
+      const dailyKey = getDailyPuzzleKey(selectedSize);
+      console.log('[index.tsx] Play Again - clearing saved state for:', dailyKey);
+      
+      // Clear saved state from localStorage
+      clearGameState(dailyKey);
+      
+      // Clear sequenceBoard from store so it won't be used as initialBoard
+      useGameStore.setState({ sequenceBoard: null });
+      
+      // Reset the puzzle (will call loadPuzzle)
+      useGameStore.getState().resetPuzzle();
+    }
+  }, [puzzle, selectedSize]);
+
   // Handle size change: reload puzzle and clear state
   const handleSizeChange = (newSize: DailySizeId) => {
+    // Don't do anything if clicking the same size
+    if (newSize === selectedSize) {
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     setSelectedSize(newSize);
@@ -69,13 +104,32 @@ export default function HomePage() {
   };
 
   useEffect(() => {
+    console.log('[index.tsx] Loading puzzle for size:', selectedSize);
+    
+    // IMPORTANT: Save current state BEFORE loading new puzzle
+    // This prevents race conditions where auto-save timer fires after grid is cleared
+    if (puzzle && previousSizeRef.current !== selectedSize) {
+      const previousDailyKey = getDailyPuzzleKey(previousSizeRef.current);
+      console.log('[index.tsx] Size changed! Saving previous state to:', previousDailyKey);
+      saveGameState(previousDailyKey);
+    }
+    previousSizeRef.current = selectedSize;
+    
     getDailyPuzzle(selectedSize)
       .then((puzzle) => {
         if (puzzle) {
-          // Try to restore saved state for this size
-          const restored = loadGameState(puzzle, selectedSize);
+          // Use date-based key for daily puzzles so state persists across size changes
+          const dailyKey = getDailyPuzzleKey(selectedSize);
+          console.log('[index.tsx] Got puzzle, dailyKey:', dailyKey);
+          
+          // Try to restore saved state for this (date, size) combination
+          const restored = loadGameState(puzzle, undefined, dailyKey);
+          console.log('[index.tsx] Restoration result:', restored);
           if (!restored) {
+            console.log('[index.tsx] No saved state, loading fresh puzzle');
             loadPuzzle(puzzle);
+          } else {
+            console.log('[index.tsx] Successfully restored from saved state');
           }
         } else {
           setError('No daily puzzle available. Generate packs using the CLI.');
@@ -85,15 +139,24 @@ export default function HomePage() {
       .finally(() => setLoading(false));
   }, [loadPuzzle, selectedSize]);
 
+  // Subscribe to grid changes for auto-save
+  const grid = useGameStore((state) => state.grid);
+  const elapsedMs = useGameStore((state) => state.elapsedMs);
+  const isComplete = useGameStore((state) => state.isComplete);
+
   // Auto-save on state changes
   useEffect(() => {
+    console.log('[index.tsx] Auto-save effect triggered, puzzle:', !!puzzle, 'loading:', loading);
     if (puzzle && !loading) {
       const timer = setTimeout(() => {
-        saveGameState(puzzle.id, selectedSize);
+        // Use date-based key for daily puzzles
+        const dailyKey = getDailyPuzzleKey(selectedSize);
+        console.log('[index.tsx] Auto-saving to key:', dailyKey);
+        saveGameState(dailyKey);
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [puzzle, loading, selectedSize, useGameStore((state) => state.grid)]);
+  }, [puzzle, loading, selectedSize, grid, elapsedMs, isComplete]);
 
   if (loading) {
     return (
@@ -166,6 +229,7 @@ export default function HomePage() {
       <CompletionModal
         isOpen={completionStatus !== null}
         onClose={dismissCompletionStatus}
+        onPlayAgain={handlePlayAgain}
       />
       
       {/* Screen reader announcements for accessibility */}

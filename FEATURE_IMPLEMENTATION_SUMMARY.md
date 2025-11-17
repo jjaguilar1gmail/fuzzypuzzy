@@ -51,10 +51,11 @@ Successfully implemented a complete daily puzzle size selection system that allo
 - Grid state cleared when switching between sizes
 - Auto-save respects current size context
 - Wrap-around when pool exhausted for each size independently
+- Completion status preserved and restored when switching between sizes
 
 **Files Modified**:
 - `frontend/src/lib/daily.ts` - Added `hashDateAndSize()`, extended `getDailyPuzzle(sizeId?)`
-- `frontend/src/lib/persistence.ts` - Size-aware storage keys in all functions
+- `frontend/src/lib/persistence.ts` - Size-aware storage keys, calls `checkCompletion()` after restore
 - `frontend/src/pages/index.tsx` - Size context passed to all persistence calls
 
 ## Technical Implementation
@@ -191,16 +192,18 @@ function hashDateAndSize(date: Date, sizeId: DailySizeId): number {
 
 ## Edge Cases Handled
 
-1. **No Puzzles for Size**: Falls back to next available with console warning
+1. **No Puzzles for Size**: Scans through all puzzles from deterministic start position until finding size match
 2. **localStorage Unavailable**: Degrades gracefully with console warnings, defaults to Medium
 3. **Invalid Size in localStorage**: Validates and defaults to Medium
 4. **Mid-Progress Size Switch**: Clears grid state, loads fresh puzzle for new size
 5. **Exhausted Puzzle Pool**: Wraps around using modulo arithmetic
+6. **Server-Side Rendering**: localStorage access guarded with `typeof window` check to prevent SSR errors
 
 ## Performance Considerations
 
-- **Size Filtering**: May load puzzles sequentially to check size (acceptable for daily context)
-- **Future Optimization**: If packs grow large, consider adding size metadata to pack manifests
+- **Size Filtering Optimization**: Uses sequential scan from deterministic start position - loads puzzles one-by-one until finding a size match (typically 1-3 attempts)
+- **SSR Compatibility**: localStorage checks include `typeof window === 'undefined'` guard to prevent server-side rendering errors
+- **Future Optimization**: If packs grow large, consider adding size metadata to pack manifests to avoid loading any puzzle files during selection
 - **localStorage Impact**: Minimal - stores simple string preference
 
 ## Browser Compatibility

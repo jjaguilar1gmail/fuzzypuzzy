@@ -6,9 +6,10 @@ import { formatDuration } from '@/components/HUD/SessionStats';
 interface CompletionModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onPlayAgain?: () => void; // Optional callback for Play Again action
 }
 
-export default function CompletionModal({ isOpen, onClose }: CompletionModalProps) {
+export default function CompletionModal({ isOpen, onClose, onPlayAgain }: CompletionModalProps) {
   const puzzle = useGameStore((state) => state.puzzle);
   const elapsedMs = useGameStore((state) => state.elapsedMs);
   const moveCount = useGameStore((state) => state.moveCount);
@@ -17,17 +18,27 @@ export default function CompletionModal({ isOpen, onClose }: CompletionModalProp
 
   const handlePrimaryAction = useCallback(() => {
     if (isCorrect) {
-      useGameStore.getState().resetPuzzle();
+      // Use custom callback if provided, otherwise use default resetPuzzle
+      if (onPlayAgain) {
+        onPlayAgain();
+      } else {
+        useGameStore.getState().resetPuzzle();
+      }
     }
     onClose();
-  }, [isCorrect, onClose]);
+  }, [isCorrect, onClose, onPlayAgain]);
 
   const handleSecondaryAction = useCallback(() => {
     if (!isCorrect) {
-      useGameStore.getState().resetPuzzle();
+      // Use custom callback if provided, otherwise use default resetPuzzle
+      if (onPlayAgain) {
+        onPlayAgain();
+      } else {
+        useGameStore.getState().resetPuzzle();
+      }
     }
     onClose();
-  }, [isCorrect, onClose]);
+  }, [isCorrect, onClose, onPlayAgain]);
 
   useEffect(() => {
     if (isOpen) {

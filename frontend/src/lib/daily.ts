@@ -32,7 +32,12 @@ export const DEFAULT_DAILY_SIZE: DailySizeId = 'medium';
  * Simple hash function for date -> number.
  */
 function hashDate(date: Date): number {
-  const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+  // Use local date (YYYY-MM-DD) so puzzle changes at local midnight
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const dateStr = `${year}-${month}-${day}`;
+  
   let hash = 0;
   for (let i = 0; i < dateStr.length; i++) {
     hash = (hash << 5) - hash + dateStr.charCodeAt(i);
@@ -64,27 +69,15 @@ export async function getDailyPuzzle(sizeId?: DailySizeId): Promise<Puzzle | nul
     const packs = await loadPacksList();
     if (packs.length === 0) return null;
 
-    // Flatten all puzzle IDs from all packs, filtering by size if specified
-    const targetSize = sizeId ? DAILY_SIZE_OPTIONS[sizeId].rows : null;
+    // Flatten all puzzle IDs from all packs
+    // Note: We load all puzzles here without size filtering for simplicity.
+    // For better performance, consider adding size metadata to pack manifests.
     const allPuzzleRefs: Array<{ packId: string; puzzleId: string }> = [];
     
     for (const packSummary of packs) {
       const pack = await loadPack(packSummary.id);
       for (const puzzleId of pack.puzzles) {
-        // Load puzzle to check size if filtering
-        if (targetSize !== null) {
-          try {
-            const puzzle = await loadPuzzle(pack.id, puzzleId);
-            if (puzzle.size === targetSize) {
-              allPuzzleRefs.push({ packId: pack.id, puzzleId });
-            }
-          } catch (err) {
-            // Skip unavailable puzzles
-            continue;
-          }
-        } else {
-          allPuzzleRefs.push({ packId: pack.id, puzzleId });
-        }
+        allPuzzleRefs.push({ packId: pack.id, puzzleId });
       }
     }
 
@@ -93,18 +86,27 @@ export async function getDailyPuzzle(sizeId?: DailySizeId): Promise<Puzzle | nul
     // Deterministic selection per (date, size)
     const today = new Date();
     const hash = sizeId ? hashDateAndSize(today, sizeId) : hashDate(today);
-    let index = hash % allPuzzleRefs.length;
+    let startIndex = hash % allPuzzleRefs.length;
 
-    // Try loading the selected puzzle; fallback to next if missing
+    // Try loading puzzles, filtering by size if specified
+    const targetSize = sizeId ? DAILY_SIZE_OPTIONS[sizeId].rows : null;
+    
     for (let attempts = 0; attempts < allPuzzleRefs.length; attempts++) {
+      const index = (startIndex + attempts) % allPuzzleRefs.length;
       const ref = allPuzzleRefs[index];
+      
       try {
         const puzzle = await loadPuzzle(ref.packId, ref.puzzleId);
+        
+        // If size filtering is enabled, check if puzzle matches
+        if (targetSize !== null && puzzle.size !== targetSize) {
+          continue; // Skip puzzles that don't match the requested size
+        }
+        
         return puzzle;
       } catch (err) {
         // Puzzle missing; try next
         console.warn(`Puzzle ${ref.puzzleId} in pack ${ref.packId} not found, trying next`);
-        index = (index + 1) % allPuzzleRefs.length;
       }
     }
 
@@ -121,6 +123,11 @@ export async function getDailyPuzzle(sizeId?: DailySizeId): Promise<Puzzle | nul
  */
 export function getDailyPuzzleKey(sizeId?: DailySizeId): string {
   const today = new Date();
-  const dateStr = today.toISOString().split('T')[0];
+  // Use local date so puzzle changes at local midnight
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  const dateStr = `${year}-${month}-${day}`;
+  
   return sizeId ? `daily-${dateStr}-${sizeId}` : `daily-${dateStr}`;
 }
