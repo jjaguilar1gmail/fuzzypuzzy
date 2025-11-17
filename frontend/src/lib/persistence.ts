@@ -1,6 +1,7 @@
 import { useGameStore } from '@/state/gameStore';
 import { Puzzle } from '@/domain/puzzle';
 import { getCell } from '@/domain/grid';
+import type { DailySizeId } from '@/lib/daily';
 
 /**
  * Local persistence utilities for saving/restoring game state.
@@ -18,14 +19,16 @@ export interface PersistedState {
 
 const SCHEMA_VERSION = '1.0';
 
-function getStorageKey(puzzleId: string): string {
-  return `hpz:v1:state:${puzzleId}`;
+function getStorageKey(puzzleId: string, sizeId?: DailySizeId): string {
+  return sizeId ? `hpz:v1:state:${puzzleId}:${sizeId}` : `hpz:v1:state:${puzzleId}`;
 }
 
 /**
  * Save current game state to localStorage.
+ * @param puzzleId - The puzzle identifier
+ * @param sizeId - Optional size identifier for daily puzzles
  */
-export function saveGameState(puzzleId: string): void {
+export function saveGameState(puzzleId: string, sizeId?: DailySizeId): void {
   const state = useGameStore.getState();
   const { grid, elapsedMs, undoStack } = state;
 
@@ -58,7 +61,7 @@ export function saveGameState(puzzleId: string): void {
   };
 
   try {
-    localStorage.setItem(getStorageKey(puzzleId), JSON.stringify(persistedState));
+    localStorage.setItem(getStorageKey(puzzleId, sizeId), JSON.stringify(persistedState));
   } catch (err) {
     console.error('Failed to save game state:', err);
   }
@@ -66,9 +69,11 @@ export function saveGameState(puzzleId: string): void {
 
 /**
  * Load game state from localStorage and apply to store.
+ * @param puzzle - The puzzle to restore state for
+ * @param sizeId - Optional size identifier for daily puzzles
  */
-export function loadGameState(puzzle: Puzzle): boolean {
-  const key = getStorageKey(puzzle.id);
+export function loadGameState(puzzle: Puzzle, sizeId?: DailySizeId): boolean {
+  const key = getStorageKey(puzzle.id, sizeId);
   const data = localStorage.getItem(key);
   if (!data) return false;
 
@@ -118,8 +123,10 @@ export function loadGameState(puzzle: Puzzle): boolean {
 
 /**
  * Clear saved state for a puzzle.
+ * @param puzzleId - The puzzle identifier
+ * @param sizeId - Optional size identifier for daily puzzles
  */
-export function clearGameState(puzzleId: string): void {
-  const key = getStorageKey(puzzleId);
+export function clearGameState(puzzleId: string, sizeId?: DailySizeId): void {
+  const key = getStorageKey(puzzleId, sizeId);
   localStorage.removeItem(key);
 }
