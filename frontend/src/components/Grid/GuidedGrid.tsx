@@ -11,12 +11,21 @@ const GRID_SAFE_MARGIN = 32;
 const DIRECTION_OPTIONS: Array<{
   value: SequenceDirection;
   label: string;
-  deltaLabel: string;
   aria: string;
+  icon: 'plus' | 'minus';
 }> = [
-  { value: 'forward', label: 'Forward', deltaLabel: '+1', aria: 'Step forward to k plus 1' },
-  { value: 'backward', label: 'Backward', deltaLabel: '-1', aria: 'Step backward to k minus 1' },
+  { value: 'forward', label: 'Forward', aria: 'Step forward to k plus 1', icon: 'plus' },
+  { value: 'backward', label: 'Backward', aria: 'Step backward to k minus 1', icon: 'minus' },
 ];
+
+const PlusMinusGlyph = ({ variant }: { variant: 'plus' | 'minus' }) => (
+  <span className="relative flex h-6 w-6 items-center justify-center" aria-hidden="true">
+    <span className="absolute left-1/2 top-1/2 h-0.5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current" />
+    {variant === 'plus' && (
+      <span className="absolute left-1/2 top-1/2 h-5 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current" />
+    )}
+  </span>
+);
 
 /**
  * Grid component integrated with guided sequence flow
@@ -275,12 +284,9 @@ const GuidedGrid = memo(function GuidedGrid() {
   } else {
     const nextTargetValue =
       state.nextTarget ?? globalSequenceState?.nextTarget ?? null;
-    const activeDirection =
-      state.stepDirection ?? globalSequenceState?.stepDirection ?? 'forward';
-    const directionLabel = activeDirection === 'forward' ? '+1' : '-1';
     nextIndicatorLabel =
       nextTargetValue !== null
-        ? `Next ${directionLabel}: ${nextTargetValue}`
+        ? `Next: ${nextTargetValue}`
         : 'Select a clue to continue';
   }
 
@@ -293,7 +299,7 @@ const GuidedGrid = memo(function GuidedGrid() {
       `}</style>
       <div className="mb-2 flex flex-wrap items-center justify-center gap-2">
         <div
-          className={`inline-flex min-h-[28px] items-center rounded-full border px-4 py-1 text-sm font-semibold shadow transition-colors ${
+          className={`inline-flex min-h-[40px] items-center rounded-full border px-4 sm:px-5 text-base font-semibold shadow transition-colors ${
             pillPulseId
               ? 'border-red-200 bg-red-50 text-red-600'
               : 'border-blue-200 bg-blue-50 text-blue-700'
@@ -302,7 +308,7 @@ const GuidedGrid = memo(function GuidedGrid() {
           {nextIndicatorLabel}
         </div>
         <div
-          className="inline-flex overflow-hidden rounded-full border border-gray-200 bg-white shadow-sm"
+          className="inline-flex min-h-[40px] overflow-hidden rounded-full border border-gray-200 bg-white shadow-sm"
           role="group"
           aria-label="Choose sequence direction"
         >
@@ -315,13 +321,15 @@ const GuidedGrid = memo(function GuidedGrid() {
                 onClick={() => setStepDirection(option.value)}
                 aria-pressed={isActive}
                 aria-label={option.aria}
-                className={`flex items-center gap-1 px-3 py-1 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${
+                className={`flex h-full min-w-[36px] items-center justify-center gap-2 px-3 text-sm font-medium leading-none transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 sm:min-w-0 sm:px-4 sm:leading-tight ${
                   isActive
                     ? 'bg-blue-500 text-white focus-visible:outline-blue-600'
                     : 'bg-transparent text-gray-600 hover:bg-gray-100 focus-visible:outline-gray-400'
                 }`}
               >
-                <span>{option.deltaLabel}</span>
+                <span className="flex h-10 w-8 items-center justify-center sm:h-auto sm:w-auto">
+                  <PlusMinusGlyph variant={option.icon} />
+                </span>
                 <span className="hidden sm:inline">{option.label}</span>
               </button>
             );
