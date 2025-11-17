@@ -77,7 +77,6 @@ export default function HomePage() {
   const handlePlayAgain = useCallback(() => {
     if (puzzle) {
       const dailyKey = getDailyPuzzleKey(selectedSize);
-      console.log('[index.tsx] Play Again - clearing saved state for:', dailyKey);
       
       // Clear saved state from localStorage
       clearGameState(dailyKey);
@@ -104,13 +103,10 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    console.log('[index.tsx] Loading puzzle for size:', selectedSize);
-    
     // IMPORTANT: Save current state BEFORE loading new puzzle
     // This prevents race conditions where auto-save timer fires after grid is cleared
     if (puzzle && previousSizeRef.current !== selectedSize) {
       const previousDailyKey = getDailyPuzzleKey(previousSizeRef.current);
-      console.log('[index.tsx] Size changed! Saving previous state to:', previousDailyKey);
       saveGameState(previousDailyKey);
     }
     previousSizeRef.current = selectedSize;
@@ -120,16 +116,11 @@ export default function HomePage() {
         if (puzzle) {
           // Use date-based key for daily puzzles so state persists across size changes
           const dailyKey = getDailyPuzzleKey(selectedSize);
-          console.log('[index.tsx] Got puzzle, dailyKey:', dailyKey);
           
           // Try to restore saved state for this (date, size) combination
           const restored = loadGameState(puzzle, undefined, dailyKey);
-          console.log('[index.tsx] Restoration result:', restored);
           if (!restored) {
-            console.log('[index.tsx] No saved state, loading fresh puzzle');
             loadPuzzle(puzzle);
-          } else {
-            console.log('[index.tsx] Successfully restored from saved state');
           }
         } else {
           setError('No daily puzzle available. Generate packs using the CLI.');
@@ -146,12 +137,10 @@ export default function HomePage() {
 
   // Auto-save on state changes
   useEffect(() => {
-    console.log('[index.tsx] Auto-save effect triggered, puzzle:', !!puzzle, 'loading:', loading);
     if (puzzle && !loading) {
       const timer = setTimeout(() => {
         // Use date-based key for daily puzzles
         const dailyKey = getDailyPuzzleKey(selectedSize);
-        console.log('[index.tsx] Auto-saving to key:', dailyKey);
         saveGameState(dailyKey);
       }, 1000);
       return () => clearTimeout(timer);

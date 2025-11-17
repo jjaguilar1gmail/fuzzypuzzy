@@ -40,68 +40,28 @@ function getStorageKey(puzzleId: string, sizeId?: DailySizeId): string {
  * @param sizeId - Optional size identifier (for non-daily puzzles only)
  */
 export function saveGameState(puzzleId: string, sizeId?: DailySizeId): void {
-  console.log('[saveGameState] Called with puzzleId:', puzzleId, 'sizeId:', sizeId);
   const state = useGameStore.getState();
   const { grid, elapsedMs, undoStack, completionStatus, isComplete, moveCount, timerRunning } = state;
-  
-  console.log('[saveGameState] Current game state:', {
-    elapsedMs,
-    moveCount,
-    isComplete,
-    completionStatus,
-    timerRunning,
-    gridSize: grid.size,
-    gridCellsLength: grid.cells?.length,
-    gridReference: grid === state.grid
-  });
 
   const cellEntries: Record<string, number> = {};
   const candidates: Record<string, number[]> = {};
-
-  let givenCount = 0;
-  let userFilledCount = 0;
-  let emptyCount = 0;
 
   for (let r = 0; r < grid.size; r++) {
     for (let c = 0; c < grid.size; c++) {
       const cell = getCell(grid, r, c);
       if (!cell) continue;
       
-      if (r === 0 && c === 0) {
-        // Log first cell for debugging
-        console.log('[saveGameState] First cell [0,0]:', {
-          given: cell.given,
-          value: cell.value,
-          hasValue: cell.value !== null
-        });
-      }
-      
-      if (cell.given) {
-        givenCount++;
-        continue;
-      }
+      if (cell.given) continue;
 
       const key = `${r},${c}`;
       if (cell.value !== null) {
         cellEntries[key] = cell.value;
-        userFilledCount++;
-      } else {
-        emptyCount++;
       }
       if (cell.candidates.length > 0) {
         candidates[key] = [...cell.candidates];
       }
     }
   }
-  
-  console.log('[saveGameState] Grid analysis:', {
-    gridSize: grid.size,
-    totalCells: grid.size * grid.size,
-    givenCount,
-    userFilledCount,
-    emptyCount,
-    cellEntriesToSave: Object.keys(cellEntries).length
-  });
 
   const persistedState: PersistedState = {
     schema_version: SCHEMA_VERSION,
@@ -120,18 +80,6 @@ export function saveGameState(puzzleId: string, sizeId?: DailySizeId): void {
       row.map(cell => ({ value: cell.value, given: cell.given }))
     ) : null,
   };
-  
-  // Log a sample cell from sequenceBoard to verify it has values
-  if (state.sequenceBoard && state.sequenceBoard.length > 0) {
-    const sampleCells = state.sequenceBoard[0].slice(0, 3).map(c => ({
-      value: c.value,
-      given: c.given
-    }));
-    console.log('[saveGameState] Sample sequenceBoard cells from first row:', sampleCells);
-  }
-  
-  console.log('[saveGameState] Saved sequenceBoard:', !!state.sequenceBoard, 
-    'board size:', state.sequenceBoard?.length);
 
   try {
     localStorage.setItem(getStorageKey(puzzleId, sizeId), JSON.stringify(persistedState));
@@ -172,12 +120,10 @@ export function loadGameState(
 
     // Apply cell values
     const grid = useGameStore.getState().grid;
-    console.log('[loadGameState] Grid size:', grid.size, 'Cell entries to restore:', Object.keys(persistedState.cell_entries).length);
     
     Object.entries(persistedState.cell_entries).forEach(([key, value]) => {
       const [r, c] = key.split(',').map(Number);
       const cell = getCell(grid, r, c);
-      console.log(`[loadGameState] Restoring cell [${r},${c}] = ${value}, cell exists:`, !!cell, 'is given:', cell?.given);
       if (cell && !cell.given) {
         cell.value = value;
       }
@@ -190,16 +136,6 @@ export function loadGameState(
       if (cell && !cell.given) {
         cell.candidates = [...cands];
       }
-    });
-
-    // Apply restored state (including v1.1 fields if present)
-    console.log('[loadGameState] About to restore state:', {
-      elapsedMs: persistedState.elapsed_ms,
-      completionStatus: persistedState.completion_status ?? null,
-      isComplete: persistedState.is_complete ?? false,
-      moveCount: persistedState.move_count ?? 0,
-      timerRunning: persistedState.timer_running ?? true,
-      hasSequenceBoard: !!persistedState.sequence_board,
     });
     
     // Restore sequenceBoard if it exists (for guided mode)
@@ -217,16 +153,6 @@ export function loadGameState(
           mistake: false,
         }))
       );
-      console.log('[loadGameState] Restored sequenceBoard with', restoredSequenceBoard.length, 'rows');
-      
-      // Log sample cells to verify they have values
-      if (restoredSequenceBoard.length > 0) {
-        const sampleCells = restoredSequenceBoard[0].slice(0, 3).map((c: any) => ({
-          value: c.value,
-          given: c.given
-        }));
-        console.log('[loadGameState] Sample restored cells from first row:', sampleCells);
-      }
     }
     
     useGameStore.setState({
@@ -257,8 +183,6 @@ export function loadGameState(
       };
       store.updateSequenceState(emptySequenceState, restoredSequenceBoard, []);
     }
-    
-    console.log('[loadGameState] State after restore:', useGameStore.getState().isComplete, useGameStore.getState().completionStatus);
 
     // Re-check completion status for old saves that don't have it
     if (isOldSchema) {

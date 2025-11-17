@@ -189,11 +189,9 @@ export function useGuidedSequenceFlow(
   useEffect(() => {
     // Skip reset if we have an initial board (restoration scenario)
     if (initialBoard) {
-      console.log('[GuidedSequenceFlow] Skipping reset - using initialBoard');
       return;
     }
     
-    console.log('[GuidedSequenceFlow] Resetting board (no initialBoard)');
     const newBoard = initializeBoard(rows, cols, givens);
     const baseState = initializeSequenceState();
     const chainInfo = computeChain(newBoard, maxValue);
