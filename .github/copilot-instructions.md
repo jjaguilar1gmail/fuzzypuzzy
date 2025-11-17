@@ -17,6 +17,8 @@ Auto-generated from all feature plans. Last updated: 2025-11-04
 - N/A (in-memory puzzle objects) (001-staged-uniqueness-validation)
 - TypeScript (React frontend) + Python 3.11 (existing puzzle generation only, unchanged). + React, existing internal hooks/context; no new global state lib (decision: no Redux/Recoil). (001-guided-sequence-flow)
 - In-memory board state only (no persistence added). (001-guided-sequence-flow)
+- TypeScript + React (Next.js frontend), following project’s existing frontend stack + Next.js pages, React, Zustand stores (`useGameStore`, `useProgressStore`), existing daily loader (`frontend/src/lib/daily.ts`), and UI components (Grid, GuidedGrid, SessionStats, CompletionModal) (001-daily-puzzle-sizes)
+- Browser localStorage via existing persistence utilities (`frontend/src/lib/persistence.ts`), plus deterministic daily puzzle selection from JSON packs (001-daily-puzzle-sizes)
 
 - Python 3.11+ + Standard library only for v0 (json, dataclasses optional); future YAML/SVG optional later (001-hidato-terminal-mvp)
 
@@ -36,9 +38,9 @@ cd src; pytest; ruff check .
 Python 3.11+: Follow standard conventions
 
 ## Recent Changes
+- 001-daily-puzzle-sizes: Added TypeScript + React (Next.js frontend), following project’s existing frontend stack + Next.js pages, React, Zustand stores (`useGameStore`, `useProgressStore`), existing daily loader (`frontend/src/lib/daily.ts`), and UI components (Grid, GuidedGrid, SessionStats, CompletionModal)
 - 001-guided-sequence-flow: Added TypeScript (React frontend) + Python 3.11 (existing puzzle generation only, unchanged). + React, existing internal hooks/context; no new global state lib (decision: no Redux/Recoil).
 - 001-staged-uniqueness-validation: Added Python 3.11 (stdlib only per constitution) + Standard library (time, heapq, dataclasses, random); optional external SAT/CP via hook (disabled by default).
-- 001-solver-driven-pruning: Added Python 3.11 (stdlib only; dataclasses optional) + Internal modules only (core.*, generate.*, solve.*, util.*)
 
 
 <!-- MANUAL ADDITIONS START -->

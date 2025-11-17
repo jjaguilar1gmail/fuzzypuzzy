@@ -16,6 +16,7 @@ const GuidedGrid = memo(function GuidedGrid() {
   const puzzleInstance = useGameStore((state) => state.puzzleInstance);
   const updateSequenceState = useGameStore((state) => state.updateSequenceState);
   const incrementMoveCount = useGameStore((state) => state.incrementMoveCount);
+  const restoredSequenceBoard = useGameStore((state) => state.sequenceBoard);
 
   // Convert puzzle givens to Map format
   const givensMap = useMemo(() => {
@@ -51,7 +52,8 @@ const GuidedGrid = memo(function GuidedGrid() {
     givensMap,
     maxValue,
     puzzleInstance,
-    { onPlacement: incrementMoveCount }
+    { onPlacement: incrementMoveCount },
+    restoredSequenceBoard  // Pass restored board for persistence
   );
   const globalSequenceState = useGameStore((store) => store.sequenceState);
   const completionStatus = useGameStore((store) => store.completionStatus);
@@ -502,8 +504,8 @@ const GuidedGrid = memo(function GuidedGrid() {
         </button>
       </div>
 
-      {/* Instructions */}
-      {state.anchorValue === null && (
+      {/* Instructions - only show if puzzle is not complete */}
+      {state.anchorValue === null && !isComplete && (
         <div className="mt-4 p-3 bg-gray-100 rounded-lg text-center">
           <p className="text-sm text-gray-600">
             Click a number to start building the sequence

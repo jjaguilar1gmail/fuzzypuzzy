@@ -158,14 +158,17 @@ export function useGuidedSequenceFlow(
   givens: Map<string, number>,
   maxValue: number,
   resetKey = 0,
-  callbacks?: { onPlacement?: () => void }
+  callbacks?: { onPlacement?: () => void },
+  initialBoard?: BoardCell[][] | null
 ): GuidedSequenceFlowAPI {
-  // Initialize board and state
-  const [board, setBoard] = useState(() => initializeBoard(rows, cols, givens));
+  // Initialize board and state - use initialBoard if provided (for restoration)
+  const [board, setBoard] = useState(() => 
+    initialBoard || initializeBoard(rows, cols, givens)
+  );
   const [state, setState] = useState(() => {
     const initial = initializeSequenceState();
-    const initialBoard = initializeBoard(rows, cols, givens);
-    const chainInfo = computeChain(initialBoard, maxValue);
+    const boardForChain = initialBoard || initializeBoard(rows, cols, givens);
+    const chainInfo = computeChain(boardForChain, maxValue);
     return {
       ...initial,
       chainEndValue: chainInfo.chainEndValue,
@@ -182,7 +185,13 @@ export function useGuidedSequenceFlow(
   const placementCallback = callbacks?.onPlacement;
 
   // Reset board/state whenever puzzle inputs or reset key change
+  // BUT: don't reset if we're being initialized with a restored board
   useEffect(() => {
+    // Skip reset if we have an initial board (restoration scenario)
+    if (initialBoard) {
+      return;
+    }
+    
     const newBoard = initializeBoard(rows, cols, givens);
     const baseState = initializeSequenceState();
     const chainInfo = computeChain(newBoard, maxValue);
@@ -197,7 +206,7 @@ export function useGuidedSequenceFlow(
     undoRedoRef.current = new UndoRedoStack();
     setUndoRedoVersion(0);
     setMistakes([]);
-  }, [rows, cols, maxValue, givens, resetKey]);
+  }, [rows, cols, maxValue, givens, resetKey]); // Note: initialBoard NOT in deps
 
   // Memoize chain computation to avoid redundant calculations
   // Only recompute when board actually changes
