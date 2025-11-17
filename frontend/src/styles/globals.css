@@ -15,6 +15,13 @@
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
+  --app-viewport-height: 100vh;
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --app-viewport-height: 100dvh;
+  }
 }
 
 /* Temporarily disable automatic dark mode overrides until the
@@ -27,14 +34,20 @@
   }
 } */
 
-body {
-  color: rgb(var(--foreground-rgb));
+html {
+  min-height: var(--app-viewport-height, 100%);
   background: linear-gradient(
       to bottom,
       transparent,
       rgb(var(--background-end-rgb))
     )
     rgb(var(--background-start-rgb));
+}
+
+body {
+  min-height: var(--app-viewport-height, 100%);
+  color: rgb(var(--foreground-rgb));
+  background: inherit;
 }
 
 /* Accessibility: Focus styles */

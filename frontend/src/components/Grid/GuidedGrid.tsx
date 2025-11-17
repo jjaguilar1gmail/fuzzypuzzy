@@ -492,7 +492,7 @@ const GuidedGrid = memo(function GuidedGrid() {
           className="px-4 py-2 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 rounded-md font-medium transition-colors"
           aria-label="Undo last move"
         >
-          Undo (Ctrl+Z)
+          Undo
         </button>
         <button
           onClick={redo}
@@ -500,7 +500,7 @@ const GuidedGrid = memo(function GuidedGrid() {
           className="px-4 py-2 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 rounded-md font-medium transition-colors"
           aria-label="Redo last move"
         >
-          Redo (Ctrl+Y)
+          Redo
         </button>
       </div>
 
