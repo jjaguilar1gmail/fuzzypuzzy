@@ -77,7 +77,8 @@ export function detectStaleTarget(
   const targetResult = deriveNextTarget(
     state.anchorValue,
     state.anchorPos,
-    board
+    board,
+    state.stepDirection
   );
 
   // If computed target differs from state, we're stale

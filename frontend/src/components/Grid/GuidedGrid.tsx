@@ -2,11 +2,21 @@
 import { motion } from 'framer-motion';
 import { memo, useMemo, useEffect, useState, useRef } from 'react';
 import { useGuidedSequenceFlow } from '@/sequence';
-import type { Position, MistakeEvent } from '@/sequence/types';
+import type { Position, MistakeEvent, SequenceDirection } from '@/sequence/types';
 
 const HOLD_DURATION_MS = 650;
 const BOARD_PADDING = 8;
 const GRID_SAFE_MARGIN = 32;
+
+const DIRECTION_OPTIONS: Array<{
+  value: SequenceDirection;
+  label: string;
+  deltaLabel: string;
+  aria: string;
+}> = [
+  { value: 'forward', label: 'Forward', deltaLabel: '+1', aria: 'Step forward to k plus 1' },
+  { value: 'backward', label: 'Backward', deltaLabel: '-1', aria: 'Step backward to k minus 1' },
+];
 
 /**
  * Grid component integrated with guided sequence flow
@@ -48,6 +58,7 @@ const GuidedGrid = memo(function GuidedGrid() {
     placeNext,
     removeCell,
     toggleGuide,
+    setStepDirection,
     undo,
     redo,
     canUndo,
@@ -264,9 +275,12 @@ const GuidedGrid = memo(function GuidedGrid() {
   } else {
     const nextTargetValue =
       state.nextTarget ?? globalSequenceState?.nextTarget ?? null;
+    const activeDirection =
+      state.stepDirection ?? globalSequenceState?.stepDirection ?? 'forward';
+    const directionLabel = activeDirection === 'forward' ? '+1' : '-1';
     nextIndicatorLabel =
       nextTargetValue !== null
-        ? `Next number: ${nextTargetValue}`
+        ? `Next ${directionLabel}: ${nextTargetValue}`
         : 'Select a clue to continue';
   }
 
@@ -277,14 +291,42 @@ const GuidedGrid = memo(function GuidedGrid() {
           outline: none;
         }
       `}</style>
-      <div
-        className={`mb-2 inline-flex min-h-[28px] items-center rounded-full border px-4 py-1 text-sm font-semibold shadow transition-colors ${
-          pillPulseId
-            ? 'border-red-200 bg-red-50 text-red-600'
-            : 'border-blue-200 bg-blue-50 text-blue-700'
-        }`}
-      >
-        {nextIndicatorLabel}
+      <div className="mb-2 flex flex-wrap items-center justify-center gap-2">
+        <div
+          className={`inline-flex min-h-[28px] items-center rounded-full border px-4 py-1 text-sm font-semibold shadow transition-colors ${
+            pillPulseId
+              ? 'border-red-200 bg-red-50 text-red-600'
+              : 'border-blue-200 bg-blue-50 text-blue-700'
+          }`}
+        >
+          {nextIndicatorLabel}
+        </div>
+        <div
+          className="inline-flex overflow-hidden rounded-full border border-gray-200 bg-white shadow-sm"
+          role="group"
+          aria-label="Choose sequence direction"
+        >
+          {DIRECTION_OPTIONS.map((option) => {
+            const isActive = state.stepDirection === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setStepDirection(option.value)}
+                aria-pressed={isActive}
+                aria-label={option.aria}
+                className={`flex items-center gap-1 px-3 py-1 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${
+                  isActive
+                    ? 'bg-blue-500 text-white focus-visible:outline-blue-600'
+                    : 'bg-transparent text-gray-600 hover:bg-gray-100 focus-visible:outline-gray-400'
+                }`}
+              >
+                <span>{option.deltaLabel}</span>
+                <span className="hidden sm:inline">{option.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
       <div
         className="relative"

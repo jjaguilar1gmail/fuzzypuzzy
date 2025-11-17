@@ -10,6 +10,7 @@ import type {
   SequenceState,
   GuidedSequenceFlowAPI,
   MistakeEvent,
+  SequenceDirection,
 } from './types';
 import { UndoRedoStack } from './undoRedo';
 import { computeChain } from './chain';
@@ -19,6 +20,7 @@ import {
   placeNext as placeNextTransition,
   removeCell as removeCellTransition,
   toggleGuide as toggleGuideTransition,
+  setStepDirection as setStepDirectionTransition,
   applyUndo,
   applyRedo,
 } from './transitions';
@@ -70,6 +72,7 @@ function initializeSequenceState(): SequenceState {
     nextTarget: null,
     legalTargets: [],
     guideEnabled: true,
+    stepDirection: 'forward',
     chainEndValue: null,
     chainLength: 0,
     nextTargetChangeReason: 'neutral',
@@ -80,8 +83,9 @@ function initializeSequenceState(): SequenceState {
  * Find the lowest-value anchor that can immediately expose legal targets.
  * Considers contiguous chain skipping logic by reusing next-target derivation.
  */
-function findLowestAnchorWithCandidates(
-  board: BoardCell[][]
+function findAnchorWithCandidates(
+  board: BoardCell[][],
+  direction: SequenceDirection
 ): Position | null {
   let bestCandidate:
     | { pos: Position; value: number; legalCount: number; sourceValue: number }
@@ -92,7 +96,12 @@ function findLowestAnchorWithCandidates(
       const cellValue = cell.value;
       if (cellValue === null) continue;
 
-      const targetResult = deriveNextTarget(cellValue, cell.position, board);
+      const targetResult = deriveNextTarget(
+        cellValue,
+        cell.position,
+        board,
+        direction
+      );
       const anchorValue = targetResult.newAnchorValue ?? cellValue;
       const anchorPos = targetResult.newAnchorPos ?? cell.position;
 
@@ -105,15 +114,20 @@ function findLowestAnchorWithCandidates(
         continue;
       }
 
-      if (
+      const shouldReplace =
         bestCandidate === null ||
-        anchorValue < bestCandidate.value ||
+        (direction === 'forward'
+          ? anchorValue < bestCandidate.value
+          : anchorValue > bestCandidate.value) ||
         (anchorValue === bestCandidate.value &&
           legalTargets.length > bestCandidate.legalCount) ||
         (anchorValue === bestCandidate.value &&
           legalTargets.length === bestCandidate.legalCount &&
-          cellValue < bestCandidate.sourceValue)
-      ) {
+          (direction === 'forward'
+            ? cellValue < bestCandidate.sourceValue
+            : cellValue > bestCandidate.sourceValue));
+
+      if (shouldReplace) {
         bestCandidate = {
           pos: { ...anchorPos },
           value: anchorValue,
@@ -256,7 +270,7 @@ export function useGuidedSequenceFlow(
       return;
     }
 
-    const autoAnchorPos = findLowestAnchorWithCandidates(board);
+    const autoAnchorPos = findAnchorWithCandidates(board, state.stepDirection);
     if (!autoAnchorPos) {
       return;
     }
@@ -340,6 +354,18 @@ export function useGuidedSequenceFlow(
   );
 
   /**
+   * Switch between forward/backward stepping directions
+   */
+  const setStepDirection = useCallback(
+    (direction: SequenceDirection) => {
+      setState((current) =>
+        setStepDirectionTransition(current, board, direction)
+      );
+    },
+    [board]
+  );
+
+  /**
    * Undo the last placement or removal action
    * Restores full state snapshot from undo stack
    */
@@ -416,6 +442,7 @@ export function useGuidedSequenceFlow(
     placeNext,
     removeCell,
     toggleGuide,
+    setStepDirection,
     undo,
     redo,
     canUndo,

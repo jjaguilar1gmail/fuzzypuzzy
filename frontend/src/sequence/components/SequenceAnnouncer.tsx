@@ -16,6 +16,13 @@ interface SequenceAnnouncerProps {
 /**
  * Generates human-readable announcement for current state
  */
+function describeNextTarget(state: SequenceState): string {
+  const legalCount = state.legalTargets.length;
+  const legalText = `${legalCount} legal ${legalCount === 1 ? 'position' : 'positions'}`;
+  const deltaLabel = state.stepDirection === 'forward' ? '+1' : '-1';
+  return `Next ${deltaLabel} is ${state.nextTarget}. ${legalText} available.`;
+}
+
 function generateAnnouncement(
   state: SequenceState,
   prevState: SequenceState | null,
@@ -34,9 +41,8 @@ function generateAnnouncement(
 
   // Anchor change
   if (state.anchorValue !== prevState?.anchorValue && state.anchorValue !== null) {
-    const legalCount = state.legalTargets.length;
     const targetText = state.nextTarget
-      ? `Next number is ${state.nextTarget}. ${legalCount} legal ${legalCount === 1 ? 'position' : 'positions'} available.`
+      ? describeNextTarget(state)
       : 'No legal moves available from this anchor.';
     return `Anchor set to ${state.anchorValue}. ${targetText}`;
   }
@@ -57,9 +63,8 @@ function generateAnnouncement(
     state.nextTargetChangeReason === 'placement'
   ) {
     const prevTarget = prevState.nextTarget;
-    const legalCount = state.legalTargets.length;
     const nextText = state.nextTarget
-      ? `Next number is ${state.nextTarget}. ${legalCount} legal ${legalCount === 1 ? 'position' : 'positions'}.`
+      ? describeNextTarget(state)
       : 'Sequence complete.';
     return `Placed ${prevTarget}. ${nextText}`;
   }
@@ -103,6 +108,7 @@ export function SequenceAnnouncer({ state, recentMistakes = [] }: SequenceAnnoun
     state.nextTarget,
     state.nextTargetChangeReason,
     state.legalTargets.length,
+    state.stepDirection,
     recentMistakes.length,
   ]);
 

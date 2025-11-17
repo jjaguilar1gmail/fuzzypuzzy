@@ -10,6 +10,7 @@ import type {
   SequenceState,
   UndoAction,
   NextTargetChangeReason,
+  SequenceDirection,
 } from './types';
 import { positionsEqual } from './adjacency';
 import { computeChain } from './chain';
@@ -39,7 +40,12 @@ export function selectAnchor(
   const anchorPos = { ...pos };
 
   // Recompute next target and legal targets
-  const targetResult = deriveNextTarget(anchorValue, anchorPos, board);
+  const targetResult = deriveNextTarget(
+    anchorValue,
+    anchorPos,
+    board,
+    state.stepDirection
+  );
   const finalAnchorValue = targetResult.newAnchorValue ?? anchorValue;
   const finalAnchorPos = targetResult.newAnchorPos ?? anchorPos;
   const legalTargets =
@@ -110,7 +116,12 @@ export function placeNext(
   const chainInfo = computeChain(newBoard, maxValue);
 
   // Recompute next target and legal targets
-  const targetResult = deriveNextTarget(anchorValue, anchorPos, newBoard);
+  const targetResult = deriveNextTarget(
+    anchorValue,
+    anchorPos,
+    newBoard,
+    state.stepDirection
+  );
   const finalAnchorValue = targetResult.newAnchorValue ?? anchorValue;
   const finalAnchorPos = targetResult.newAnchorPos ?? anchorPos;
   const legalTargets =
@@ -201,7 +212,8 @@ export function removeCell(
     const targetResult = deriveNextTarget(
       state.anchorValue,
       state.anchorPos,
-      newBoard
+      newBoard,
+      state.stepDirection
     );
     const finalAnchorValue = targetResult.newAnchorValue ?? state.anchorValue;
     const finalAnchorPos = targetResult.newAnchorPos ?? state.anchorPos;
@@ -233,6 +245,54 @@ export function toggleGuide(
   return {
     ...state,
     guideEnabled: enabled,
+  };
+}
+
+/**
+ * Action: SET_STEP_DIRECTION
+ * Update stepping direction and recompute targets if needed
+ */
+export function setStepDirection(
+  state: SequenceState,
+  board: BoardCell[][],
+  direction: SequenceDirection
+): SequenceState {
+  if (state.stepDirection === direction) {
+    return state;
+  }
+
+  // No anchor selected; enter neutral with new direction
+  if (state.anchorValue === null || state.anchorPos === null) {
+    return {
+      ...state,
+      stepDirection: direction,
+      nextTarget: null,
+      legalTargets: [],
+      nextTargetChangeReason: 'neutral',
+    };
+  }
+
+  const targetResult = deriveNextTarget(
+    state.anchorValue,
+    state.anchorPos,
+    board,
+    direction
+  );
+  const finalAnchorValue = targetResult.newAnchorValue ?? state.anchorValue;
+  const finalAnchorPos = targetResult.newAnchorPos ?? state.anchorPos;
+  const legalTargets =
+    targetResult.nextTarget !== null && finalAnchorPos
+      ? computeLegalTargets(finalAnchorPos, board)
+      : [];
+
+  return {
+    ...state,
+    stepDirection: direction,
+    anchorValue: finalAnchorValue,
+    anchorPos: finalAnchorPos,
+    nextTarget: targetResult.nextTarget,
+    legalTargets,
+    nextTargetChangeReason: 'anchor-change',
   };
 }
 
@@ -313,7 +373,12 @@ export function applyRedo(
   if (action.type === 'PLACE') {
     const anchorValue = action.value;
     const anchorPos = { ...action.position };
-    const targetResult = deriveNextTarget(anchorValue, anchorPos, newBoard);
+    const targetResult = deriveNextTarget(
+      anchorValue,
+      anchorPos,
+      newBoard,
+      state.stepDirection
+    );
     const finalAnchorValue = targetResult.newAnchorValue ?? anchorValue;
     const finalAnchorPos = targetResult.newAnchorPos ?? anchorPos;
     const legalTargets =
@@ -354,7 +419,8 @@ export function applyRedo(
         const targetResult = deriveNextTarget(
           state.anchorValue,
           state.anchorPos,
-          newBoard
+          newBoard,
+          state.stepDirection
         );
         const finalAnchorValue = targetResult.newAnchorValue ?? state.anchorValue;
         const finalAnchorPos = targetResult.newAnchorPos ?? state.anchorPos;

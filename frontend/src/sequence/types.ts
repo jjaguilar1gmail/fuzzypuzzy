@@ -22,6 +22,11 @@ export type NextTargetChangeReason =
   | 'neutral';
 
 /**
+ * Direction to advance sequence placements
+ */
+export type SequenceDirection = 'forward' | 'backward';
+
+/**
  * Individual board cell state
  */
 export interface BoardCell {
@@ -55,6 +60,8 @@ export interface SequenceState {
   legalTargets: Position[];
   /** "Show Guide" toggle */
   guideEnabled: boolean;
+  /** Whether to step up or down the sequence */
+  stepDirection: SequenceDirection;
   /** Highest contiguous value in primary chain */
   chainEndValue: number | null;
   /** Length of contiguous chain */
@@ -155,6 +162,8 @@ export interface GuidedSequenceFlowAPI {
   removeCell: (pos: Position) => void;
   /** Toggle guide visibility */
   toggleGuide: (enabled: boolean) => void;
+  /** Change step direction */
+  setStepDirection: (direction: SequenceDirection) => void;
   /** Undo last action */
   undo: () => void;
   /** Redo last undone action */

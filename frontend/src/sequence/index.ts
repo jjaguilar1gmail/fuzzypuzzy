@@ -17,6 +17,7 @@ export type {
   MistakeReason,
   PlayerSettings,
   HighlightIntensity,
+  SequenceDirection,
   NextTargetChangeReason,
   ChainInfo,
   RemovalClassification,
