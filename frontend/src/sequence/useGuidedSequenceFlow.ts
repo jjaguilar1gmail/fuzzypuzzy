@@ -26,6 +26,7 @@ import {
 } from './transitions';
 import { validatePlacement, isInvalidEmptyCellClick } from './mistakes';
 import { detectStaleTarget, recoverFromStaleState } from './staleTarget';
+import { loadSequenceSettings, saveSequenceSettings } from './playerSettings';
 
 const MISTAKE_BUFFER_SIZE = 20;
 
@@ -197,6 +198,7 @@ export function useGuidedSequenceFlow(
   // Mistake buffer (ring buffer)
   const [mistakes, setMistakes] = useState<MistakeEvent[]>([]);
   const placementCallback = callbacks?.onPlacement;
+  const settingsLoadedRef = useRef(false);
 
   // Reset board/state whenever puzzle inputs or reset key change
   // BUT: don't reset if we're being initialized with a restored board
@@ -278,6 +280,21 @@ export function useGuidedSequenceFlow(
     const result = selectAnchorTransition(state, board, maxValue, autoAnchorPos);
     setState(result.state);
   }, [board, maxValue, state]);
+
+  useEffect(() => {
+    if (settingsLoadedRef.current) {
+      return;
+    }
+
+    const stored = loadSequenceSettings();
+    if (stored && stored.stepDirection !== state.stepDirection) {
+      setState((current) =>
+        setStepDirectionTransition(current, board, stored.stepDirection)
+      );
+    }
+
+    settingsLoadedRef.current = true;
+  }, [board, state.stepDirection]);
 
   /**
    * Select a cell value as the anchor for guided placement
@@ -361,6 +378,7 @@ export function useGuidedSequenceFlow(
       setState((current) =>
         setStepDirectionTransition(current, board, direction)
       );
+      saveSequenceSettings({ stepDirection: direction });
     },
     [board]
   );
