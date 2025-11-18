@@ -4,8 +4,14 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { selectAnchor, placeNext, removeCell } from '../transitions';
-import { applyUndo, applyRedo } from '../transitions';
+import {
+  selectAnchor,
+  placeNext,
+  removeCell,
+  setStepDirection,
+  applyUndo,
+  applyRedo,
+} from '../transitions';
 import type { BoardCell, SequenceState, UndoAction } from '../types';
 import { computeChain } from '../chain';
 
@@ -38,6 +44,7 @@ function createInitialState(): SequenceState {
     nextTarget: null,
     legalTargets: [],
     guideEnabled: true,
+    stepDirection: 'forward',
     chainEndValue: null,
     chainLength: 0,
     nextTargetChangeReason: 'neutral',
@@ -462,6 +469,40 @@ describe('integration: full user flows', () => {
       expect(chainInfo.chainEndValue).toBe(null);
       expect(chainInfo.chainLength).toBe(0);
       expect(chainInfo.nextCandidate).toBe(null);
+    });
+  });
+
+  describe('direction toggling', () => {
+    it('switches to backward stepping to target missing lower values', () => {
+      const board = createTestBoard(
+        new Map([
+          ['0,0', 3],
+          ['0,1', 4],
+          ['0,2', 5],
+        ])
+      );
+
+      let state = createInitialState();
+      const anchor = selectAnchor(state, board, 25, { row: 0, col: 2 });
+      state = anchor.state;
+      expect(state.stepDirection).toBe('forward');
+      expect(state.nextTarget).toBe(6);
+
+      const backwardState = setStepDirection(state, board, 'backward');
+      expect(backwardState.stepDirection).toBe('backward');
+      expect(backwardState.anchorValue).toBe(3);
+      expect(backwardState.nextTarget).toBe(2);
+      expect(backwardState.legalTargets.length).toBeGreaterThan(0);
+    });
+
+    it('keeps neutral state when toggling direction without an anchor', () => {
+      const board = createTestBoard(new Map());
+      const neutralState = createInitialState();
+
+      const backwardState = setStepDirection(neutralState, board, 'backward');
+      expect(backwardState.stepDirection).toBe('backward');
+      expect(backwardState.nextTarget).toBeNull();
+      expect(backwardState.anchorValue).toBeNull();
     });
   });
 });

@@ -185,6 +185,7 @@ export function loadGameState(
         nextTarget: null,
         legalTargets: [],
         guideEnabled: true,
+        stepDirection: 'forward' as const,
         chainEndValue: null,
         chainLength: 0,
         nextTargetChangeReason: 'neutral' as const,

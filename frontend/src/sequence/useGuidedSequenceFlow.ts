@@ -10,6 +10,7 @@ import type {
   SequenceState,
   GuidedSequenceFlowAPI,
   MistakeEvent,
+  SequenceDirection,
 } from './types';
 import { UndoRedoStack } from './undoRedo';
 import { computeChain } from './chain';
@@ -19,11 +20,13 @@ import {
   placeNext as placeNextTransition,
   removeCell as removeCellTransition,
   toggleGuide as toggleGuideTransition,
+  setStepDirection as setStepDirectionTransition,
   applyUndo,
   applyRedo,
 } from './transitions';
 import { validatePlacement, isInvalidEmptyCellClick } from './mistakes';
 import { detectStaleTarget, recoverFromStaleState } from './staleTarget';
+import { loadSequenceSettings, saveSequenceSettings } from './playerSettings';
 
 const MISTAKE_BUFFER_SIZE = 20;
 
@@ -63,13 +66,16 @@ function initializeBoard(
 /**
  * Initialize sequence state
  */
-function initializeSequenceState(): SequenceState {
+function initializeSequenceState(
+  stepDirection: SequenceDirection = 'forward'
+): SequenceState {
   return {
     anchorValue: null,
     anchorPos: null,
     nextTarget: null,
     legalTargets: [],
     guideEnabled: true,
+    stepDirection,
     chainEndValue: null,
     chainLength: 0,
     nextTargetChangeReason: 'neutral',
@@ -80,8 +86,9 @@ function initializeSequenceState(): SequenceState {
  * Find the lowest-value anchor that can immediately expose legal targets.
  * Considers contiguous chain skipping logic by reusing next-target derivation.
  */
-function findLowestAnchorWithCandidates(
-  board: BoardCell[][]
+function findAnchorWithCandidates(
+  board: BoardCell[][],
+  direction: SequenceDirection
 ): Position | null {
   let bestCandidate:
     | { pos: Position; value: number; legalCount: number; sourceValue: number }
@@ -92,7 +99,12 @@ function findLowestAnchorWithCandidates(
       const cellValue = cell.value;
       if (cellValue === null) continue;
 
-      const targetResult = deriveNextTarget(cellValue, cell.position, board);
+      const targetResult = deriveNextTarget(
+        cellValue,
+        cell.position,
+        board,
+        direction
+      );
       const anchorValue = targetResult.newAnchorValue ?? cellValue;
       const anchorPos = targetResult.newAnchorPos ?? cell.position;
 
@@ -105,15 +117,20 @@ function findLowestAnchorWithCandidates(
         continue;
       }
 
-      if (
+      const shouldReplace =
         bestCandidate === null ||
-        anchorValue < bestCandidate.value ||
+        (direction === 'forward'
+          ? anchorValue < bestCandidate.value
+          : anchorValue > bestCandidate.value) ||
         (anchorValue === bestCandidate.value &&
           legalTargets.length > bestCandidate.legalCount) ||
         (anchorValue === bestCandidate.value &&
           legalTargets.length === bestCandidate.legalCount &&
-          cellValue < bestCandidate.sourceValue)
-      ) {
+          (direction === 'forward'
+            ? cellValue < bestCandidate.sourceValue
+            : cellValue > bestCandidate.sourceValue));
+
+      if (shouldReplace) {
         bestCandidate = {
           pos: { ...anchorPos },
           value: anchorValue,
@@ -166,7 +183,8 @@ export function useGuidedSequenceFlow(
     initialBoard || initializeBoard(rows, cols, givens)
   );
   const [state, setState] = useState(() => {
-    const initial = initializeSequenceState();
+    const storedDirection = loadSequenceSettings()?.stepDirection ?? 'forward';
+    const initial = initializeSequenceState(storedDirection);
     const boardForChain = initialBoard || initializeBoard(rows, cols, givens);
     const chainInfo = computeChain(boardForChain, maxValue);
     return {
@@ -183,6 +201,7 @@ export function useGuidedSequenceFlow(
   // Mistake buffer (ring buffer)
   const [mistakes, setMistakes] = useState<MistakeEvent[]>([]);
   const placementCallback = callbacks?.onPlacement;
+  const settingsLoadedRef = useRef(false);
 
   // Reset board/state whenever puzzle inputs or reset key change
   // BUT: don't reset if we're being initialized with a restored board
@@ -193,7 +212,9 @@ export function useGuidedSequenceFlow(
     }
     
     const newBoard = initializeBoard(rows, cols, givens);
-    const baseState = initializeSequenceState();
+    const preferredDirection =
+      loadSequenceSettings()?.stepDirection ?? 'forward';
+    const baseState = initializeSequenceState(preferredDirection);
     const chainInfo = computeChain(newBoard, maxValue);
 
     setBoard(newBoard);
@@ -206,6 +227,7 @@ export function useGuidedSequenceFlow(
     undoRedoRef.current = new UndoRedoStack();
     setUndoRedoVersion(0);
     setMistakes([]);
+    settingsLoadedRef.current = false;
   }, [rows, cols, maxValue, givens, resetKey]); // Note: initialBoard NOT in deps
 
   // Memoize chain computation to avoid redundant calculations
@@ -256,7 +278,7 @@ export function useGuidedSequenceFlow(
       return;
     }
 
-    const autoAnchorPos = findLowestAnchorWithCandidates(board);
+    const autoAnchorPos = findAnchorWithCandidates(board, state.stepDirection);
     if (!autoAnchorPos) {
       return;
     }
@@ -264,6 +286,21 @@ export function useGuidedSequenceFlow(
     const result = selectAnchorTransition(state, board, maxValue, autoAnchorPos);
     setState(result.state);
   }, [board, maxValue, state]);
+
+  useEffect(() => {
+    if (settingsLoadedRef.current) {
+      return;
+    }
+
+    const stored = loadSequenceSettings();
+    if (stored && stored.stepDirection !== state.stepDirection) {
+      setState((current) =>
+        setStepDirectionTransition(current, board, stored.stepDirection)
+      );
+    }
+
+    settingsLoadedRef.current = true;
+  }, [board, state.stepDirection]);
 
   /**
    * Select a cell value as the anchor for guided placement
@@ -337,6 +374,19 @@ export function useGuidedSequenceFlow(
       setState(newState);
     },
     [state]
+  );
+
+  /**
+   * Switch between forward/backward stepping directions
+   */
+  const setStepDirection = useCallback(
+    (direction: SequenceDirection) => {
+      setState((current) =>
+        setStepDirectionTransition(current, board, direction)
+      );
+      saveSequenceSettings({ stepDirection: direction });
+    },
+    [board]
   );
 
   /**
@@ -416,6 +466,7 @@ export function useGuidedSequenceFlow(
     placeNext,
     removeCell,
     toggleGuide,
+    setStepDirection,
     undo,
     redo,
     canUndo,

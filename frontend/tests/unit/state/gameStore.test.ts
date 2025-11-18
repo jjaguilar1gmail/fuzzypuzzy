@@ -9,6 +9,7 @@ const baseSequenceState: SequenceState = {
   nextTarget: null,
   legalTargets: [],
   guideEnabled: true,
+  stepDirection: 'forward',
   chainEndValue: null,
   chainLength: 0,
   nextTargetChangeReason: 'neutral',

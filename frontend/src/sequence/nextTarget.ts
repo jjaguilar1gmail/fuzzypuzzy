@@ -3,7 +3,7 @@
  * Based on specs/001-guided-sequence-flow/data-model.md
  */
 
-import type { BoardCell, Position } from './types';
+import type { BoardCell, Position, SequenceDirection } from './types';
 import { getLegalAdjacents } from './adjacency';
 
 /**
@@ -28,7 +28,8 @@ export interface NextTargetResult {
 export function deriveNextTarget(
   anchorValue: number | null,
   anchorPos: Position | null,
-  board: BoardCell[][]
+  board: BoardCell[][],
+  direction: SequenceDirection
 ): NextTargetResult {
   // No anchor selected
   if (anchorValue === null || anchorPos === null) {
@@ -46,41 +47,86 @@ export function deriveNextTarget(
   }
 
   const maxValue = board.length * board[0].length;
+  const minValue = 1;
 
-  // Find the next value after anchor that doesn't exist on the board
   let currentValue = anchorValue;
   let currentPos = anchorPos;
-  let nextValue = currentValue + 1;
 
-  // Skip over values that exist on the board, updating anchor as we go
-  // But only move anchor if the new position has legal adjacents
-  while (nextValue <= maxValue && valuePositions.has(nextValue)) {
+  if (direction === 'forward') {
+    let nextValue = currentValue + 1;
+
+    while (nextValue <= maxValue && valuePositions.has(nextValue)) {
+      const candidatePos = valuePositions.get(nextValue)!;
+      const candidateLegalAdjacents = getLegalAdjacents(candidatePos, board);
+
+      if (candidateLegalAdjacents.length > 0) {
+        currentValue = nextValue;
+        currentPos = candidatePos;
+      }
+
+      nextValue++;
+    }
+
+    if (nextValue > maxValue) {
+      return {
+        nextTarget: null,
+        newAnchorValue: currentValue,
+        newAnchorPos: currentPos,
+      };
+    }
+
+    const legalAdjacents = getLegalAdjacents(currentPos, board);
+    if (legalAdjacents.length === 0) {
+      return {
+        nextTarget: null,
+        newAnchorValue: currentValue,
+        newAnchorPos: currentPos,
+      };
+    }
+
+    return {
+      nextTarget: nextValue,
+      newAnchorValue: currentValue,
+      newAnchorPos: currentPos,
+    };
+  }
+
+  // Backward direction
+  let nextValue = currentValue - 1;
+  while (nextValue >= minValue && valuePositions.has(nextValue)) {
     const candidatePos = valuePositions.get(nextValue)!;
     const candidateLegalAdjacents = getLegalAdjacents(candidatePos, board);
-    
-    // Only update anchor if the candidate position has legal moves
+
     if (candidateLegalAdjacents.length > 0) {
       currentValue = nextValue;
       currentPos = candidatePos;
     }
-    
-    nextValue++;
+
+    nextValue--;
   }
 
-  // If we've exceeded the max value, no more targets available
-  if (nextValue > maxValue) {
-    return { nextTarget: null, newAnchorValue: currentValue, newAnchorPos: currentPos };
+  if (nextValue < minValue) {
+    return {
+      nextTarget: null,
+      newAnchorValue: currentValue,
+      newAnchorPos: currentPos,
+    };
   }
 
-  // Check if the updated anchor position has legal adjacents
   const legalAdjacents = getLegalAdjacents(currentPos, board);
-
-  // If no legal adjacent cells, cannot extend
   if (legalAdjacents.length === 0) {
-    return { nextTarget: null, newAnchorValue: currentValue, newAnchorPos: currentPos };
+    return {
+      nextTarget: null,
+      newAnchorValue: currentValue,
+      newAnchorPos: currentPos,
+    };
   }
 
-  return { nextTarget: nextValue, newAnchorValue: currentValue, newAnchorPos: currentPos };
+  return {
+    nextTarget: nextValue,
+    newAnchorValue: currentValue,
+    newAnchorPos: currentPos,
+  };
 }
 
 /**

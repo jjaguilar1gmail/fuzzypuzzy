@@ -2,11 +2,30 @@
 import { motion } from 'framer-motion';
 import { memo, useMemo, useEffect, useState, useRef } from 'react';
 import { useGuidedSequenceFlow } from '@/sequence';
-import type { Position, MistakeEvent } from '@/sequence/types';
+import type { Position, MistakeEvent, SequenceDirection } from '@/sequence/types';
 
 const HOLD_DURATION_MS = 650;
 const BOARD_PADDING = 8;
 const GRID_SAFE_MARGIN = 32;
+
+const DIRECTION_OPTIONS: Array<{
+  value: SequenceDirection;
+  label: string;
+  aria: string;
+  icon: 'plus' | 'minus';
+}> = [
+  { value: 'forward', label: 'Forward', aria: 'Step forward to k plus 1', icon: 'plus' },
+  { value: 'backward', label: 'Backward', aria: 'Step backward to k minus 1', icon: 'minus' },
+];
+
+const PlusMinusGlyph = ({ variant }: { variant: 'plus' | 'minus' }) => (
+  <span className="relative flex h-6 w-6 items-center justify-center" aria-hidden="true">
+    <span className="absolute left-1/2 top-1/2 h-0.5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current" />
+    {variant === 'plus' && (
+      <span className="absolute left-1/2 top-1/2 h-5 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current" />
+    )}
+  </span>
+);
 
 /**
  * Grid component integrated with guided sequence flow
@@ -48,6 +67,7 @@ const GuidedGrid = memo(function GuidedGrid() {
     placeNext,
     removeCell,
     toggleGuide,
+    setStepDirection,
     undo,
     redo,
     canUndo,
@@ -266,7 +286,7 @@ const GuidedGrid = memo(function GuidedGrid() {
       state.nextTarget ?? globalSequenceState?.nextTarget ?? null;
     nextIndicatorLabel =
       nextTargetValue !== null
-        ? `Next number: ${nextTargetValue}`
+        ? `Next: ${nextTargetValue}`
         : 'Select a clue to continue';
   }
 
@@ -277,14 +297,44 @@ const GuidedGrid = memo(function GuidedGrid() {
           outline: none;
         }
       `}</style>
-      <div
-        className={`mb-2 inline-flex min-h-[28px] items-center rounded-full border px-4 py-1 text-sm font-semibold shadow transition-colors ${
-          pillPulseId
-            ? 'border-red-200 bg-red-50 text-red-600'
-            : 'border-blue-200 bg-blue-50 text-blue-700'
-        }`}
-      >
-        {nextIndicatorLabel}
+      <div className="mb-2 flex flex-wrap items-center justify-center gap-2">
+        <div
+          className={`inline-flex h-12 items-center rounded-full border px-4 sm:px-6 text-base font-semibold shadow transition-colors ${
+            pillPulseId
+              ? 'border-red-200 bg-red-50 text-red-600'
+              : 'border-blue-200 bg-blue-50 text-blue-700'
+          }`}
+        >
+          {nextIndicatorLabel}
+        </div>
+        <div
+          className="inline-flex h-12 overflow-hidden rounded-full border border-gray-200 bg-white shadow-sm"
+          role="group"
+          aria-label="Choose sequence direction"
+        >
+          {DIRECTION_OPTIONS.map((option) => {
+            const isActive = state.stepDirection === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setStepDirection(option.value)}
+                aria-pressed={isActive}
+                aria-label={option.aria}
+                className={`flex h-full min-w-[44px] items-center justify-center gap-2 px-2.5 text-sm font-medium leading-none transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 sm:min-w-0 sm:px-4 sm:leading-tight ${
+                  isActive
+                    ? 'bg-blue-500 text-white focus-visible:outline-blue-600'
+                    : 'bg-transparent text-gray-600 hover:bg-gray-100 focus-visible:outline-gray-400'
+                }`}
+              >
+                <span className="flex h-12 w-12 items-center justify-center sm:h-auto sm:w-auto">
+                  <PlusMinusGlyph variant={option.icon} />
+                </span>
+                <span className="hidden sm:inline">{option.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
       <div
         className="relative"
