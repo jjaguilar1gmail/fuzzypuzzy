@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useGameStore } from '@/state/gameStore';
 import { 
@@ -196,9 +197,9 @@ export default function HomePage() {
         style={pageViewportStyle}
       >
         <p className="text-red-600">Error: {error || 'Failed to load puzzle'}</p>
-        <a href="/packs" className="text-blue-600 hover:underline">
-          Browse puzzle packs 
-        </a>
+        <Link href="/packs" className="text-blue-600 hover:underline">
+          Browse puzzle packs
+        </Link>
       </div>
     );
   }
