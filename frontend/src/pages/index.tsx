@@ -15,8 +15,10 @@ import CompletionModal from '@/components/HUD/CompletionModal';
 import { SessionStats } from '@/components/HUD/SessionStats';
 import SettingsMenu from '@/components/HUD/SettingsMenu';
 import { SequenceAnnouncer } from '@/sequence/components';
+import { TutorialSplash } from '@/components/HUD/TutorialSplash';
 
 const DAILY_SIZE_PREFERENCE_KEY = 'hpz:daily:size-preference';
+const TUTORIAL_SEEN_KEY = 'hpz:tutorial:seen';
 
 /**
  * Load saved size preference from localStorage.
@@ -61,6 +63,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedSize, setSelectedSize] = useState<DailySizeId>(() => loadSizePreference());
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const previousSizeRef = useRef<DailySizeId>(selectedSize);
   
   const loadPuzzle = useGameStore((state) => state.loadPuzzle);
@@ -136,6 +139,32 @@ export default function HomePage() {
   const elapsedMs = useGameStore((state) => state.elapsedMs);
   const isComplete = useGameStore((state) => state.isComplete);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    try {
+      const hasSeenTutorial = window.localStorage.getItem(TUTORIAL_SEEN_KEY);
+      if (!hasSeenTutorial) {
+        setIsTutorialOpen(true);
+      }
+    } catch (err) {
+      console.warn('Unable to read tutorial preference', err);
+    }
+  }, []);
+
+  const openTutorial = () => setIsTutorialOpen(true);
+  const closeTutorial = () => {
+    setIsTutorialOpen(false);
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem(TUTORIAL_SEEN_KEY, 'true');
+      } catch (err) {
+        console.warn('Unable to save tutorial preference', err);
+      }
+    }
+  };
+
   // Auto-save on state changes
   useEffect(() => {
     // Only auto-save if puzzle size matches selected size (prevents saving wrong board to wrong key during transitions)
@@ -168,7 +197,7 @@ export default function HomePage() {
       >
         <p className="text-red-600">Error: {error || 'Failed to load puzzle'}</p>
         <a href="/packs" className="text-blue-600 hover:underline">
-          Browse puzzle packs →
+          Browse puzzle packs 
         </a>
       </div>
     );
@@ -179,14 +208,22 @@ export default function HomePage() {
       className="flex min-h-screen flex-col items-center justify-center p-4 gap-6"
       style={pageViewportStyle}
     >
-      <div className="flex flex-col items-center gap-2 text-center">
-        <div className="flex items-center justify-center gap-4 mb-2">
+      <div className="flex w-full max-w-3xl flex-col items-center gap-2 text-center">
+        <div className="relative mb-2 flex w-full items-center justify-center">
           <h1
             className="text-3xl font-bold"
             style={{ fontFamily: 'IowanTitle, serif' }}
           >
             Number Flow
           </h1>
+          <button
+            type="button"
+            onClick={openTutorial}
+            aria-label="Open how to play tutorial"
+            className="absolute right-0 inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white/70 text-lg font-bold text-slate-900 shadow-sm transition hover:bg-white hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+          >
+            ?
+          </button>
           {/* <SettingsMenu /> */}
         </div>
 
@@ -239,6 +276,9 @@ export default function HomePage() {
           recentMistakes={recentMistakes}
         />
       )}
+
+      <TutorialSplash isOpen={isTutorialOpen} onClose={closeTutorial} />
     </main>
   );
 }
+
