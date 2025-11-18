@@ -66,14 +66,16 @@ function initializeBoard(
 /**
  * Initialize sequence state
  */
-function initializeSequenceState(): SequenceState {
+function initializeSequenceState(
+  stepDirection: SequenceDirection = 'forward'
+): SequenceState {
   return {
     anchorValue: null,
     anchorPos: null,
     nextTarget: null,
     legalTargets: [],
     guideEnabled: true,
-    stepDirection: 'forward',
+    stepDirection,
     chainEndValue: null,
     chainLength: 0,
     nextTargetChangeReason: 'neutral',
@@ -181,7 +183,8 @@ export function useGuidedSequenceFlow(
     initialBoard || initializeBoard(rows, cols, givens)
   );
   const [state, setState] = useState(() => {
-    const initial = initializeSequenceState();
+    const storedDirection = loadSequenceSettings()?.stepDirection ?? 'forward';
+    const initial = initializeSequenceState(storedDirection);
     const boardForChain = initialBoard || initializeBoard(rows, cols, givens);
     const chainInfo = computeChain(boardForChain, maxValue);
     return {
@@ -209,7 +212,9 @@ export function useGuidedSequenceFlow(
     }
     
     const newBoard = initializeBoard(rows, cols, givens);
-    const baseState = initializeSequenceState();
+    const preferredDirection =
+      loadSequenceSettings()?.stepDirection ?? 'forward';
+    const baseState = initializeSequenceState(preferredDirection);
     const chainInfo = computeChain(newBoard, maxValue);
 
     setBoard(newBoard);
@@ -222,6 +227,7 @@ export function useGuidedSequenceFlow(
     undoRedoRef.current = new UndoRedoStack();
     setUndoRedoVersion(0);
     setMistakes([]);
+    settingsLoadedRef.current = false;
   }, [rows, cols, maxValue, givens, resetKey]); // Note: initialBoard NOT in deps
 
   // Memoize chain computation to avoid redundant calculations
