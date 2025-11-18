@@ -59,10 +59,16 @@ export function deriveNextTarget(
       const candidatePos = valuePositions.get(nextValue)!;
       const candidateLegalAdjacents = getLegalAdjacents(candidatePos, board);
 
-      if (candidateLegalAdjacents.length > 0) {
-        currentValue = nextValue;
-        currentPos = candidatePos;
+      if (candidateLegalAdjacents.length === 0) {
+        return {
+          nextTarget: null,
+          newAnchorValue: currentValue,
+          newAnchorPos: currentPos,
+        };
       }
+
+      currentValue = nextValue;
+      currentPos = candidatePos;
 
       nextValue++;
     }
@@ -97,10 +103,16 @@ export function deriveNextTarget(
     const candidatePos = valuePositions.get(nextValue)!;
     const candidateLegalAdjacents = getLegalAdjacents(candidatePos, board);
 
-    if (candidateLegalAdjacents.length > 0) {
-      currentValue = nextValue;
-      currentPos = candidatePos;
+    if (candidateLegalAdjacents.length === 0) {
+      return {
+        nextTarget: null,
+        newAnchorValue: currentValue,
+        newAnchorPos: currentPos,
+      };
     }
+
+    currentValue = nextValue;
+    currentPos = candidatePos;
 
     nextValue--;
   }
