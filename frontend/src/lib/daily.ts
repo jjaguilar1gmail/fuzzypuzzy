@@ -57,6 +57,17 @@ function hashDateAndSize(date: Date, sizeId: DailySizeId): number {
   return dateHash + (sizeHash * 1000);
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function getLocalDayIndex(date: Date): number {
+  const midnight = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  return Math.floor(midnight.getTime() / DAY_MS);
+}
+
+function positiveModulo(value: number, modulus: number): number {
+  return ((value % modulus) + modulus) % modulus;
+}
+
 /**
  * Get today's daily puzzle from available packs.
  * Deterministic: same (date, sizeId) -> same puzzle (modulo available pool).
@@ -92,28 +103,48 @@ export async function getDailyPuzzle(sizeId?: DailySizeId): Promise<Puzzle | nul
 
     // Deterministic selection per (date, size)
     const today = new Date();
-    const hash = sizeId ? hashDateAndSize(today, sizeId) : hashDate(today);
+
+    if (sizeId) {
+      const targetSize = DAILY_SIZE_OPTIONS[sizeId].rows;
+      const matchingPuzzles: Puzzle[] = [];
+
+      for (const ref of allPuzzleRefs) {
+        try {
+          const puzzle = await loadPuzzle(ref.packId, ref.puzzleId);
+          if (puzzle.size === targetSize) {
+            matchingPuzzles.push(puzzle);
+          }
+        } catch (err) {
+          console.warn(
+            `Puzzle ${ref.puzzleId} in pack ${ref.packId} not found while building daily pool`,
+            err
+          );
+        }
+      }
+
+      if (matchingPuzzles.length === 0) {
+        return null;
+      }
+
+      const dayIndex = getLocalDayIndex(today);
+      const rotationSeed = dayIndex + DAILY_SIZE_OPTIONS[sizeId].order;
+      const selectedIndex = positiveModulo(rotationSeed, matchingPuzzles.length);
+      return matchingPuzzles[selectedIndex];
+    }
+
+    const hash = hashDate(today);
     let startIndex = hash % allPuzzleRefs.length;
 
-    // Try loading puzzles, filtering by size if specified
-    const targetSize = sizeId ? DAILY_SIZE_OPTIONS[sizeId].rows : null;
-    
     for (let attempts = 0; attempts < allPuzzleRefs.length; attempts++) {
       const index = (startIndex + attempts) % allPuzzleRefs.length;
       const ref = allPuzzleRefs[index];
       
       try {
         const puzzle = await loadPuzzle(ref.packId, ref.puzzleId);
-        
-        // If size filtering is enabled, check if puzzle matches
-        if (targetSize !== null && puzzle.size !== targetSize) {
-          continue; // Skip puzzles that don't match the requested size
-        }
-        
         return puzzle;
       } catch (err) {
         // Puzzle missing; try next
-        console.warn(`Puzzle ${ref.puzzleId} in pack ${ref.packId} not found, trying next`);
+        console.warn(`Puzzle ${ref.puzzleId} in pack ${ref.packId} not found, trying next`, err);
       }
     }
 

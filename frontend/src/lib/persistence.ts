@@ -11,6 +11,7 @@ export interface PersistedState {
   schema_version: string;
   puzzle_id: string;
   pack_id?: string;
+  puzzle_identity?: string | null;
   cell_entries: Record<string, number>;
   candidates: Record<string, number[]>;
   elapsed_ms: number;
@@ -67,6 +68,7 @@ export function saveGameState(puzzleId: string, sizeId?: DailySizeId): void {
     schema_version: SCHEMA_VERSION,
     puzzle_id: puzzleId,
     pack_id: state.puzzle?.pack_id,
+    puzzle_identity: getPuzzleIdentity(state.puzzle),
     cell_entries: cellEntries,
     candidates,
     elapsed_ms: elapsedMs,
@@ -109,6 +111,22 @@ export function loadGameState(
 
   try {
     const persistedState: PersistedState = JSON.parse(data);
+    const expectedIdentity = getPuzzleIdentity(puzzle);
+    if (
+      persistedState.puzzle_identity &&
+      expectedIdentity &&
+      persistedState.puzzle_identity !== expectedIdentity
+    ) {
+      localStorage.removeItem(key);
+      return false;
+    }
+    if (
+      puzzleId.startsWith('daily-') &&
+      (!persistedState.puzzle_identity || !expectedIdentity)
+    ) {
+      localStorage.removeItem(key);
+      return false;
+    }
 
     // Handle schema migration from v1.0 to v1.1
     const isOldSchema = persistedState.schema_version === '1.0';
