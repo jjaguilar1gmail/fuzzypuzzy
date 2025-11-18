@@ -6,5 +6,5 @@ coverage
 .env*.local
 
 # Generated puzzle packs
-public/packs/
-public/index.json
+#public/packs/
+#public/index.json

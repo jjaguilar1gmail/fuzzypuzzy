@@ -22,12 +22,12 @@
   },
   {
     "id": "hard_7x7",
-    "title": "7x7 Hard Verified Solutions",
+    "title": "7x7 Hard Verified",
     "puzzle_count": 40,
     "difficulty_counts": {
       "hard": 40
     },
-    "created_at": "2025-11-13T23:22:29.225586Z",
-    "description": "Initial set of 7x7 hard puzzles with solutions"
+    "created_at": "2025-11-18T18:44:15.764434Z",
+    "description": "Initial set of 7x7 hard puzzles"
   }
 ]

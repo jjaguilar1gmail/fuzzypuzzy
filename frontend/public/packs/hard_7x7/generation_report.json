@@ -1,0 +1,19 @@
+{
+  "pack_id": "hard_7x7",
+  "total_requested": 40,
+  "total_generated": 40,
+  "total_skipped": 0,
+  "total_failed": 0,
+  "difficulty_breakdown": {
+    "hard": {
+      "generated": 40,
+      "failed": 0
+    }
+  },
+  "size_breakdown": {
+    "7": 40
+  },
+  "average_generation_time_ms": 141794.00361776352,
+  "total_time_sec": 5671.826744318008,
+  "success_rate": 1.0
+}

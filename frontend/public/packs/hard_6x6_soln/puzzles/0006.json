@@ -1,0 +1,269 @@
+{
+  "schema_version": "1.0",
+  "id": "0006",
+  "pack_id": "hard_6x6_soln",
+  "size": 6,
+  "difficulty": "hard",
+  "seed": 913070797,
+  "clue_count": 15,
+  "max_gap": null,
+  "givens": [
+    {
+      "row": 1,
+      "col": 2,
+      "value": 21
+    },
+    {
+      "row": 1,
+      "col": 4,
+      "value": 1
+    },
+    {
+      "row": 2,
+      "col": 2,
+      "value": 10
+    },
+    {
+      "row": 2,
+      "col": 3,
+      "value": 3
+    },
+    {
+      "row": 2,
+      "col": 4,
+      "value": 4
+    },
+    {
+      "row": 3,
+      "col": 1,
+      "value": 26
+    },
+    {
+      "row": 3,
+      "col": 2,
+      "value": 7
+    },
+    {
+      "row": 3,
+      "col": 4,
+      "value": 5
+    },
+    {
+      "row": 4,
+      "col": 1,
+      "value": 31
+    },
+    {
+      "row": 4,
+      "col": 2,
+      "value": 32
+    },
+    {
+      "row": 4,
+      "col": 3,
+      "value": 6
+    },
+    {
+      "row": 4,
+      "col": 4,
+      "value": 12
+    },
+    {
+      "row": 5,
+      "col": 1,
+      "value": 30
+    },
+    {
+      "row": 5,
+      "col": 4,
+      "value": 35
+    },
+    {
+      "row": 5,
+      "col": 5,
+      "value": 36
+    }
+  ],
+  "solution": [
+    {
+      "row": 0,
+      "col": 0,
+      "value": 23
+    },
+    {
+      "row": 0,
+      "col": 1,
+      "value": 22
+    },
+    {
+      "row": 0,
+      "col": 2,
+      "value": 20
+    },
+    {
+      "row": 0,
+      "col": 3,
+      "value": 19
+    },
+    {
+      "row": 0,
+      "col": 4,
+      "value": 18
+    },
+    {
+      "row": 0,
+      "col": 5,
+      "value": 17
+    },
+    {
+      "row": 1,
+      "col": 0,
+      "value": 24
+    },
+    {
+      "row": 1,
+      "col": 1,
+      "value": 9
+    },
+    {
+      "row": 1,
+      "col": 2,
+      "value": 21
+    },
+    {
+      "row": 1,
+      "col": 3,
+      "value": 2
+    },
+    {
+      "row": 1,
+      "col": 4,
+      "value": 1
+    },
+    {
+      "row": 1,
+      "col": 5,
+      "value": 16
+    },
+    {
+      "row": 2,
+      "col": 0,
+      "value": 25
+    },
+    {
+      "row": 2,
+      "col": 1,
+      "value": 8
+    },
+    {
+      "row": 2,
+      "col": 2,
+      "value": 10
+    },
+    {
+      "row": 2,
+      "col": 3,
+      "value": 3
+    },
+    {
+      "row": 2,
+      "col": 4,
+      "value": 4
+    },
+    {
+      "row": 2,
+      "col": 5,
+      "value": 15
+    },
+    {
+      "row": 3,
+      "col": 0,
+      "value": 27
+    },
+    {
+      "row": 3,
+      "col": 1,
+      "value": 26
+    },
+    {
+      "row": 3,
+      "col": 2,
+      "value": 7
+    },
+    {
+      "row": 3,
+      "col": 3,
+      "value": 11
+    },
+    {
+      "row": 3,
+      "col": 4,
+      "value": 5
+    },
+    {
+      "row": 3,
+      "col": 5,
+      "value": 14
+    },
+    {
+      "row": 4,
+      "col": 0,
+      "value": 28
+    },
+    {
+      "row": 4,
+      "col": 1,
+      "value": 31
+    },
+    {
+      "row": 4,
+      "col": 2,
+      "value": 32
+    },
+    {
+      "row": 4,
+      "col": 3,
+      "value": 6
+    },
+    {
+      "row": 4,
+      "col": 4,
+      "value": 12
+    },
+    {
+      "row": 4,
+      "col": 5,
+      "value": 13
+    },
+    {
+      "row": 5,
+      "col": 0,
+      "value": 29
+    },
+    {
+      "row": 5,
+      "col": 1,
+      "value": 30
+    },
+    {
+      "row": 5,
+      "col": 2,
+      "value": 33
+    },
+    {
+      "row": 5,
+      "col": 3,
+      "value": 34
+    },
+    {
+      "row": 5,
+      "col": 4,
+      "value": 35
+    },
+    {
+      "row": 5,
+      "col": 5,
+      "value": 36
+    }
+  ]
+}

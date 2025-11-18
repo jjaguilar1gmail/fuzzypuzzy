@@ -1,0 +1,19 @@
+{
+  "pack_id": "hard_6x6_soln",
+  "total_requested": 20,
+  "total_generated": 20,
+  "total_skipped": 0,
+  "total_failed": 0,
+  "difficulty_breakdown": {
+    "hard": {
+      "generated": 20,
+      "failed": 0
+    }
+  },
+  "size_breakdown": {
+    "6": 20
+  },
+  "average_generation_time_ms": 87206.5225481987,
+  "total_time_sec": 1744.165111541748,
+  "success_rate": 1.0
+}
