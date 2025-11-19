@@ -24,6 +24,24 @@
   }
 }
 
+/* Prevent accidental text selection & touch highlight during gameplay */
+:where(html, body, #__next, #__next *) {
+  user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+}
+
+:where(html, body, #__next) {
+  touch-action: manipulation;
+}
+
+/* Keep text inputs editable when needed */
+:where(input, textarea, [contenteditable='true']) {
+  user-select: text;
+  -webkit-user-select: text;
+  -ms-user-select: text;
+}
+
 /* Temporarily disable automatic dark mode overrides until the
    design team finalizes the desired color palette. */
 /* @media (prefers-color-scheme: dark) {

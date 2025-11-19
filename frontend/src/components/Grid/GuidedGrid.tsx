@@ -7,6 +7,8 @@ import type { Position, MistakeEvent, SequenceDirection } from '@/sequence/types
 const HOLD_DURATION_MS = 650;
 const BOARD_PADDING = 8;
 const GRID_SAFE_MARGIN = 32;
+const HOLD_RING_MARGIN = 2;
+const HOLD_RING_STROKE_WIDTH = 4;
 
 const DIRECTION_OPTIONS: Array<{
   value: SequenceDirection;
@@ -394,7 +396,7 @@ const GuidedGrid = memo(function GuidedGrid() {
               holdIndicator.pos.row === r &&
               holdIndicator.pos.col === c;
             const holdProgress = isHoldTarget ? holdIndicator.progress : 0;
-            const holdRadius = cellSize / 2 - 6;
+            const holdRadius = cellSize / 2 - HOLD_RING_MARGIN;
             const holdCircumference = 2 * Math.PI * holdRadius;
 
             // Determine fill color based on cell state
@@ -514,17 +516,29 @@ const GuidedGrid = memo(function GuidedGrid() {
 
                 {/* Long-press progress */}
                 {isHoldTarget && (
-                  <circle
+                  <motion.circle
                     cx={x + cellSize / 2}
                     cy={y + cellSize / 2}
                     r={holdRadius}
                     fill="none"
-                    stroke="rgba(239,68,68,0.85)"
-                    strokeWidth={3}
+                    stroke="rgba(239,68,68,0.9)"
+                    strokeWidth={HOLD_RING_STROKE_WIDTH}
                     strokeDasharray={holdCircumference}
                     strokeDashoffset={holdCircumference * (1 - holdProgress)}
                     strokeLinecap="round"
                     pointerEvents="none"
+                    style={{
+                      filter: 'drop-shadow(0 0 6px rgba(239,68,68,0.35))',
+                    }}
+                    animate={{
+                      opacity: [0.75, 1, 0.9],
+                      scale: [0.99, 1, 0.99],
+                    }}
+                    transition={{
+                      duration: 1.2,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }}
                   />
                 )}
 
