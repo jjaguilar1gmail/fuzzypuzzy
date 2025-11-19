@@ -18,8 +18,8 @@ export interface NextTargetResult {
 /**
  * Derive next target value from anchor value
  * Skips values that already exist on the board (given or player-placed)
- * When skipping, moves anchor to the position of the highest skipped value
- * that still has legal adjacent cells
+ * When skipping, moves anchor to the position of the highest contiguous value
+ * before the first missing number, then validates that position has a legal move
  * @param anchorValue - Current anchor value (or null)
  * @param anchorPos - Current anchor position (or null)
  * @param board - 2D board grid
@@ -52,72 +52,22 @@ export function deriveNextTarget(
   let currentValue = anchorValue;
   let currentPos = anchorPos;
 
-  if (direction === 'forward') {
-    let nextValue = currentValue + 1;
+  const step = direction === 'forward' ? 1 : -1;
+  let nextValue = currentValue + step;
 
-    while (nextValue <= maxValue && valuePositions.has(nextValue)) {
-      const candidatePos = valuePositions.get(nextValue)!;
-      const candidateLegalAdjacents = getLegalAdjacents(candidatePos, board);
-
-      if (candidateLegalAdjacents.length === 0) {
-        return {
-          nextTarget: null,
-          newAnchorValue: currentValue,
-          newAnchorPos: currentPos,
-        };
-      }
-
-      currentValue = nextValue;
-      currentPos = candidatePos;
-
-      nextValue++;
-    }
-
-    if (nextValue > maxValue) {
-      return {
-        nextTarget: null,
-        newAnchorValue: currentValue,
-        newAnchorPos: currentPos,
-      };
-    }
-
-    const legalAdjacents = getLegalAdjacents(currentPos, board);
-    if (legalAdjacents.length === 0) {
-      return {
-        nextTarget: null,
-        newAnchorValue: currentValue,
-        newAnchorPos: currentPos,
-      };
-    }
-
-    return {
-      nextTarget: nextValue,
-      newAnchorValue: currentValue,
-      newAnchorPos: currentPos,
-    };
-  }
-
-  // Backward direction
-  let nextValue = currentValue - 1;
-  while (nextValue >= minValue && valuePositions.has(nextValue)) {
-    const candidatePos = valuePositions.get(nextValue)!;
-    const candidateLegalAdjacents = getLegalAdjacents(candidatePos, board);
-
-    if (candidateLegalAdjacents.length === 0) {
-      return {
-        nextTarget: null,
-        newAnchorValue: currentValue,
-        newAnchorPos: currentPos,
-      };
-    }
-
+  while (
+    (direction === 'forward' ? nextValue <= maxValue : nextValue >= minValue) &&
+    valuePositions.has(nextValue)
+  ) {
     currentValue = nextValue;
-    currentPos = candidatePos;
-
-    nextValue--;
+    currentPos = valuePositions.get(nextValue)!;
+    nextValue += step;
   }
 
-  if (nextValue < minValue) {
+  const exhaustedBounds =
+    direction === 'forward' ? nextValue > maxValue : nextValue < minValue;
+
+  if (exhaustedBounds) {
     return {
       nextTarget: null,
       newAnchorValue: currentValue,

@@ -325,8 +325,8 @@ describe('integration: full user flows', () => {
       const anchor = selectAnchor(state, board, 25, { row: 1, col: 1 });
       state = anchor.state;
       
-      // Should have nextTarget but no legal targets
-      expect(state.anchorValue).toBe(1);
+      // Anchor advances to the last contiguous value even though no legal targets remain
+      expect(state.anchorValue).toBe(3);
       expect(state.nextTarget).toBe(null); // Computed as null when no legal moves
       expect(state.legalTargets.length).toBe(0);
     });
