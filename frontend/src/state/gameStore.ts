@@ -75,6 +75,7 @@ interface GameState {
   moveCount: number;
   timerRunning: boolean;
   lastTick: number | null;
+  boardClearSignal: number;
   
   // Guided sequence flow state (for integration)
   sequenceState: SequenceState | null;
@@ -105,6 +106,7 @@ interface GameState {
   undo: () => void;
   redo: () => void;
   resetPuzzle: () => void;
+  clearBoardEntries: () => void;
   checkCompletion: () => void;
   dismissCompletionStatus: () => void;
   startTimer: () => void;
@@ -128,6 +130,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   moveCount: 0,
   timerRunning: false,
   lastTick: null,
+  boardClearSignal: 0,
   sequenceState: null,
   sequenceBoard: null,
   sequenceBoardKey: null,
@@ -167,6 +170,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       timerRunning: true,
       lastTick: Date.now(),
       completionStatus: null,
+      boardClearSignal: 0,
       puzzleInstance: state.puzzleInstance + 1,
       };
     });
@@ -353,6 +357,45 @@ export const useGameStore = create<GameState>((set, get) => ({
       };
       loadPuzzle(puzzleClone);
     }
+  },
+
+  clearBoardEntries: () => {
+    set((state) => {
+      const { grid } = state;
+      if (!grid) {
+        return {};
+      }
+
+      const clearedGrid: Grid = {
+        size: grid.size,
+        cells: grid.cells.map((row) =>
+          row.map((cell) => {
+            if (cell.given) {
+              return { ...cell };
+            }
+            return {
+              ...cell,
+              value: null,
+              candidates: [],
+            };
+          })
+        ),
+      };
+
+      return {
+        grid: clearedGrid,
+        undoStack: [],
+        redoStack: [],
+        selectedCell: null,
+        recentMistakes: [],
+        isComplete: false,
+        completionStatus: state.completionStatus,
+        sequenceBoard: null,
+        sequenceBoardKey: null,
+        sequenceState: null,
+        boardClearSignal: state.boardClearSignal + 1,
+      };
+    });
   },
 
   checkCompletion: () => {

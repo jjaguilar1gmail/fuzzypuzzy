@@ -160,6 +160,8 @@ export interface GuidedSequenceFlowAPI {
   placeNext: (pos: Position) => void;
   /** Remove value from cell */
   removeCell: (pos: Position) => void;
+  /** Clear all non-given entries and return to the original givens */
+  clearBoard: () => void;
   /** Toggle guide visibility */
   toggleGuide: (enabled: boolean) => void;
   /** Change step direction */
