@@ -30,15 +30,10 @@ export default function CompletionModal({ isOpen, onClose, onPlayAgain }: Comple
 
   const handleSecondaryAction = useCallback(() => {
     if (!isCorrect) {
-      // Use custom callback if provided, otherwise use default resetPuzzle
-      if (onPlayAgain) {
-        onPlayAgain();
-      } else {
-        useGameStore.getState().resetPuzzle();
-      }
+      useGameStore.getState().clearBoardEntries();
     }
     onClose();
-  }, [isCorrect, onClose, onPlayAgain]);
+  }, [isCorrect, onClose]);
 
   useEffect(() => {
     if (isOpen) {
@@ -134,7 +129,7 @@ export default function CompletionModal({ isOpen, onClose, onPlayAgain }: Comple
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  {isCorrect ? 'Close' : 'Reset Puzzle'}
+                  {isCorrect ? 'Close' : 'Clear Puzzle'}
                 </motion.button>
               </div>
             </div>

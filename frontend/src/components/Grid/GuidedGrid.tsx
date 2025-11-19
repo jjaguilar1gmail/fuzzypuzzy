@@ -37,6 +37,8 @@ const GuidedGrid = memo(function GuidedGrid() {
   const incrementMoveCount = useGameStore((state) => state.incrementMoveCount);
   const rawSequenceBoard = useGameStore((state) => state.sequenceBoard);
   const sequenceBoardKey = useGameStore((state) => state.sequenceBoardKey);
+  const boardClearSignal = useGameStore((state) => state.boardClearSignal);
+  const requestBoardClear = useGameStore((state) => state.clearBoardEntries);
   const puzzleIdentity = useMemo(() => getPuzzleIdentity(puzzle), [puzzle]);
   const restoredSequenceBoard = useMemo(() => {
     if (!rawSequenceBoard || !puzzleIdentity) return null;
@@ -101,6 +103,19 @@ const GuidedGrid = memo(function GuidedGrid() {
       row.some((cell) => !cell.given && cell.value !== null)
     );
   }, [board]);
+  const lastClearSignalRef = useRef(boardClearSignal);
+
+  // Respond to global clear requests (e.g., "Reset Puzzle" button on incorrect modal)
+  useEffect(() => {
+    if (boardClearSignal === 0) {
+      lastClearSignalRef.current = 0;
+      return;
+    }
+    if (boardClearSignal !== lastClearSignalRef.current) {
+      lastClearSignalRef.current = boardClearSignal;
+      clearBoard();
+    }
+  }, [boardClearSignal, clearBoard]);
 
   // Auto-dismiss the latest mistake after 3 seconds
   const [visibleMistake, setVisibleMistake] = useState<MistakeEvent | null>(null);
@@ -569,7 +584,7 @@ const GuidedGrid = memo(function GuidedGrid() {
         </button>
         <button
           type="button"
-          onClick={clearBoard}
+          onClick={requestBoardClear}
           disabled={!hasPlayerEntries}
           className="px-4 py-2 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 rounded-md font-medium transition-colors text-sm"
           aria-label="Clear all filled cells and start over"
