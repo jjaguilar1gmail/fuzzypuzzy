@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useGameStore } from '@/state/gameStore';
 import { 
   getDailyPuzzle, 
@@ -66,6 +66,7 @@ export default function HomePage() {
   const [selectedSize, setSelectedSize] = useState<DailySizeId>(() => loadSizePreference());
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const previousSizeRef = useRef<DailySizeId>(selectedSize);
+  const [sessionDate] = useState(() => new Date());
   
   const loadPuzzle = useGameStore((state) => state.loadPuzzle);
   const puzzle = useGameStore((state) => state.puzzle);
@@ -73,10 +74,20 @@ export default function HomePage() {
   const dismissCompletionStatus = useGameStore(
     (state) => state.dismissCompletionStatus
   );
+  const resetMistakeHistory = useGameStore((state) => state.resetMistakeHistory);
   const sequenceState = useGameStore((state) => state.sequenceState);
   const sequenceBoard = useGameStore((state) => state.sequenceBoard);
   const recentMistakes = useGameStore((state) => state.recentMistakes);
   const pageViewportStyle = { minHeight: 'var(--app-viewport-height)' };
+  const dateLabel = useMemo(
+    () =>
+      sessionDate.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }),
+    [sessionDate]
+  );
 
   // Handle "Play Again" - clear saved state and reset puzzle
   const handlePlayAgain = useCallback(() => {
@@ -88,11 +99,13 @@ export default function HomePage() {
       
       // Clear sequenceBoard from store so it won't be used as initialBoard
       useGameStore.setState({ sequenceBoard: null, sequenceBoardKey: null });
+
+      resetMistakeHistory();
       
       // Reset the puzzle (will call loadPuzzle)
       useGameStore.getState().resetPuzzle();
     }
-  }, [puzzle, selectedSize]);
+  }, [puzzle, selectedSize, resetMistakeHistory]);
 
   // Handle size change: reload puzzle and clear state
   const handleSizeChange = (newSize: DailySizeId) => {
@@ -268,6 +281,8 @@ export default function HomePage() {
         isOpen={completionStatus !== null}
         onClose={dismissCompletionStatus}
         onPlayAgain={handlePlayAgain}
+        dailySize={selectedSize}
+        dateLabel={dateLabel}
       />
       
       {/* Screen reader announcements for accessibility */}

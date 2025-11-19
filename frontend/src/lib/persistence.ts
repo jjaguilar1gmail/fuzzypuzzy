@@ -2,6 +2,10 @@ import { useGameStore, getPuzzleIdentity } from '@/state/gameStore';
 import { Puzzle } from '@/domain/puzzle';
 import { getCell } from '@/domain/grid';
 import type { DailySizeId } from '@/lib/daily';
+import {
+  CellMistakeHistory,
+  markHistoryFromGrid,
+} from '@/state/cellMistakeHistory';
 
 /**
  * Local persistence utilities for saving/restoring game state.
@@ -23,9 +27,21 @@ export interface PersistedState {
   timer_running?: boolean;
   // Guided sequence board (for guided mode)
   sequence_board?: Array<Array<{value: number | null; given: boolean}>> | null;
+  // Mistake tracking (optional)
+  cell_attempt_history?: string[];
 }
 
 const SCHEMA_VERSION = '1.1';
+
+function hydrateHistory(keys?: string[] | null): CellMistakeHistory {
+  if (!keys || keys.length === 0) {
+    return {};
+  }
+  return keys.reduce<CellMistakeHistory>((acc, key) => {
+    acc[key] = true;
+    return acc;
+  }, {});
+}
 
 function getStorageKey(puzzleId: string, sizeId?: DailySizeId): string {
   // For daily puzzles, sizeId is already included in the puzzleId (e.g., "daily-2025-11-17-small")
@@ -81,6 +97,7 @@ export function saveGameState(puzzleId: string, sizeId?: DailySizeId): void {
     sequence_board: state.sequenceBoard ? state.sequenceBoard.map(row => 
       row.map(cell => ({ value: cell.value, given: cell.given }))
     ) : null,
+    cell_attempt_history: Object.keys(state.cellMistakeHistory),
   };
 
   try {
@@ -180,6 +197,13 @@ export function loadGameState(
       );
     }
     
+    const hasPersistedHistory = Array.isArray(persistedState.cell_attempt_history);
+    const cellMistakeHistory = hasPersistedHistory
+      ? hydrateHistory(persistedState.cell_attempt_history || [])
+      : markHistoryFromGrid(puzzle, {}, grid);
+
+    const identityForPuzzle = expectedIdentity ?? getPuzzleIdentity(puzzle);
+
     useGameStore.setState({
       grid: { ...grid },
       elapsedMs: persistedState.elapsed_ms,
@@ -189,7 +213,9 @@ export function loadGameState(
       moveCount: persistedState.move_count ?? 0,
       timerRunning: persistedState.timer_running ?? true, // Default to true for old saves
       sequenceBoard: restoredSequenceBoard,
-      sequenceBoardKey: restoredSequenceBoard ? getPuzzleIdentity(puzzle) : null,
+      sequenceBoardKey: restoredSequenceBoard ? identityForPuzzle : null,
+      cellMistakeHistory,
+      cellMistakePuzzleKey: identityForPuzzle,
     });
     
     // If we restored a sequenceBoard, derive completion status from it

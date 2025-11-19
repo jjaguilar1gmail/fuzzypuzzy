@@ -7,6 +7,11 @@ import type {
   BoardCell as SequenceBoardCell,
   MistakeEvent,
 } from '@/sequence/types';
+import {
+  CellMistakeHistory,
+  markHistoryFromSequenceBoard,
+  markHistoryFromSnapshots,
+} from '@/state/cellMistakeHistory';
 
 type CompletionStatus = 'success' | 'incorrect' | null;
 
@@ -76,6 +81,8 @@ interface GameState {
   timerRunning: boolean;
   lastTick: number | null;
   boardClearSignal: number;
+  cellMistakeHistory: CellMistakeHistory;
+  cellMistakePuzzleKey: string | null;
   
   // Guided sequence flow state (for integration)
   sequenceState: SequenceState | null;
@@ -113,6 +120,7 @@ interface GameState {
   stopTimer: () => void;
   tickTimer: () => void;
   incrementMoveCount: () => void;
+  resetMistakeHistory: () => void;
   
   // Guided sequence flow actions
   updateSequenceState: (
@@ -131,6 +139,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   timerRunning: false,
   lastTick: null,
   boardClearSignal: 0,
+  cellMistakeHistory: {},
+  cellMistakePuzzleKey: null,
   sequenceState: null,
   sequenceBoard: null,
   sequenceBoardKey: null,
@@ -145,6 +155,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   loadPuzzle: (puzzle: Puzzle) => {
     set((state) => {
       const grid = createEmptyGrid(puzzle.size);
+      const nextIdentity = getPuzzleIdentity(puzzle);
+      const preserveHistory =
+        nextIdentity !== null && nextIdentity === state.cellMistakePuzzleKey;
       
       puzzle.givens.forEach(({ row, col, value }) => {
         const cell = getCell(grid, row, col);
@@ -172,6 +185,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       completionStatus: null,
       boardClearSignal: 0,
       puzzleInstance: state.puzzleInstance + 1,
+      cellMistakePuzzleKey: nextIdentity,
+      cellMistakeHistory: preserveHistory ? state.cellMistakeHistory : {},
       };
     });
   },
@@ -204,11 +219,19 @@ export const useGameStore = create<GameState>((set, get) => ({
     cell.value = value;
     cell.candidates = [];
     
-    set({
+    set((state) => ({
       grid: { ...grid },
       undoStack: [...undoStack, action],
       redoStack: [],
-    });
+      cellMistakeHistory: markHistoryFromSnapshots(state.puzzle, state.cellMistakeHistory, [
+        {
+          row: selectedCell.row,
+          col: selectedCell.col,
+          value,
+          given: cell.given,
+        },
+      ]),
+    }));
     
     get().incrementMoveCount();
     
@@ -507,6 +530,15 @@ export const useGameStore = create<GameState>((set, get) => ({
       return { moveCount: state.moveCount + 1 };
     });
   },
+
+  resetMistakeHistory: () => {
+    set((state) => {
+      if (Object.keys(state.cellMistakeHistory).length === 0) {
+        return {};
+      }
+      return { cellMistakeHistory: {} };
+    });
+  },
   
   updateSequenceState: (state: SequenceState, board: SequenceBoardCell[][], mistakes: MistakeEvent[]) => {
     set((current) => {
@@ -538,6 +570,12 @@ export const useGameStore = create<GameState>((set, get) => ({
         }
       }
 
+      const cellMistakeHistory = markHistoryFromSequenceBoard(
+        current.puzzle,
+        current.cellMistakeHistory,
+        board
+      );
+
       return {
         sequenceState: state,
         sequenceBoard: board,
@@ -548,6 +586,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         elapsedMs,
         timerRunning,
         lastTick,
+        cellMistakeHistory,
       };
     });
   },
