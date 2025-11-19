@@ -365,6 +365,30 @@ export function useGuidedSequenceFlow(
   );
 
   /**
+   * Clear all player entries and return to the original givens
+   * Keeps guide/toggle preferences intact and preserves timers upstream
+   */
+  const clearBoard = useCallback(() => {
+    const baseBoard = initializeBoard(rows, cols, givens);
+    const chainDetails = computeChain(baseBoard, maxValue);
+
+    setBoard(baseBoard);
+    setState((current) => {
+      const baseState = initializeSequenceState(current.stepDirection);
+      return {
+        ...baseState,
+        guideEnabled: current.guideEnabled,
+        chainEndValue: chainDetails.chainEndValue,
+        chainLength: chainDetails.chainLength,
+      };
+    });
+
+    undoRedoRef.current = new UndoRedoStack();
+    setUndoRedoVersion((v) => v + 1);
+    setMistakes([]);
+  }, [rows, cols, givens, maxValue]);
+
+  /**
    * Toggle visual guidance highlights
    * @param enabled - Whether to show legal target highlights
    */
@@ -471,6 +495,7 @@ export function useGuidedSequenceFlow(
     redo,
     canUndo,
     canRedo,
+    clearBoard,
     recentMistakes: mistakes,
   };
 }

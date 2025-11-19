@@ -72,6 +72,7 @@ const GuidedGrid = memo(function GuidedGrid() {
     redo,
     canUndo,
     canRedo,
+    clearBoard,
     recentMistakes,
   } = useGuidedSequenceFlow(
     puzzle?.size || 5,
@@ -93,6 +94,13 @@ const GuidedGrid = memo(function GuidedGrid() {
 
   // Track focused cell for keyboard navigation
   const [focusedCell, setFocusedCell] = useState<Position | null>(null);
+
+  // Determine whether there is anything to clear for button state
+  const hasPlayerEntries = useMemo(() => {
+    return board.some((row) =>
+      row.some((cell) => !cell.given && cell.value !== null)
+    );
+  }, [board]);
 
   // Auto-dismiss the latest mistake after 3 seconds
   const [visibleMistake, setVisibleMistake] = useState<MistakeEvent | null>(null);
@@ -531,7 +539,7 @@ const GuidedGrid = memo(function GuidedGrid() {
       </div>
 
       {/* Undo/Redo buttons */}
-      <div className="mt-4 flex justify-center gap-2">
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
         <button
           onClick={() => toggleGuide(!state.guideEnabled)}
           className={`px-4 py-2 rounded-md font-medium transition-colors ${
@@ -558,6 +566,15 @@ const GuidedGrid = memo(function GuidedGrid() {
           aria-label="Redo last move"
         >
           Redo
+        </button>
+        <button
+          type="button"
+          onClick={clearBoard}
+          disabled={!hasPlayerEntries}
+          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 rounded-md font-medium transition-colors text-sm"
+          aria-label="Clear all filled cells and start over"
+        >
+          Clear
         </button>
       </div>
 
