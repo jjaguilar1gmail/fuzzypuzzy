@@ -1,7 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '@/state/gameStore';
-import { formatDuration } from '@/components/HUD/SessionStats';
+import { formatDuration, formatMoveStat } from '@/components/HUD/SessionStats';
 
 interface CompletionModalProps {
   isOpen: boolean;
@@ -15,6 +15,7 @@ export default function CompletionModal({ isOpen, onClose, onPlayAgain }: Comple
   const moveCount = useGameStore((state) => state.moveCount);
   const completionStatus = useGameStore((state) => state.completionStatus);
   const isCorrect = completionStatus !== 'incorrect';
+  const moveStat = formatMoveStat(moveCount, puzzle);
 
   const handlePrimaryAction = useCallback(() => {
     if (isCorrect) {
@@ -105,7 +106,7 @@ export default function CompletionModal({ isOpen, onClose, onPlayAgain }: Comple
 
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Moves:</span>
-                  <span className="font-semibold">{moveCount}</span>
+                  <span className="font-semibold">{moveStat}</span>
                 </div>
               </div>
 
