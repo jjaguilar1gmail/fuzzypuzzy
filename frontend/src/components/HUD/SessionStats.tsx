@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Puzzle } from '@/domain/puzzle';
 import { useGameStore } from '@/state/gameStore';
 
 export function formatDuration(ms: number): string {
@@ -6,6 +7,22 @@ export function formatDuration(ms: number): string {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+export function getFillableCellCount(puzzle: Puzzle | null): number | null {
+  if (!puzzle) return null;
+  const totalCells = puzzle.size * puzzle.size;
+  const givenCount = puzzle.givens?.length ?? 0;
+  const fillable = totalCells - givenCount;
+  return fillable > 0 ? fillable : null;
+}
+
+export function formatMoveStat(moveCount: number, puzzle: Puzzle | null): string {
+  const fillableCells = getFillableCellCount(puzzle);
+  if (fillableCells !== null && fillableCells > 0) {
+    return `${moveCount} / ${fillableCells}`;
+  }
+  return `${moveCount}`;
 }
 
 export function SessionStats() {
@@ -25,6 +42,8 @@ export function SessionStats() {
 
   if (!puzzle) return null;
 
+  const moveDisplay = formatMoveStat(moveCount, puzzle);
+
   return (
     <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-gray-600">
       <div className="flex items-center gap-1 px-4 py-1.5 rounded-full border border-gray-200 bg-white/80 shadow-sm">
@@ -33,7 +52,7 @@ export function SessionStats() {
       </div>
       <div className="flex items-center gap-1 px-4 py-1.5 rounded-full border border-gray-200 bg-white/80 shadow-sm">
         <span className="font-medium text-gray-800">Moves</span>
-        <span className="font-semibold text-gray-900">{moveCount}</span>
+        <span className="font-semibold text-gray-900">{moveDisplay}</span>
       </div>
     </div>
   );
