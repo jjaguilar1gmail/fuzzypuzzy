@@ -47,6 +47,7 @@ export interface Pack {
   puzzles: string[];
   difficulty_counts?: Record<Difficulty, number>;
   size_distribution?: Record<string, number>;
+  size_catalog?: Record<string, string[]>;
   created_at: string;
 }
 
@@ -60,5 +61,10 @@ export interface PackSummary {
   puzzle_count: number;
   difficulty_counts?: Record<Difficulty, number>;
   size_distribution?: Record<string, number>;
+  /**
+   * Optional mapping of puzzle size -> ordered puzzle IDs for that size.
+   * Enables size-aware selection without fetching each puzzle file.
+   */
+  size_catalog?: Record<string, string[]>;
   created_at: string;
 }

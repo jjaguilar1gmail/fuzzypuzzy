@@ -68,6 +68,93 @@ function positiveModulo(value: number, modulus: number): number {
   return ((value % modulus) + modulus) % modulus;
 }
 
+type PuzzleRef = { packId: string; puzzleId: string };
+
+function sortRefs(refs: PuzzleRef[]): PuzzleRef[] {
+  return refs.sort((a, b) => {
+    if (a.packId === b.packId) {
+      return a.puzzleId.localeCompare(b.puzzleId);
+    }
+    return a.packId.localeCompare(b.packId);
+  });
+}
+
+function refsFromSummary(packs: PackSummary[], sizeKey?: string): PuzzleRef[] {
+  const refs: PuzzleRef[] = [];
+  for (const pack of packs) {
+    const catalog = pack.size_catalog;
+    if (!catalog) continue;
+
+    if (sizeKey) {
+      const ids = catalog[sizeKey];
+      if (!ids || ids.length === 0) continue;
+      ids.forEach((puzzleId) => refs.push({ packId: pack.id, puzzleId }));
+      continue;
+    }
+
+    Object.values(catalog).forEach((ids) => {
+      ids.forEach((puzzleId) => refs.push({ packId: pack.id, puzzleId }));
+    });
+  }
+  return refs.length > 0 ? sortRefs(refs) : refs;
+}
+
+async function refsFromLegacyData(
+  packs: PackSummary[],
+  sizeFilter?: number
+): Promise<PuzzleRef[]> {
+  const refs: PuzzleRef[] = [];
+  const packDetails: Array<{ packId: string; puzzles: string[] }> = [];
+  const filterValue = typeof sizeFilter === 'number' ? sizeFilter : null;
+
+  for (const packSummary of packs) {
+    const pack = await loadPack(packSummary.id);
+    packDetails.push({ packId: pack.id, puzzles: [...pack.puzzles].sort((a, b) => a.localeCompare(b)) });
+  }
+
+  for (const { packId, puzzles } of packDetails) {
+    for (const puzzleId of puzzles) {
+      if (filterValue !== null) {
+        try {
+          const puzzle = await loadPuzzle(packId, puzzleId);
+          if (puzzle.size === filterValue) {
+            refs.push({ packId, puzzleId });
+          }
+        } catch (err) {
+          console.warn(
+            `Puzzle ${puzzleId} in pack ${packId} not found while building daily pool`,
+            err
+          );
+        }
+      } else {
+        refs.push({ packId, puzzleId });
+      }
+    }
+  }
+
+  return refs.length > 0 ? sortRefs(refs) : refs;
+}
+
+async function loadPuzzleFromRefs(refs: PuzzleRef[], startIndex: number): Promise<Puzzle | null> {
+  if (refs.length === 0) return null;
+
+  const normalizedStart = positiveModulo(startIndex, refs.length);
+  for (let attempts = 0; attempts < refs.length; attempts++) {
+    const index = (normalizedStart + attempts) % refs.length;
+    const ref = refs[index];
+    try {
+      const puzzle = await loadPuzzle(ref.packId, ref.puzzleId);
+      return puzzle;
+    } catch (err) {
+      console.warn(
+        `Puzzle ${ref.puzzleId} in pack ${ref.packId} not found, trying next`,
+        err
+      );
+    }
+  }
+  return null;
+}
+
 /**
  * Get today's daily puzzle from available packs.
  * Deterministic: same (date, sizeId) -> same puzzle (modulo available pool).
@@ -76,79 +163,39 @@ function positiveModulo(value: number, modulus: number): number {
  */
 export async function getDailyPuzzle(sizeId?: DailySizeId): Promise<Puzzle | null> {
   try {
-    // Load all packs
     const packs = await loadPacksList();
     if (packs.length === 0) return null;
 
-    // Flatten all puzzle IDs from all packs
-    // Note: We load all puzzles here without size filtering for simplicity.
-    // For better performance, consider adding size metadata to pack manifests.
-    const allPuzzleRefs: Array<{ packId: string; puzzleId: string }> = [];
-    
-    for (const packSummary of packs) {
-      const pack = await loadPack(packSummary.id);
-      for (const puzzleId of pack.puzzles) {
-        allPuzzleRefs.push({ packId: pack.id, puzzleId });
-      }
-    }
-
-    if (allPuzzleRefs.length === 0) return null;
-
-    allPuzzleRefs.sort((a, b) => {
-      if (a.packId === b.packId) {
-        return a.puzzleId.localeCompare(b.puzzleId);
-      }
-      return a.packId.localeCompare(b.packId);
-    });
-
-    // Deterministic selection per (date, size)
     const today = new Date();
 
     if (sizeId) {
       const targetSize = DAILY_SIZE_OPTIONS[sizeId].rows;
-      const matchingPuzzles: Puzzle[] = [];
-
-      for (const ref of allPuzzleRefs) {
-        try {
-          const puzzle = await loadPuzzle(ref.packId, ref.puzzleId);
-          if (puzzle.size === targetSize) {
-            matchingPuzzles.push(puzzle);
-          }
-        } catch (err) {
-          console.warn(
-            `Puzzle ${ref.puzzleId} in pack ${ref.packId} not found while building daily pool`,
-            err
-          );
-        }
+      const sizeKey = String(targetSize);
+      let refs = refsFromSummary(packs, sizeKey);
+      if (refs.length === 0) {
+        refs = await refsFromLegacyData(packs, targetSize);
       }
 
-      if (matchingPuzzles.length === 0) {
+      if (refs.length === 0) {
         return null;
       }
 
       const dayIndex = getLocalDayIndex(today);
       const rotationSeed = dayIndex + DAILY_SIZE_OPTIONS[sizeId].order;
-      const selectedIndex = positiveModulo(rotationSeed, matchingPuzzles.length);
-      return matchingPuzzles[selectedIndex];
+      return await loadPuzzleFromRefs(refs, rotationSeed);
+    }
+
+    let refs = refsFromSummary(packs);
+    if (refs.length === 0) {
+      refs = await refsFromLegacyData(packs);
+    }
+    if (refs.length === 0) {
+      return null;
     }
 
     const hash = hashDate(today);
-    let startIndex = hash % allPuzzleRefs.length;
-
-    for (let attempts = 0; attempts < allPuzzleRefs.length; attempts++) {
-      const index = (startIndex + attempts) % allPuzzleRefs.length;
-      const ref = allPuzzleRefs[index];
-      
-      try {
-        const puzzle = await loadPuzzle(ref.packId, ref.puzzleId);
-        return puzzle;
-      } catch (err) {
-        // Puzzle missing; try next
-        console.warn(`Puzzle ${ref.puzzleId} in pack ${ref.packId} not found, trying next`, err);
-      }
-    }
-
-    return null;
+    const startIndex = hash % refs.length;
+    return await loadPuzzleFromRefs(refs, startIndex);
   } catch (err) {
     console.error('Failed to load daily puzzle:', err);
     return null;

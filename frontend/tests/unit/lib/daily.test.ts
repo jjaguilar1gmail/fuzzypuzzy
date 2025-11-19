@@ -5,18 +5,27 @@ const packSummaries = [
     id: 'aaa-small-pack',
     title: 'Small Pack',
     puzzle_count: 2,
+    size_catalog: {
+      '5': ['small-0001', 'small-0002'],
+    },
     created_at: '2025-11-17T00:00:00Z',
   },
   {
     id: 'bbb-medium-pack',
     title: 'Medium Pack',
     puzzle_count: 2,
+    size_catalog: {
+      '6': ['medium-0001', 'medium-0002'],
+    },
     created_at: '2025-11-17T00:00:00Z',
   },
   {
     id: 'ccc-large-pack',
     title: 'Large Pack',
     puzzle_count: 2,
+    size_catalog: {
+      '7': ['large-0001', 'large-0002'],
+    },
     created_at: '2025-11-17T00:00:00Z',
   },
 ] as const;
@@ -123,6 +132,7 @@ vi.mock('@/lib/loaders/packs', () => {
 
 const loaders = await import('@/lib/loaders/packs');
 const loadPacksListMock = vi.mocked(loaders.loadPacksList);
+const loadPackMock = vi.mocked(loaders.loadPack);
 
 const { getDailyPuzzle } = await import('@/lib/daily');
 
@@ -173,5 +183,21 @@ describe('getDailyPuzzle determinism', () => {
 
     const puzzle = await getDailyPuzzle('small');
     expect(puzzle).toBeNull();
+  });
+
+  it('avoids loading pack metadata when size catalog is present', async () => {
+    loadPackMock.mockClear();
+    await getDailyPuzzle('small');
+    expect(loadPackMock).not.toHaveBeenCalled();
+  });
+
+  it('falls back to loading packs when catalog data is missing', async () => {
+    loadPackMock.mockClear();
+    loadPacksListMock.mockResolvedValueOnce(
+      packSummaries.map(({ size_catalog, ...rest }) => ({ ...rest }))
+    );
+
+    await getDailyPuzzle('small');
+    expect(loadPackMock).toHaveBeenCalled();
   });
 });
