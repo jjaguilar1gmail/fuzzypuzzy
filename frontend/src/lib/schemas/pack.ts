@@ -13,6 +13,7 @@ export const PackSchema = z.object({
     .record(z.enum(['easy', 'medium', 'hard', 'extreme']), z.number().int().min(0))
     .optional(),
   size_distribution: z.record(z.string(), z.number().int().min(0)).optional(),
+  size_catalog: z.record(z.string(), z.array(z.string()).min(1)).optional(),
   created_at: z.string().datetime(),
 });
 
@@ -31,6 +32,7 @@ export const PackSummarySchema = z.object({
     .record(z.enum(['easy', 'medium', 'hard', 'extreme']), z.number().int().min(0))
     .optional(),
   size_distribution: z.record(z.string(), z.number().int().min(0)).optional(),
+  size_catalog: z.record(z.string(), z.array(z.string()).min(1)).optional(),
   created_at: z.string().datetime(),
 });
 

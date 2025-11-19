@@ -223,10 +223,10 @@ export function TutorialSplash({ isOpen, onClose }: TutorialSplashProps) {
                           id="tutorial-heading"
                           className="text-2xl font-extrabold text-slate-900"
                         >
-                          Fill every square from 1 to N without breaking the path.
+                          Fill every square in order.
                         </p>
                         <p className="text-base text-slate-700">
-                          Tap any filled number to set the anchor, then place the next value in an adjacent square (diagonals count) so the chain never breaks&mdash;flip on Guide if you want the legal squares to show.
+                          Tap any filled number, place the next value in a neighbor square (diagonals count) so the chain never breaks.
                         </p>
                       </div>
                       <div className="flex justify-center md:ml-4 md:justify-end">
