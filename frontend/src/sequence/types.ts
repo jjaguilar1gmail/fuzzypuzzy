@@ -46,6 +46,8 @@ export interface BoardCell {
   mistake: boolean;
 }
 
+export type SequenceBoardCell = BoardCell;
+
 /**
  * Current guided sequence state
  */
