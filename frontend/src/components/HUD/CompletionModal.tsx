@@ -63,7 +63,6 @@ export default function CompletionModal({
       setShareFeedback('Copied to clipboard');
     } catch (err) {
       console.error('Failed to share result', err);
-      setShareFeedback('Unable to share');
     }
   }, [puzzle, cellMistakeHistory, moveStat, elapsedMs, dateLabel, sizeLabel]);
 
@@ -154,25 +153,25 @@ export default function CompletionModal({
               aria-labelledby="completion-title"
               aria-modal="true"
             >
-              <div className="mb-4 flex items-start justify-between gap-4">
+              <div className="mb-4 flex flex-col items-center gap-3">
                 <h2
                   id="completion-title"
-                  className={`text-3xl font-bold ${
+                  className={`text-3xl font-bold text-center ${
                     isCorrect ? 'text-green-600' : 'text-red-600'
                   }`}
                 >
                   {isCorrect ? 'Puzzle Complete!' : 'Incorrect Solution'}
                 </h2>
                 {shareEnabled && (
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-col items-center gap-1">
                     <button
                       type="button"
                       onClick={handleShare}
-                      className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700 shadow-sm transition hover:bg-blue-100"
+                      className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100"
                       aria-label="Share puzzle result"
                     >
                       <ShareIcon />
-                      Share
+                      <span className="-mr-1 pr-1">Share</span>
                     </button>
                     {shareFeedback && (
                       <span className="text-xs font-medium text-blue-500">
@@ -288,11 +287,12 @@ function AccuracyMiniGrid({
       <div className="rounded-2xl bg-white/80 p-3 shadow-inner ring-1 ring-gray-100">
         {grid}
       </div>
-      <div className="flex gap-3">
+      {/* Share legend omitted for now – re-enable if we decide players need labels */}
+      {/* <div className="flex gap-3">
         <LegendItem colorClass="bg-emerald-300" label="Clean" />
         <LegendItem colorClass="bg-red-400" label="Had mistake" />
         <LegendItem colorClass="bg-gray-300" label="Given" />
-      </div>
+      </div> */}
     </div>
   );
 }
@@ -309,8 +309,8 @@ function LegendItem({ colorClass, label }: { colorClass: string; label: string }
 function ShareIcon() {
   return (
     <svg
-      width="18"
-      height="18"
+      width="20"
+      height="20"
       viewBox="0 0 18 18"
       aria-hidden="true"
       className="text-blue-600"
@@ -354,7 +354,6 @@ function buildShareText({
     sizeLabel ? `Size: ${sizeLabel}` : `Size: ${puzzle.size}x${puzzle.size}`,
     `Time: ${formatDuration(elapsedMs)}`,
     `Moves: ${moveStat}`,
-    'Accuracy:',
     ...generateAccuracyLines(puzzle, history),
   ];
   return lines.join('\n');
