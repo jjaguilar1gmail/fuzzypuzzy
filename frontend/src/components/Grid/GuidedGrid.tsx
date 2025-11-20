@@ -62,7 +62,7 @@ const GuidedGrid = memo(function GuidedGrid() {
   // Calculate max value (size^2 for Hidato)
   const maxValue = useMemo(() => {
     return puzzle ? puzzle.size * puzzle.size : 25;
-  }, [puzzle?.size]);
+  }, [puzzle]);
 
   // Initialize guided sequence flow
   const {
@@ -89,8 +89,10 @@ const GuidedGrid = memo(function GuidedGrid() {
     restoredSequenceBoard  // Pass restored board for persistence
   );
   const globalSequenceState = useGameStore((store) => store.sequenceState);
-  const completionStatus = useGameStore((store) => store.completionStatus);
   const isComplete = useGameStore((store) => store.isComplete);
+  const reopenCompletionSummary = useGameStore(
+    (store) => store.reopenCompletionSummary
+  );
 
   // Sync sequence state with game store
   useEffect(() => {
@@ -251,7 +253,7 @@ const GuidedGrid = memo(function GuidedGrid() {
     const gap = 2;
     const totalSize = board.length * cellSize + (board.length - 1) * gap;
     return { cellSize, gap, totalSize };
-  }, [board?.length]);
+  }, [board]);
 
   const handleCellClick = (row: number, col: number) => {
     if (skipNextClickRef.current) {
@@ -316,6 +318,24 @@ const GuidedGrid = memo(function GuidedGrid() {
         : 'Select a clue to continue';
   }
 
+  const pillClassName = `inline-flex h-12 items-center rounded-full border px-4 sm:px-6 text-base font-semibold transition-all ${
+    pillPulseId
+      ? 'shadow-[0_0_12px_2px_rgba(220,38,38,0.2)] text-white'
+      : 'border-primary bg-primary/10 text-primary shadow-sm'
+  }`;
+  const pillStyle = pillPulseId
+    ? {
+        animation: 'pillPulse 0.6s ease-in-out forwards',
+        borderColor: statusPalette.danger,
+        backgroundColor: statusPalette.danger,
+      }
+    : undefined;
+
+  const handleCompletionPillClick = () => {
+    if (!isComplete) return;
+    reopenCompletionSummary();
+  };
+
   return (
     <div className="flex flex-col items-center">
       <style>{`
@@ -331,24 +351,21 @@ const GuidedGrid = memo(function GuidedGrid() {
         }
       `}</style>
       <div className="mb-2 flex flex-wrap items-center justify-center gap-2">
-        <div
-          className={`inline-flex h-12 items-center rounded-full border px-4 sm:px-6 text-base font-semibold transition-all ${
-            pillPulseId
-              ? 'shadow-[0_0_12px_2px_rgba(220,38,38,0.2)] text-white'
-              : 'border-primary bg-primary/10 text-primary shadow-sm'
-          }`}
-          style={
-            pillPulseId
-              ? {
-                  animation: 'pillPulse 0.6s ease-in-out forwards',
-                  borderColor: statusPalette.danger,
-                  backgroundColor: statusPalette.danger,
-                }
-              : undefined
-          }
-        >
-          {nextIndicatorLabel}
-        </div>
+        {isComplete ? (
+          <button
+            type="button"
+            onClick={handleCompletionPillClick}
+            aria-label="View puzzle completion details"
+            className={`${pillClassName} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary`}
+            style={pillStyle}
+          >
+            {nextIndicatorLabel}
+          </button>
+        ) : (
+          <div className={pillClassName} style={pillStyle}>
+            {nextIndicatorLabel}
+          </div>
+        )}
         <div
           className="inline-flex h-12 overflow-hidden rounded-full border border-border bg-surface shadow-sm"
           role="group"
@@ -434,8 +451,6 @@ const GuidedGrid = memo(function GuidedGrid() {
             // Determine stroke color
             let strokeColor = statusPalette.border;
             let strokeWidth = 1;
-            const showAnchorWarning = isAnchor && !!visibleMistake;
-
             if (isAnchor) {
               strokeColor = gridPalette.anchorStroke;
               strokeWidth = 3;
