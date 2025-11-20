@@ -116,6 +116,7 @@ interface GameState {
   clearBoardEntries: () => void;
   checkCompletion: () => void;
   dismissCompletionStatus: () => void;
+  reopenCompletionSummary: () => void;
   startTimer: () => void;
   stopTimer: () => void;
   tickTimer: () => void;
@@ -488,6 +489,15 @@ export const useGameStore = create<GameState>((set, get) => ({
         ? { completionStatus: null }
         : { completionStatus: null, isComplete: false }
     );
+  },
+
+  reopenCompletionSummary: () => {
+    set((state) => {
+      if (!state.isComplete) {
+        return {};
+      }
+      return { completionStatus: 'success' };
+    });
   },
 
   startTimer: () => {
