@@ -148,7 +148,7 @@ export default function CompletionModal({
             transition={{ duration: 0.15, type: 'spring' }}
           >
             <div
-              className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full"
+              className="bg-surface rounded-lg shadow-xl p-8 max-w-md w-full"
               onClick={(e) => e.stopPropagation()}
               role="dialog"
               aria-labelledby="completion-title"
@@ -168,7 +168,7 @@ export default function CompletionModal({
                     <button
                       type="button"
                       onClick={handleShare}
-                      className="inline-flex items-center gap-2 rounded-full border border-primary-muted bg-primary-muted px-4 py-1.5 text-sm font-semibold text-primary shadow-sm transition hover:bg-primary-muted/80"
+                      className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary shadow-sm transition hover:bg-primary/20 dark:border-primary/50 dark:bg-primary/20 dark:text-primary-foreground"
                       aria-label="Share puzzle result"
                     >
                       <ShareIcon />

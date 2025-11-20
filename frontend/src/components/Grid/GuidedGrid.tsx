@@ -608,7 +608,7 @@ const GuidedGrid = memo(function GuidedGrid() {
         <button
           onClick={undo}
           disabled={!canUndo}
-          className="px-4 py-2 border border-border bg-surface-muted text-copy hover:bg-surface disabled:bg-surface-muted disabled:text-copy-muted disabled:opacity-60 rounded-md font-medium transition-colors"
+          className="px-4 py-2 border border-border bg-surface-muted text-copy hover:bg-surface disabled:bg-disabled disabled:text-disabled-text disabled:border-disabled-border disabled:opacity-60 rounded-md font-medium transition-colors"
           aria-label="Undo last move"
         >
           Undo
@@ -616,7 +616,7 @@ const GuidedGrid = memo(function GuidedGrid() {
         <button
           onClick={redo}
           disabled={!canRedo}
-          className="px-4 py-2 border border-border bg-surface-muted text-copy hover:bg-surface disabled:bg-surface-muted disabled:text-copy-muted disabled:opacity-60 rounded-md font-medium transition-colors"
+          className="px-4 py-2 border border-border bg-surface-muted text-copy hover:bg-surface disabled:bg-disabled disabled:text-disabled-text disabled:border-disabled-border disabled:opacity-60 rounded-md font-medium transition-colors"
           aria-label="Redo last move"
         >
           Redo
@@ -625,7 +625,7 @@ const GuidedGrid = memo(function GuidedGrid() {
           type="button"
           onClick={requestBoardClear}
           disabled={!hasPlayerEntries}
-          className="px-4 py-2 border border-border bg-surface-muted text-copy hover:bg-surface disabled:bg-surface-muted disabled:text-copy-muted disabled:opacity-60 rounded-md font-medium transition-colors text-sm"
+          className="px-4 py-2 border border-border bg-surface-muted text-copy hover:bg-surface disabled:bg-disabled disabled:text-disabled-text disabled:border-disabled-border disabled:opacity-60 rounded-md font-medium transition-colors text-sm"
           aria-label="Clear all filled cells and start over"
         >
           Clear

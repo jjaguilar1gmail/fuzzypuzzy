@@ -15,11 +15,16 @@ interface MiniCell {
 }
 
 const statusStyles: Record<MiniCellStatus, string> = {
-  given: 'bg-copy-muted/20 text-copy font-bold border border-border',
-  path: 'bg-primary/5 text-primary border border-primary-muted',
-  anchor: 'bg-warning/30 text-copy border border-warning font-bold',
-  target: 'bg-primary/5 text-primary border-2 border-dashed border-primary',
-  empty: 'bg-surface text-copy-muted border border-border',
+  given:
+    'bg-copy-muted/20 text-copy font-bold border border-border dark:bg-surface-muted/60 dark:text-copy',
+  path:
+    'bg-primary/5 text-primary border border-primary-muted dark:bg-primary/15 dark:text-primary',
+  anchor:
+    'bg-warning/30 text-copy border border-warning font-bold dark:bg-warning/40 dark:text-copy',
+  target:
+    'bg-primary/5 text-primary border-2 border-dashed border-primary dark:bg-primary/20 dark:text-primary',
+  empty:
+    'bg-surface text-copy-muted border border-border dark:bg-surface-elevated dark:text-copy-muted',
 };
 
 const goalExample: MiniCell[] = [
@@ -78,7 +83,7 @@ function MiniGrid({
   return (
     <div className="relative inline-flex" aria-hidden="true">
       <div
-        className="relative grid grid-cols-3 rounded-2xl bg-surface-inverse/5 w-fit"
+        className="relative grid grid-cols-3 rounded-2xl bg-surface dark:bg-surface-inverse/10 w-fit"
         style={{
           padding: MINI_PADDING,
           gap: MINI_GAP,
@@ -180,7 +185,7 @@ export function TutorialSplash({ isOpen, onClose }: TutorialSplashProps) {
       {isOpen && (
         <>
           <motion.div
-            className="fixed inset-0 z-40 bg-surface-inverse/85 backdrop-blur-sm"
+            className="fixed inset-0 z-40 bg-surface-inverse/85 dark:bg-black/75 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

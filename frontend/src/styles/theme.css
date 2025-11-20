@@ -6,9 +6,12 @@
   --color-primary-foreground: 255 255 255;
 
   --color-surface: 255 255 255;
-  --color-surface-muted: 248 250 252;
-  --color-surface-elevated: 255 255 255;
+  --color-surface-muted: 240 244 250;
+  --color-surface-elevated: 252 253 255;
   --color-surface-inverse: 15 23 42;
+  --color-disabled-bg: 229 231 235;
+  --color-disabled-border: 209 213 219;
+  --color-disabled-text: 156 163 175;
   --color-page-start: 241 245 249;
   --color-page-end: 252 252 255;
 
@@ -40,9 +43,12 @@
   :root {
     color-scheme: dark;
     --color-surface: 17 24 39;
-    --color-surface-muted: 30 41 59;
-    --color-surface-elevated: 30 41 59;
+    --color-surface-muted: 31 41 55;
+    --color-surface-elevated: 39 52 73;
     --color-surface-inverse: 255 255 255;
+    --color-disabled-bg: 51 65 85;
+    --color-disabled-border: 71 85 105;
+    --color-disabled-text: 148 163 184;
     --color-page-start: 15 23 42;
     --color-page-end: 15 23 42;
 
@@ -73,9 +79,12 @@
 [data-theme='dark'] {
   color-scheme: dark;
   --color-surface: 17 24 39;
-  --color-surface-muted: 30 41 59;
-  --color-surface-elevated: 30 41 59;
+  --color-surface-muted: 31 41 55;
+  --color-surface-elevated: 39 52 73;
   --color-surface-inverse: 255 255 255;
+  --color-disabled-bg: 51 65 85;
+  --color-disabled-border: 71 85 105;
+  --color-disabled-text: 148 163 184;
   --color-page-start: 15 23 42;
   --color-page-end: 15 23 42;
 

@@ -35,6 +35,10 @@ export default {
           elevated: '--color-surface-elevated',
           inverse: '--color-surface-inverse',
         }),
+        disabled: palette('--color-disabled-bg', {
+          border: '--color-disabled-border',
+          text: '--color-disabled-text',
+        }),
         border: colorVar('--color-border'),
         copy: colorVar('--color-text'),
         'copy-muted': colorVar('--color-text-muted'),
