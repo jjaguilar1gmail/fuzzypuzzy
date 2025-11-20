@@ -239,7 +239,7 @@ export function TutorialSplash({ isOpen, onClose }: TutorialSplashProps) {
 
                   <TutorialCard
                     title="Quick controls"
-                    punchline="Keep the board in rhythm."
+                    punchline="Master the essentials."
                   >
                     <div className="grid gap-2 sm:grid-cols-2">
                       {controlBadges.map((badge) => (
@@ -257,10 +257,7 @@ export function TutorialSplash({ isOpen, onClose }: TutorialSplashProps) {
                   </TutorialCard>
                 </div>
 
-                <div className="flex flex-col gap-3 rounded-2xl bg-surface-inverse px-4 py-5 text-white md:flex-row md:items-center md:justify-between">
-                  <p className="text-lg font-semibold">
-                    Ready to chase the perfect flow?
-                  </p>
+                <div className="flex flex-col gap-3 rounded-3xl bg-surface-inverse px-4 py-5 text-white md:flex-row md:items-center md:justify-between">
                   <button
                     type="button"
                     onClick={onClose}
