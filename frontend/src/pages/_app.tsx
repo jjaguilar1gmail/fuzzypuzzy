@@ -1,6 +1,7 @@
 import '@/styles/globals.css';
 import type { AppProps } from 'next/app';
 import { useEffect } from 'react';
+import { useSettingsStore } from '@/state/settingsStore';
 
 function useViewportHeightVariable() {
   useEffect(() => {
@@ -34,7 +35,34 @@ function useViewportHeightVariable() {
   }, []);
 }
 
+function useThemePreference() {
+  const theme = useSettingsStore((state) => state.theme);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    const root = document.documentElement;
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+
+    const applyTheme = () => {
+      const resolved =
+        theme === 'system' ? (media.matches ? 'dark' : 'light') : theme;
+      root.dataset.theme = resolved;
+    };
+
+    applyTheme();
+
+    if (theme === 'system') {
+      media.addEventListener('change', applyTheme);
+      return () => media.removeEventListener('change', applyTheme);
+    }
+  }, [theme]);
+}
+
 export default function App({ Component, pageProps }: AppProps) {
   useViewportHeightVariable();
+  useThemePreference();
   return <Component {...pageProps} />;
 }

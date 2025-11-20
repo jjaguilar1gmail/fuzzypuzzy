@@ -15,11 +15,16 @@ interface MiniCell {
 }
 
 const statusStyles: Record<MiniCellStatus, string> = {
-  given: 'bg-slate-200 text-slate-700 font-bold',
-  path: 'bg-white text-blue-600 border border-blue-200',
-  anchor: 'bg-amber-200 text-slate-900 border border-amber-400 font-bold',
-  target: 'bg-white text-blue-600 border-2 border-dashed border-blue-400',
-  empty: 'bg-white text-slate-300 border border-slate-200',
+  given:
+    'bg-copy-muted/20 text-copy font-bold border border-border dark:bg-surface-muted/60 dark:text-copy',
+  path:
+    'bg-primary/5 text-primary border border-primary-muted dark:bg-primary/15 dark:text-primary',
+  anchor:
+    'bg-warning/30 text-copy border border-warning font-bold dark:bg-warning/40 dark:text-copy',
+  target:
+    'bg-primary/5 text-primary border-2 border-dashed border-primary dark:bg-primary/20 dark:text-primary',
+  empty:
+    'bg-surface text-copy-muted border border-border dark:bg-surface-elevated dark:text-copy-muted',
 };
 
 const goalExample: MiniCell[] = [
@@ -78,7 +83,7 @@ function MiniGrid({
   return (
     <div className="relative inline-flex" aria-hidden="true">
       <div
-        className="relative grid grid-cols-3 rounded-2xl bg-slate-900/5 w-fit"
+        className="relative grid grid-cols-3 rounded-2xl bg-surface dark:bg-surface-inverse/10 w-fit"
         style={{
           padding: MINI_PADDING,
           gap: MINI_GAP,
@@ -113,13 +118,13 @@ function MiniGrid({
               orient="auto"
               markerUnits="strokeWidth"
             >
-              <path d="M0,0 L8,4 L0,8 z" fill="#2563eb" />
+              <path d="M0,0 L8,4 L0,8 z" fill="rgb(var(--color-primary))" />
             </marker>
           </defs>
           <polyline
             points={points}
             fill="none"
-            stroke="#2563eb"
+            stroke="rgb(var(--color-primary))"
             strokeWidth={3}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -146,16 +151,16 @@ function TutorialCard({
 }: TutorialCardProps) {
   return (
     <div
-      className={`flex h-full flex-col gap-4 rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-lg shadow-slate-500/10 ${
+      className={`flex h-full flex-col gap-4 rounded-3xl border border-border bg-surface p-5 shadow-lg shadow-primary-strong/10 ${
         className ?? ''
       }`}
     >
       <div>
-        <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">
+        <p className="text-sm font-semibold uppercase tracking-wide text-primary">
           {title}
         </p>
         {punchline && (
-          <p className="text-xl font-bold text-slate-900">{punchline}</p>
+          <p className="text-xl font-bold text-copy">{punchline}</p>
         )}
       </div>
       {children}
@@ -180,7 +185,7 @@ export function TutorialSplash({ isOpen, onClose }: TutorialSplashProps) {
       {isOpen && (
         <>
           <motion.div
-            className="fixed inset-0 z-40 bg-slate-900/70 backdrop-blur-sm"
+            className="fixed inset-0 z-40 bg-surface-inverse/85 dark:bg-black/75 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -199,14 +204,14 @@ export function TutorialSplash({ isOpen, onClose }: TutorialSplashProps) {
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="tutorial-heading"
-                className="relative flex w-full max-w-3xl flex-col gap-5 overflow-hidden rounded-3xl bg-gradient-to-br from-slate-50 via-white to-blue-50 p-6 shadow-2xl shadow-blue-900/10 ring-1 ring-slate-900/10 max-h-[calc(100vh-2rem)] overflow-y-auto"
+                className="relative flex w-full max-w-3xl flex-col gap-5 overflow-hidden rounded-3xl bg-gradient-to-br from-surface-muted via-surface to-primary-muted p-6 shadow-2xl shadow-primary-strong/10 ring-1 ring-surface-inverse max-h-[calc(100vh-2rem)] overflow-y-auto"
                 onClick={(event) => event.stopPropagation()}
               >
                 <button
                   type="button"
                   aria-label="Close tutorial"
                   onClick={onClose}
-                  className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500"
+                  className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface text-copy-muted transition hover:text-copy focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                 >
                   x
                 </button>
@@ -219,7 +224,7 @@ export function TutorialSplash({ isOpen, onClose }: TutorialSplashProps) {
                   >
                     <div className="flex flex-col gap-2 md:flex-row md:items-center">
                       <div className="flex-1">
-                        <p className="text-base text-slate-700">
+                        <p className="text-base text-copy">
                           Tap any filled number, place the next value in a neighbor square (diagonals count) so the chain never breaks.
                         </p>
                       </div>
@@ -240,10 +245,10 @@ export function TutorialSplash({ isOpen, onClose }: TutorialSplashProps) {
                       {controlBadges.map((badge) => (
                         <div
                           key={badge.label}
-                          className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900"
+                          className="rounded-2xl border border-border bg-surface px-3 py-2 text-sm font-semibold text-copy"
                         >
                           <p>{badge.label}</p>
-                          <p className="text-xs font-normal text-slate-500">
+                          <p className="text-xs font-normal text-copy-muted">
                             {badge.helper}
                           </p>
                         </div>
@@ -252,14 +257,14 @@ export function TutorialSplash({ isOpen, onClose }: TutorialSplashProps) {
                   </TutorialCard>
                 </div>
 
-                <div className="flex flex-col gap-3 rounded-2xl bg-slate-900/80 px-4 py-5 text-white md:flex-row md:items-center md:justify-between">
+                <div className="flex flex-col gap-3 rounded-2xl bg-surface-inverse px-4 py-5 text-white md:flex-row md:items-center md:justify-between">
                   <p className="text-lg font-semibold">
                     Ready to chase the perfect flow?
                   </p>
                   <button
                     type="button"
                     onClick={onClose}
-                    className="inline-flex items-center justify-center rounded-full bg-white/95 px-6 py-3 text-base font-semibold text-slate-900 shadow-sm transition hover:bg-white"
+                    className="inline-flex items-center justify-center rounded-full bg-surface px-6 py-3 text-base font-semibold text-copy shadow-sm transition hover:bg-surface-muted"
                   >
                     Got it, let me play
                   </button>

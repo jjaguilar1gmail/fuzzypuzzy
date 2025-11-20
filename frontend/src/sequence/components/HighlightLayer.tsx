@@ -5,6 +5,7 @@
 
 import React from 'react';
 import type { Position } from '../types';
+import { cssVar } from '@/styles/colorTokens';
 
 interface HighlightLayerProps {
   /** Anchor position (or null) */
@@ -59,7 +60,7 @@ export const HighlightLayer: React.FC<HighlightLayerProps> = ({
             top: anchorPos.row * cellSize,
             width: cellSize,
             height: cellSize,
-            border: '2px solid rgba(59, 130, 246, 0.6)',
+            border: `2px solid ${cssVar('--color-primary', 0.6)}`,
             boxSizing: 'border-box',
           }}
         />
@@ -77,7 +78,7 @@ export const HighlightLayer: React.FC<HighlightLayerProps> = ({
             top: pos.row * cellSize,
             width: cellSize,
             height: cellSize,
-            backgroundColor: 'rgba(34, 197, 94, 0.15)',
+            backgroundColor: cssVar('--color-success', 0.15),
             boxSizing: 'border-box',
           }}
         />

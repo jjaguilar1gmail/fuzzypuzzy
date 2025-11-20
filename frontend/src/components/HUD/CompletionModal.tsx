@@ -6,6 +6,7 @@ import { Puzzle } from '@/domain/puzzle';
 import type { CellMistakeHistory } from '@/state/cellMistakeHistory';
 import { positionKey } from '@/domain/position';
 import type { DailySizeId } from '@/lib/daily';
+import { cssVar } from '@/styles/colorTokens';
 
 interface CompletionModalProps {
   isOpen: boolean;
@@ -73,26 +74,26 @@ export default function CompletionModal({
   }, [shareFeedback]);
 
   const statsList = (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {sizeLabel && (
         <div className="flex justify-between items-center gap-6">
-          <span className="text-gray-600">Size:</span>
+          <span className="text-copy-muted">Size:</span>
           <span className="font-semibold">{sizeLabel}</span>
         </div>
       )}
       {dateLabel && (
         <div className="flex justify-between items-center gap-6">
-          <span className="text-gray-600">Date:</span>
+          <span className="text-copy-muted">Date:</span>
           <span className="font-semibold">{dateLabel}</span>
         </div>
       )}
       <div className="flex justify-between items-center gap-6">
-        <span className="text-gray-600">Time:</span>
+        <span className="text-copy-muted">Time:</span>
         <span className="font-semibold">{formatDuration(elapsedMs)}</span>
       </div>
 
       <div className="flex justify-between items-center gap-6">
-        <span className="text-gray-600">Moves:</span>
+        <span className="text-copy-muted">Moves:</span>
         <span className="font-semibold">{moveStat}</span>
       </div>
     </div>
@@ -147,7 +148,7 @@ export default function CompletionModal({
             transition={{ duration: 0.15, type: 'spring' }}
           >
             <div
-              className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full"
+              className="bg-surface rounded-lg shadow-xl p-8 max-w-md w-full"
               onClick={(e) => e.stopPropagation()}
               role="dialog"
               aria-labelledby="completion-title"
@@ -157,7 +158,7 @@ export default function CompletionModal({
                 <h2
                   id="completion-title"
                   className={`text-3xl font-bold text-center ${
-                    isCorrect ? 'text-green-600' : 'text-red-600'
+                    isCorrect ? 'text-success' : 'text-danger'
                   }`}
                 >
                   {isCorrect ? 'Puzzle Complete!' : 'Incorrect Solution'}
@@ -167,14 +168,14 @@ export default function CompletionModal({
                     <button
                       type="button"
                       onClick={handleShare}
-                      className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100"
+                      className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary shadow-sm transition hover:bg-primary/20 dark:border-primary/50 dark:bg-primary/20 dark:text-primary-foreground"
                       aria-label="Share puzzle result"
                     >
                       <ShareIcon />
                       <span className="-mr-1 pr-1">Share</span>
                     </button>
                     {shareFeedback && (
-                      <span className="text-xs font-medium text-blue-500">
+                      <span className="text-xs font-medium text-primary">
                         {shareFeedback}
                       </span>
                     )}
@@ -194,7 +195,7 @@ export default function CompletionModal({
               <div className="flex gap-3">
                 <motion.button
                   onClick={handlePrimaryAction}
-                  className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                  className="flex-1 px-6 py-3 bg-surface text-copy rounded-lg font-medium hover:bg-surface-muted transition-colors border border-border shadow-sm"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -203,10 +204,10 @@ export default function CompletionModal({
 
                 <motion.button
                   onClick={handleSecondaryAction}
-                  className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
+                  className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors border ${
                     isCorrect
-                      ? 'bg-blue-500 text-white hover:bg-blue-600'
-                      : 'bg-red-500 text-white hover:bg-red-600'
+                      ? 'border-primary bg-primary text-primary-foreground hover:bg-primary-strong'
+                      : 'border-danger bg-surface text-danger hover:bg-surface-muted'
                   }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -255,21 +256,25 @@ function AccuracyMiniGrid({
           const isGiven = givens.has(key);
           const hadMistake = Boolean(history[key]);
 
-          let colorClass = 'bg-emerald-300';
           let label = 'Never had a wrong value';
+          let backgroundColor = cssVar('--color-accuracy-clean');
           if (isGiven) {
-            colorClass = 'bg-gray-300';
+            backgroundColor = cssVar('--color-grid-given');
             label = 'Given cell';
           } else if (hadMistake) {
-            colorClass = 'bg-red-400';
+            backgroundColor = cssVar('--color-accuracy-mistake');
             label = 'Had a wrong value at some point';
           }
 
           return (
             <span
               key={key}
-              className={`rounded ${colorClass}`}
-              style={{ width: cellSize, height: cellSize }}
+              className="rounded"
+              style={{
+                width: cellSize,
+                height: cellSize,
+                backgroundColor,
+              }}
               title={label}
               aria-label={label}
             />
@@ -281,17 +286,17 @@ function AccuracyMiniGrid({
 
   return (
     <div
-      className="flex flex-col items-center gap-2 text-xs text-gray-500"
+      className="flex flex-col items-center gap-2 text-xs text-copy-muted"
       aria-label="Accuracy map showing how many cells were ever incorrect"
     >
-      <div className="rounded-2xl bg-white/80 p-3 shadow-inner ring-1 ring-gray-100">
+      <div className="rounded-2xl bg-surface p-3 shadow-inner border border-border">
         {grid}
       </div>
-      {/* Share legend omitted for now – re-enable if we decide players need labels */}
+      {/* Legend temporarily hidden */}
       {/* <div className="flex gap-3">
-        <LegendItem colorClass="bg-emerald-300" label="Clean" />
-        <LegendItem colorClass="bg-red-400" label="Had mistake" />
-        <LegendItem colorClass="bg-gray-300" label="Given" />
+        <LegendItem colorClass="bg-success-muted" label="Clean" />
+        <LegendItem colorClass="bg-danger-muted" label="Had mistake" />
+        <LegendItem colorClass="bg-grid-given" label="Given" />
       </div> */}
     </div>
   );
@@ -313,7 +318,7 @@ function ShareIcon() {
       height="20"
       viewBox="0 0 18 18"
       aria-hidden="true"
-      className="text-blue-600"
+      className="text-primary"
     >
       <circle cx="6" cy="9" r="2" fill="currentColor" />
       <circle cx="12.5" cy="4.5" r="2" fill="currentColor" />

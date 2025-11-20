@@ -102,7 +102,7 @@ export default function PackPuzzlePage() {
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 mb-4">Error: {error || 'Failed to load puzzle'}</p>
-          <Link href={`/packs/${packId}`} className="text-blue-600 hover:underline">
+          <Link href={`/packs/${packId}`} className="text-primary hover:underline">
             ← Back to pack
           </Link>
         </div>
@@ -123,7 +123,7 @@ export default function PackPuzzlePage() {
         <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
           <Link
             href={`/packs/${packId}`}
-            className="text-blue-600 hover:underline inline-flex items-center gap-2"
+            className="text-primary hover:underline inline-flex items-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -179,7 +179,7 @@ export default function PackPuzzlePage() {
           <button
             onClick={() => handleNavigate('next')}
             disabled={!hasNext}
-            className="px-6 py-3 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-primary text-white hover:bg-primary-dark disabled:hover:bg-primary"
+            className="px-6 py-3 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-primary text-primary-foreground hover:bg-primary-strong disabled:hover:bg-primary"
             aria-label="Next puzzle"
           >
             Next →

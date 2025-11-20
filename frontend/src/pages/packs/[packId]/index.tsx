@@ -38,7 +38,7 @@ export default function PackDetailPage() {
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 mb-4">Error: {error || 'Pack not found'}</p>
-          <Link href="/packs" className="text-blue-600 hover:underline">
+          <Link href="/packs" className="text-primary hover:underline">
             ← Back to packs
           </Link>
         </div>
@@ -56,7 +56,7 @@ export default function PackDetailPage() {
   return (
     <main className="min-h-screen p-8">
       <div className="max-w-4xl mx-auto">
-        <Link href="/packs" className="text-blue-600 hover:underline mb-6 inline-block">
+        <Link href="/packs" className="text-primary hover:underline mb-6 inline-block">
           ← Back to packs
         </Link>
         
@@ -102,7 +102,7 @@ export default function PackDetailPage() {
                   <p className="text-sm text-gray-600 mb-2">Grid Sizes</p>
                   <div className="flex flex-wrap gap-2 text-sm">
                     {Object.entries(pack.size_distribution).map(([size, count]) => (
-                      <span key={size} className="bg-blue-100 text-blue-800 px-3 py-1 rounded">
+                      <span key={size} className="bg-primary-muted text-primary px-3 py-1 rounded">
                         {count} puzzles - {size}x{size}
                       </span>
                     ))}

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { memo, useMemo, useEffect, useState, useRef } from 'react';
 import { useGuidedSequenceFlow } from '@/sequence';
 import type { Position, MistakeEvent, SequenceDirection } from '@/sequence/types';
+import { cssVar, gridPalette, statusPalette } from '@/styles/colorTokens';
 
 const HOLD_DURATION_MS = 650;
 const BOARD_PADDING = 8;
@@ -22,9 +23,9 @@ const DIRECTION_OPTIONS: Array<{
 
 const PlusMinusGlyph = ({ variant }: { variant: 'plus' | 'minus' }) => (
   <span className="relative flex h-6 w-6 items-center justify-center" aria-hidden="true">
-    <span className="absolute left-1/2 top-1/2 h-0.5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current" />
+    <span className="absolute left-1/2 top-1/2 h-0.5 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current" />
     {variant === 'plus' && (
-      <span className="absolute left-1/2 top-1/2 h-5 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current" />
+      <span className="absolute left-1/2 top-1/2 h-4 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current" />
     )}
   </span>
 );
@@ -318,27 +319,50 @@ const GuidedGrid = memo(function GuidedGrid() {
   return (
     <div className="flex flex-col items-center">
       <style>{`
+        @keyframes pillPulse {
+          0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.05); }
+          50% { box-shadow: 0 0 12px 2px rgba(220, 38, 38, 0.4); }
+          100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        }
+      `}</style>
+      <style>{`
         .cell-rect:focus {
           outline: none;
         }
       `}</style>
       <div className="mb-2 flex flex-wrap items-center justify-center gap-2">
         <div
-          className={`inline-flex h-12 items-center rounded-full border px-4 sm:px-6 text-base font-semibold shadow transition-colors ${
+          className={`inline-flex h-12 items-center rounded-full border px-4 sm:px-6 text-base font-semibold transition-all ${
             pillPulseId
-              ? 'border-red-200 bg-red-50 text-red-600'
-              : 'border-blue-200 bg-blue-50 text-blue-700'
+              ? 'shadow-[0_0_12px_2px_rgba(220,38,38,0.2)] text-white'
+              : 'border-primary bg-primary/10 text-primary shadow-sm'
           }`}
+          style={
+            pillPulseId
+              ? {
+                  animation: 'pillPulse 0.6s ease-in-out forwards',
+                  borderColor: statusPalette.danger,
+                  backgroundColor: statusPalette.danger,
+                }
+              : undefined
+          }
         >
           {nextIndicatorLabel}
         </div>
         <div
-          className="inline-flex h-12 overflow-hidden rounded-full border border-gray-200 bg-white shadow-sm"
+          className="inline-flex h-12 overflow-hidden rounded-full border border-border bg-surface shadow-sm"
           role="group"
           aria-label="Choose sequence direction"
         >
           {DIRECTION_OPTIONS.map((option) => {
             const isActive = state.stepDirection === option.value;
+            const buttonStyle = isActive
+              ? {
+                  backgroundColor: statusPalette.primary,
+                  borderColor: statusPalette.primary,
+                  color: statusPalette.primaryForeground,
+                }
+              : undefined;
             return (
               <button
                 key={option.value}
@@ -346,10 +370,11 @@ const GuidedGrid = memo(function GuidedGrid() {
                 onClick={() => setStepDirection(option.value)}
                 aria-pressed={isActive}
                 aria-label={option.aria}
-                className={`flex h-full min-w-[44px] items-center justify-center gap-2 px-2.5 text-sm font-medium leading-none transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 sm:min-w-0 sm:px-4 sm:leading-tight ${
+                style={buttonStyle}
+                className={`flex h-full min-w-[44px] items-center justify-center gap-2 px-2.5 text-sm font-semibold leading-none transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 sm:min-w-0 sm:px-4 sm:leading-tight border ${
                   isActive
-                    ? 'bg-blue-500 text-white focus-visible:outline-blue-600'
-                    : 'bg-transparent text-gray-600 hover:bg-gray-100 focus-visible:outline-gray-400'
+                    ? 'focus-visible:outline-primary text-primary-foreground'
+                    : 'border-border bg-surface text-copy-muted hover:bg-surface-muted focus-visible:outline-border'
                 }`}
               >
                 <span className="flex h-12 w-12 items-center justify-center sm:h-auto sm:w-auto">
@@ -400,25 +425,25 @@ const GuidedGrid = memo(function GuidedGrid() {
             const holdCircumference = 2 * Math.PI * holdRadius;
 
             // Determine fill color based on cell state
-            let fillColor = 'white';
-            if (isAnchor) fillColor = 'rgb(254, 240, 138)'; // yellow-200
-            else if (isHighlighted) fillColor = 'rgb(191, 219, 254)'; // blue-200
-            else if (isMistake) fillColor = 'rgb(254, 202, 202)'; // red-200
-            else if (isGiven) fillColor = 'rgb(229, 231, 235)'; // gray-200
+            let fillColor = gridPalette.cellSurface;
+            if (isAnchor) fillColor = gridPalette.anchorFill;
+            else if (isHighlighted) fillColor = gridPalette.target;
+            else if (isMistake) fillColor = gridPalette.mistakeFill;
+            else if (isGiven) fillColor = gridPalette.given;
 
             // Determine stroke color
-            let strokeColor = 'rgb(203, 213, 225)'; // slate-300
+            let strokeColor = statusPalette.border;
             let strokeWidth = 1;
             const showAnchorWarning = isAnchor && !!visibleMistake;
 
             if (isAnchor) {
-              strokeColor = 'rgb(234, 179, 8)'; // yellow-600
+              strokeColor = gridPalette.anchorStroke;
               strokeWidth = 3;
             } else if (isHighlighted) {
-              strokeColor = 'rgb(59, 130, 246)'; // blue-500
+              strokeColor = statusPalette.primary;
               strokeWidth = 2;
             } else if (isMistake) {
-              strokeColor = 'rgb(239, 68, 68)'; // red-500
+              strokeColor = gridPalette.mistakeStroke;
               strokeWidth = 2;
             }
 
@@ -461,7 +486,7 @@ const GuidedGrid = memo(function GuidedGrid() {
                     width={cellSize - 4}
                     height={cellSize - 4}
                     fill="none"
-                    stroke="rgb(99, 102, 241)"
+                    stroke={statusPalette.primary}
                     strokeWidth={2}
                     strokeDasharray="4 2"
                     rx={3}
@@ -479,7 +504,7 @@ const GuidedGrid = memo(function GuidedGrid() {
                     dominantBaseline="central"
                     fontSize={isGiven ? 24 : 22}
                     fontWeight={isGiven ? 'bold' : 'normal'}
-                    fill={isGiven ? 'rgb(0, 0, 0)' : 'rgb(59, 130, 246)'}
+                    fill={isGiven ? statusPalette.text : statusPalette.primary}
                     pointerEvents="none"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
@@ -497,7 +522,7 @@ const GuidedGrid = memo(function GuidedGrid() {
                     width={cellSize}
                     height={cellSize}
                     fill="none"
-                    stroke="rgb(234, 179, 8)"
+                    stroke={gridPalette.anchorStroke}
                     strokeWidth={2}
                     rx={4}
                     pointerEvents="none"
@@ -521,14 +546,14 @@ const GuidedGrid = memo(function GuidedGrid() {
                     cy={y + cellSize / 2}
                     r={holdRadius}
                     fill="none"
-                    stroke="rgba(239,68,68,0.9)"
+                    stroke={cssVar('--color-grid-hold-stroke', 0.9)}
                     strokeWidth={HOLD_RING_STROKE_WIDTH}
                     strokeDasharray={holdCircumference}
                     strokeDashoffset={holdCircumference * (1 - holdProgress)}
                     strokeLinecap="round"
                     pointerEvents="none"
                     style={{
-                      filter: 'drop-shadow(0 0 6px rgba(239,68,68,0.35))',
+                      filter: `drop-shadow(0 0 6px ${cssVar('--color-grid-hold-stroke', 0.35)})`,
                     }}
                     animate={{
                       opacity: [0.75, 1, 0.9],
@@ -551,13 +576,13 @@ const GuidedGrid = memo(function GuidedGrid() {
                     width={cellSize - 4}
                     height={cellSize - 4}
                     rx={4}
-                    fill="rgba(239,68,68,0.12)"
-                    stroke="rgba(239,68,68,0.35)"
+                    fill={cssVar('--color-grid-mistake-fill', 0.55)}
+                    stroke={cssVar('--color-grid-mistake-stroke')}
                     strokeWidth={2}
                     pointerEvents="none"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: [0, 1, 0] }}
-                    transition={{ duration: 0.45, ease: 'easeOut' }}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: [0, 1, 0], scale: [0.95, 1.05, 1] }}
+                    transition={{ duration: 0.6, ease: 'easeInOut' }}
                   />
                 )}
               </g>
@@ -571,10 +596,10 @@ const GuidedGrid = memo(function GuidedGrid() {
       <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
         <button
           onClick={() => toggleGuide(!state.guideEnabled)}
-          className={`px-4 py-2 rounded-md font-medium transition-colors ${
+          className={`px-4 py-2 rounded-md font-medium transition-colors border ${
             state.guideEnabled
-              ? 'bg-blue-500 text-white hover:bg-blue-600'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              ? 'border-primary bg-primary text-primary-foreground hover:bg-primary-strong'
+              : 'border-border bg-surface-muted text-copy hover:bg-surface'
           }`}
           aria-label={state.guideEnabled ? 'Hide guide highlights' : 'Show guide highlights'}
         >
@@ -583,7 +608,7 @@ const GuidedGrid = memo(function GuidedGrid() {
         <button
           onClick={undo}
           disabled={!canUndo}
-          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 rounded-md font-medium transition-colors"
+          className="px-4 py-2 border border-border bg-surface-muted text-copy hover:bg-surface disabled:bg-disabled disabled:text-disabled-text disabled:border-disabled-border disabled:opacity-60 rounded-md font-medium transition-colors"
           aria-label="Undo last move"
         >
           Undo
@@ -591,7 +616,7 @@ const GuidedGrid = memo(function GuidedGrid() {
         <button
           onClick={redo}
           disabled={!canRedo}
-          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 rounded-md font-medium transition-colors"
+          className="px-4 py-2 border border-border bg-surface-muted text-copy hover:bg-surface disabled:bg-disabled disabled:text-disabled-text disabled:border-disabled-border disabled:opacity-60 rounded-md font-medium transition-colors"
           aria-label="Redo last move"
         >
           Redo
@@ -600,7 +625,7 @@ const GuidedGrid = memo(function GuidedGrid() {
           type="button"
           onClick={requestBoardClear}
           disabled={!hasPlayerEntries}
-          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 rounded-md font-medium transition-colors text-sm"
+          className="px-4 py-2 border border-border bg-surface-muted text-copy hover:bg-surface disabled:bg-disabled disabled:text-disabled-text disabled:border-disabled-border disabled:opacity-60 rounded-md font-medium transition-colors text-sm"
           aria-label="Clear all filled cells and start over"
         >
           Clear
@@ -609,8 +634,8 @@ const GuidedGrid = memo(function GuidedGrid() {
 
       {/* Instructions - only show if puzzle is not complete */}
       {state.anchorValue === null && !isComplete && (
-        <div className="mt-4 p-3 bg-gray-100 rounded-lg text-center">
-          <p className="text-sm text-gray-600">
+        <div className="mt-4 p-3 bg-surface-muted border border-border rounded-lg text-center">
+          <p className="text-sm text-copy-muted">
             Click a number to start building the sequence
           </p>
         </div>

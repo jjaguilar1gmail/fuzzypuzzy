@@ -12,10 +12,9 @@
 }
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
   --app-viewport-height: 100vh;
+  --app-background-start: rgb(var(--color-page-start));
+  --app-background-end: rgb(var(--color-page-end));
 }
 
 @supports (height: 100dvh) {
@@ -57,21 +56,15 @@ html {
   background: linear-gradient(
       to bottom,
       transparent,
-      rgb(var(--background-end-rgb))
+      var(--app-background-end)
     )
-    rgb(var(--background-start-rgb));
+    var(--app-background-start);
 }
 
 body {
   min-height: var(--app-viewport-height, 100%);
-  color: rgb(var(--foreground-rgb));
+  color: rgb(var(--color-text));
   background: inherit;
-}
-
-/* Accessibility: Focus styles */
-*:focus-visible {
-  outline: 2px solid rgb(14, 165, 233);
-  outline-offset: 2px;
 }
 
 /* Grid cell base styles */
@@ -80,7 +73,7 @@ body {
 }
 
 .cell--selected {
-  @apply ring-2 ring-primary-500;
+  @apply ring-2 ring-primary;
 }
 
 .cell--given {
@@ -202,6 +195,6 @@ html {
 
 button:active,
 a:active {
-  -webkit-tap-highlight-color: rgba(14, 165, 233, 0.2);
+  -webkit-tap-highlight-color: rgb(var(--color-primary) / 0.2);
 }
 
