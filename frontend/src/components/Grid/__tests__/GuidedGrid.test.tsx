@@ -8,10 +8,28 @@ import GuidedGrid from '@/components/Grid/GuidedGrid';
 
 // Minimal motion mock so SVG/DOM nodes render without framer-motion
 vi.mock('framer-motion', () => {
-  const createMotionComponent =
-    (tag: keyof JSX.IntrinsicElements) =>
-    ({ children, ...props }: Record<string, unknown>) =>
-      React.createElement(tag, props, children);
+  type MotionProps = {
+    children?: React.ReactNode;
+  } & Record<string, unknown>;
+
+  const createMotionComponent = (tag: keyof JSX.IntrinsicElements) => {
+    const MotionComponent = ({ children, ...props }: MotionProps) => {
+      const {
+        whileHover: _whileHover,
+        whileTap: _whileTap,
+        animate: _animate,
+        initial: _initial,
+        exit: _exit,
+        transition: _transition,
+        variants: _variants,
+        layout: _layout,
+        ...safeProps
+      } = props;
+      return React.createElement(tag, safeProps, children);
+    };
+    MotionComponent.displayName = `motion.${String(tag)}`;
+    return MotionComponent;
+  };
 
   const motion = new Proxy(
     {},
@@ -25,10 +43,25 @@ vi.mock('framer-motion', () => {
 });
 
 // Mock Zustand store hook so we can control the slices the component consumes
-const mockGameState: Record<string, any> = {};
+type MockCompletionStatus = 'success' | 'incorrect' | null;
+interface MockGameStoreState {
+  puzzle: Puzzle | null;
+  puzzleInstance: number;
+  updateSequenceState: ReturnType<typeof vi.fn>;
+  incrementMoveCount: ReturnType<typeof vi.fn>;
+  sequenceBoard: BoardCell[][] | null;
+  sequenceBoardKey: string | null;
+  boardClearSignal: number;
+  clearBoardEntries: ReturnType<typeof vi.fn>;
+  sequenceState: SequenceState | null;
+  completionStatus: MockCompletionStatus;
+  isComplete: boolean;
+  reopenCompletionSummary: ReturnType<typeof vi.fn>;
+}
 
-const resetGameState = (overrides: Record<string, unknown> = {}) => {
-  Object.keys(mockGameState).forEach((key) => delete mockGameState[key]);
+const mockGameState = {} as MockGameStoreState;
+
+const resetGameState = (overrides: Partial<MockGameStoreState> = {}) => {
   Object.assign(
     mockGameState,
     {
@@ -41,7 +74,7 @@ const resetGameState = (overrides: Record<string, unknown> = {}) => {
       boardClearSignal: 0,
       clearBoardEntries: vi.fn(),
       sequenceState: null,
-      completionStatus: null,
+      completionStatus: null as MockCompletionStatus,
       isComplete: false,
       reopenCompletionSummary: vi.fn(),
     },
@@ -56,7 +89,7 @@ vi.mock('@/state/gameStore', () => ({
 }));
 
 // Mock guided sequence hook to avoid the full puzzle runtime
-let mockSequenceResult = createSequenceApi();
+let mockSequenceResult: ReturnType<typeof createSequenceApi> = createSequenceApi();
 
 vi.mock('@/sequence', () => ({
   useGuidedSequenceFlow: () => mockSequenceResult,

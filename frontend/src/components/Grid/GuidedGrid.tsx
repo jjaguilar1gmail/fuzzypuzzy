@@ -62,7 +62,7 @@ const GuidedGrid = memo(function GuidedGrid() {
   // Calculate max value (size^2 for Hidato)
   const maxValue = useMemo(() => {
     return puzzle ? puzzle.size * puzzle.size : 25;
-  }, [puzzle?.size]);
+  }, [puzzle]);
 
   // Initialize guided sequence flow
   const {
@@ -89,7 +89,6 @@ const GuidedGrid = memo(function GuidedGrid() {
     restoredSequenceBoard  // Pass restored board for persistence
   );
   const globalSequenceState = useGameStore((store) => store.sequenceState);
-  const completionStatus = useGameStore((store) => store.completionStatus);
   const isComplete = useGameStore((store) => store.isComplete);
   const reopenCompletionSummary = useGameStore(
     (store) => store.reopenCompletionSummary
@@ -254,7 +253,7 @@ const GuidedGrid = memo(function GuidedGrid() {
     const gap = 2;
     const totalSize = board.length * cellSize + (board.length - 1) * gap;
     return { cellSize, gap, totalSize };
-  }, [board?.length]);
+  }, [board]);
 
   const handleCellClick = (row: number, col: number) => {
     if (skipNextClickRef.current) {
@@ -452,8 +451,6 @@ const GuidedGrid = memo(function GuidedGrid() {
             // Determine stroke color
             let strokeColor = statusPalette.border;
             let strokeWidth = 1;
-            const showAnchorWarning = isAnchor && !!visibleMistake;
-
             if (isAnchor) {
               strokeColor = gridPalette.anchorStroke;
               strokeWidth = 3;
