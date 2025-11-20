@@ -1,6 +1,7 @@
 import { useGameStore } from '@/state/gameStore';
 import { motion } from 'framer-motion';
 import { memo, useMemo, useState, useEffect } from 'react';
+import { gridPalette, statusPalette } from '@/styles/colorTokens';
 
 const GRID_SAFE_MARGIN = 32;
 
@@ -69,6 +70,15 @@ const Grid = memo(function Grid() {
           const isGiven = cell.given;
           const hasValue = cell.value !== null;
 
+          const fillColor = isGiven
+            ? gridPalette.given
+            : isSelected
+            ? gridPalette.selected
+            : gridPalette.cellSurface;
+          const strokeColor = isSelected
+            ? statusPalette.primary
+            : statusPalette.border;
+
           return (
             <g key={`${r}-${c}`}>
               {/* Cell background */}
@@ -77,14 +87,8 @@ const Grid = memo(function Grid() {
                 y={y}
                 width={cellSize}
                 height={cellSize}
-                fill={
-                  isGiven
-                    ? 'rgb(229, 231, 235)'
-                    : isSelected
-                    ? 'rgb(219, 234, 254)'
-                    : 'white'
-                }
-                stroke={isSelected ? 'rgb(14, 165, 233)' : 'rgb(203, 213, 225)'}
+                fill={fillColor}
+                stroke={strokeColor}
                 strokeWidth={isSelected ? 3 : 1}
                 rx={4}
                 onClick={() => selectCell(r, c)}
@@ -113,7 +117,7 @@ const Grid = memo(function Grid() {
                   dominantBaseline="central"
                   fontSize={isGiven ? 24 : 22}
                   fontWeight={isGiven ? 'bold' : 'normal'}
-                  fill={isGiven ? 'rgb(0, 0, 0)' : 'rgb(59, 130, 246)'}
+                    fill={isGiven ? statusPalette.text : statusPalette.primary}
                   pointerEvents="none"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
@@ -143,7 +147,7 @@ const Grid = memo(function Grid() {
                         textAnchor="middle"
                         dominantBaseline="central"
                         fontSize={10}
-                        fill="rgb(107, 114, 128)"
+                        fill={statusPalette.textMuted}
                         pointerEvents="none"
                       >
                         {candidate}

@@ -5,6 +5,7 @@
 
 import React, { useEffect, useState } from 'react';
 import type { MistakeEvent } from '../types';
+import { cssVar } from '@/styles/colorTokens';
 
 interface MistakeBadgeProps {
   /** Most recent mistake event */
@@ -64,7 +65,7 @@ export const MistakeBadge: React.FC<MistakeBadgeProps> = ({
         top: '20px',
         right: '20px',
         padding: '12px 16px',
-        backgroundColor: 'rgba(239, 68, 68, 0.95)',
+        backgroundColor: cssVar('--color-danger', 0.95),
         color: 'white',
         borderRadius: '8px',
         boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',

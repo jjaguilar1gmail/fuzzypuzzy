@@ -34,8 +34,8 @@ const Palette = memo(function Palette() {
           aria-pressed={pencilMode}
           className={`px-4 py-3 min-h-[44px] rounded-lg font-medium transition-colors ${
             pencilMode
-              ? 'bg-blue-500 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-surface-muted text-copy hover:bg-surface'
           }`}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -46,7 +46,7 @@ const Palette = memo(function Palette() {
         <motion.button
           onClick={undo}
           disabled={undoStack.length === 0}
-          className="px-4 py-3 min-h-[44px] rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-3 min-h-[44px] rounded-lg bg-surface-muted text-copy hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           aria-label="Undo"
@@ -57,7 +57,7 @@ const Palette = memo(function Palette() {
         <motion.button
           onClick={redo}
           disabled={redoStack.length === 0}
-          className="px-4 py-3 min-h-[44px] rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-3 min-h-[44px] rounded-lg bg-surface-muted text-copy hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           aria-label="Redo"
@@ -79,7 +79,7 @@ const Palette = memo(function Palette() {
           <motion.button
             key={num}
             onClick={() => placeValue(num)}
-            className="w-12 h-12 rounded-lg bg-white border-2 border-gray-300 hover:border-blue-500 hover:bg-blue-50 font-semibold text-lg transition-colors"
+            className="w-12 h-12 rounded-lg bg-surface border-2 border-border hover:border-primary hover:bg-primary-muted font-semibold text-lg transition-colors"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             initial={{ opacity: 0, y: 20 }}

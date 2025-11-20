@@ -220,7 +220,7 @@ export default function HomePage() {
         style={pageViewportStyle}
       >
         <p className="text-red-600">Error: {error || 'Failed to load puzzle'}</p>
-        <Link href="/packs" className="text-blue-600 hover:underline">
+        <Link href="/packs" className="text-primary hover:underline">
           Browse puzzle packs
         </Link>
       </div>
@@ -245,11 +245,11 @@ export default function HomePage() {
               type="button"
               onClick={openTutorial}
               aria-label="Open how to play tutorial"
-              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white/70 text-lg font-bold text-slate-900 shadow-sm transition hover:bg-white hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+            className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface-elevated/70 text-lg font-bold text-copy shadow-sm transition hover:bg-surface-elevated hover:text-copy focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               ?
               {!hasSeenTutorial && (
-                <span className="pointer-events-none absolute -top-1 -right-1 rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none text-white shadow-sm">
+                <span className="pointer-events-none absolute -top-1 -right-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none text-primary-foreground shadow-sm">
                   New
                 </span>
               )}
@@ -270,10 +270,10 @@ export default function HomePage() {
               onClick={() => handleSizeChange(option.id)}
               disabled={loading}
               className={`
-                px-3 py-1.5 rounded-full text-sm font-medium transition-colors
+                px-3 py-1.5 rounded-full text-sm font-medium transition-colors border
                 ${selectedSize === option.id
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                  : 'border-border bg-surface-muted text-copy hover:bg-surface'
                 }
                 disabled:opacity-50 disabled:cursor-not-allowed
               `}

@@ -45,14 +45,14 @@ export function SessionStats() {
   const moveDisplay = formatMoveStat(moveCount, puzzle);
 
   return (
-    <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-gray-600">
-      <div className="flex items-center gap-1 px-4 py-1.5 rounded-full border border-gray-200 bg-white/80 shadow-sm">
-        <span className="font-medium text-gray-800">Time</span>
-        <span className="font-semibold text-gray-900">{formatDuration(elapsedMs)}</span>
+    <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-copy-muted">
+      <div className="flex items-center gap-1 px-4 py-1.5 rounded-full border border-border bg-surface-elevated/80 shadow-sm">
+        <span className="font-medium text-copy">Time</span>
+        <span className="font-semibold text-copy">{formatDuration(elapsedMs)}</span>
       </div>
-      <div className="flex items-center gap-1 px-4 py-1.5 rounded-full border border-gray-200 bg-white/80 shadow-sm">
-        <span className="font-medium text-gray-800">Moves</span>
-        <span className="font-semibold text-gray-900">{moveDisplay}</span>
+      <div className="flex items-center gap-1 px-4 py-1.5 rounded-full border border-border bg-surface-elevated/80 shadow-sm">
+        <span className="font-medium text-copy">Moves</span>
+        <span className="font-semibold text-copy">{moveDisplay}</span>
       </div>
     </div>
   );

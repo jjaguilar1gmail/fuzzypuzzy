@@ -67,7 +67,7 @@ export const CHANGE_REASON_CSS = `
 /* Placement success pulse */
 @keyframes pulse-success {
   0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.05); opacity: 0.9; background-color: rgba(34, 197, 94, 0.2); }
+  50% { transform: scale(1.05); opacity: 0.9; background-color: rgb(var(--color-success) / 0.2); }
   100% { transform: scale(1); opacity: 1; }
 }
 
@@ -77,9 +77,9 @@ export const CHANGE_REASON_CSS = `
 
 /* Anchor change highlight */
 @keyframes highlight-anchor {
-  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-  50% { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4); }
-  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+  0% { box-shadow: 0 0 0 0 rgb(var(--color-primary) / 0.7); }
+  50% { box-shadow: 0 0 0 4px rgb(var(--color-primary) / 0.4); }
+  100% { box-shadow: 0 0 0 0 rgb(var(--color-primary) / 0); }
 }
 
 .change-reason-anchor {
@@ -104,23 +104,23 @@ export const CHANGE_REASON_CSS = `
 
 /* Indicator state classes */
 .next-indicator-has-target {
-  color: #059669;
+  color: rgb(var(--color-success));
   font-weight: 600;
 }
 
 .next-indicator-neutral {
-  color: #6b7280;
+  color: rgb(var(--color-text-muted));
   font-weight: 400;
 }
 
 /* Cell visual states */
 .cell-anchor {
-  outline: 2px solid rgba(59, 130, 246, 0.6);
+  outline: 2px solid rgb(var(--color-primary) / 0.6);
   outline-offset: -2px;
 }
 
 .cell-legal-target {
-  background-color: rgba(34, 197, 94, 0.15);
+  background-color: rgb(var(--color-success) / 0.15);
 }
 
 .cell-recent-placement {
@@ -155,19 +155,19 @@ export const CHANGE_REASON_CSS = `
 
 .cell-mistake {
   animation: mistakePulse 0.6s ease-in-out;
-  border: 3px solid rgba(239, 68, 68, 0.8) !important;
+  border: 3px solid rgb(var(--color-danger) / 0.8) !important;
 }
 
 /* Accessibility: High contrast mode */
 @media (prefers-contrast: high) {
   .cell-anchor {
     outline-width: 3px;
-    outline-color: #1e40af;
+    outline-color: rgb(var(--color-primary-strong));
   }
 
   .cell-legal-target {
-    background-color: rgba(34, 197, 94, 0.3);
-    outline: 1px solid #16a34a;
+    background-color: rgb(var(--color-success) / 0.3);
+    outline: 1px solid rgb(var(--color-success));
   }
 }
 `;

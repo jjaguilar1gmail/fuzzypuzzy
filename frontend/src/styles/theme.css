@@ -1,40 +1,99 @@
-/**
- * Theme utilities and CSS custom properties for accessibility.
- * Applied on top of globals.css Tailwind base.
- */
-
 :root {
-  /* Light theme colors */
-  --color-primary: 14 165 233;
+  color-scheme: light;
+  --color-primary: 37 99 235;
+  --color-primary-strong: 30 64 175;
+  --color-primary-muted: 219 234 254;
+  --color-primary-foreground: 255 255 255;
+
   --color-surface: 255 255 255;
-  --color-text: 0 0 0;
-  --color-text-muted: 115 115 115;
-  --color-border: 229 231 235;
-  --color-error: 239 68 68;
-  --color-success: 34 197 94;
+  --color-surface-muted: 248 250 252;
+  --color-surface-elevated: 255 255 255;
+  --color-surface-inverse: 15 23 42;
+  --color-page-start: 241 245 249;
+  --color-page-end: 252 252 255;
+
+  --color-border: 226 232 240;
+  --color-text: 15 23 42;
+  --color-text-muted: 100 116 139;
+
+  --color-success: 5 150 105;
+  --color-success-muted: 209 250 229;
+  --color-accuracy-clean: 16 185 129;
+  --color-danger: 220 38 38;
+  --color-danger-muted: 254 202 202;
+  --color-accuracy-mistake: 248 113 113;
+  --color-warning: 234 179 8;
+  --color-info: 2 132 199;
+
+  --color-grid-given: 226 232 240;
+  --color-grid-selected: 219 234 254;
+  --color-grid-path: 255 255 255;
+  --color-grid-target: 191 219 254;
+  --color-grid-anchor: 250 204 21;
+  --color-grid-anchor-stroke: 217 119 6;
+  --color-grid-mistake-fill: 254 226 226;
+  --color-grid-mistake-stroke: 220 38 38;
+  --color-grid-hold-stroke: 220 38 38;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
+    color-scheme: dark;
     --color-surface: 17 24 39;
-    --color-text: 255 255 255;
-    --color-text-muted: 156 163 175;
-    --color-border: 55 65 81;
+    --color-surface-muted: 30 41 59;
+    --color-surface-elevated: 30 41 59;
+    --color-surface-inverse: 255 255 255;
+    --color-page-start: 15 23 42;
+    --color-page-end: 15 23 42;
+
+    --color-border: 71 85 105;
+    --color-text: 241 245 249;
+    --color-text-muted: 148 163 184;
+
+    --color-primary-muted: 59 130 246;
+    --color-accuracy-clean: 125 211 176;
+    --color-accuracy-mistake: 252 165 165;
+
+    --color-grid-given: 51 65 85;
+    --color-grid-selected: 59 130 246;
+    --color-grid-path: 30 41 59;
+    --color-grid-target: 96 165 250;
+    --color-grid-anchor: 234 179 8;
+    --color-grid-anchor-stroke: 217 119 6;
+    --color-grid-mistake-fill: 127 29 29;
+    --color-grid-mistake-stroke: 252 165 165;
+    --color-grid-hold-stroke: 248 113 113;
   }
 }
 
 [data-theme='light'] {
-  --color-surface: 255 255 255;
-  --color-text: 0 0 0;
-  --color-text-muted: 115 115 115;
-  --color-border: 229 231 235;
+  color-scheme: light;
 }
 
 [data-theme='dark'] {
+  color-scheme: dark;
   --color-surface: 17 24 39;
-  --color-text: 255 255 255;
-  --color-text-muted: 156 163 175;
-  --color-border: 55 65 81;
+  --color-surface-muted: 30 41 59;
+  --color-surface-elevated: 30 41 59;
+  --color-surface-inverse: 255 255 255;
+  --color-page-start: 15 23 42;
+  --color-page-end: 15 23 42;
+
+  --color-border: 71 85 105;
+  --color-text: 241 245 249;
+  --color-text-muted: 148 163 184;
+
+  --color-primary-muted: 59 130 246;
+
+  --color-grid-given: 51 65 85;
+  --color-grid-selected: 59 130 246;
+  --color-grid-path: 30 41 59;
+  --color-grid-target: 96 165 250;
+  --color-grid-anchor: 234 179 8;
+  --color-grid-anchor-stroke: 217 119 6;
+  --color-grid-mistake-fill: 127 29 29;
+  --color-grid-mistake-stroke: 252 165 165;
+  --color-grid-hold-stroke: 248 113 113;
 }
 
 /* Accessibility: High contrast focus indicators (WCAG AA) */

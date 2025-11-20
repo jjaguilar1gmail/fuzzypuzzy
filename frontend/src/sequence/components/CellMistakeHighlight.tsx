@@ -5,6 +5,7 @@
 
 import React, { useEffect, useState } from 'react';
 import type { Position } from '../types';
+import { cssVar } from '@/styles/colorTokens';
 
 interface CellMistakeHighlightProps {
   /** Position of the mistake */
@@ -50,7 +51,7 @@ export const CellMistakeHighlight: React.FC<CellMistakeHighlightProps> = ({
         top: position.row * cellSize,
         width: cellSize,
         height: cellSize,
-        border: '3px solid rgba(239, 68, 68, 0.8)',
+        border: `3px solid ${cssVar('--color-danger', 0.8)}`,
         borderRadius: '4px',
         boxSizing: 'border-box',
         pointerEvents: 'none',
