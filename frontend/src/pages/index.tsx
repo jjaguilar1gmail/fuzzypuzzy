@@ -65,6 +65,7 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedSize, setSelectedSize] = useState<DailySizeId>(() => loadSizePreference());
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+  const [hasSeenTutorial, setHasSeenTutorial] = useState(true);
   const previousSizeRef = useRef<DailySizeId>(selectedSize);
   const [sessionDate] = useState(() => new Date());
   
@@ -158,18 +159,15 @@ export default function HomePage() {
       return;
     }
     try {
-      const hasSeenTutorial = window.localStorage.getItem(TUTORIAL_SEEN_KEY);
-      if (!hasSeenTutorial) {
-        setIsTutorialOpen(true);
-      }
+      const seen = window.localStorage.getItem(TUTORIAL_SEEN_KEY) === 'true';
+      setHasSeenTutorial(seen);
     } catch (err) {
       console.warn('Unable to read tutorial preference', err);
     }
   }, []);
 
-  const openTutorial = () => setIsTutorialOpen(true);
-  const closeTutorial = () => {
-    setIsTutorialOpen(false);
+  const markTutorialSeen = useCallback(() => {
+    setHasSeenTutorial(true);
     if (typeof window !== 'undefined') {
       try {
         window.localStorage.setItem(TUTORIAL_SEEN_KEY, 'true');
@@ -177,6 +175,18 @@ export default function HomePage() {
         console.warn('Unable to save tutorial preference', err);
       }
     }
+  }, []);
+
+  const openTutorial = () => {
+    setIsTutorialOpen(true);
+    if (!hasSeenTutorial) {
+      markTutorialSeen();
+    }
+  };
+
+  const closeTutorial = () => {
+    setIsTutorialOpen(false);
+    markTutorialSeen();
   };
 
   // Auto-save on state changes
@@ -230,14 +240,21 @@ export default function HomePage() {
           >
             Number Flow
           </h1>
-          <button
-            type="button"
-            onClick={openTutorial}
-            aria-label="Open how to play tutorial"
-            className="absolute right-0 inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white/70 text-lg font-bold text-slate-900 shadow-sm transition hover:bg-white hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
-          >
-            ?
-          </button>
+          <div className="absolute right-0">
+            <button
+              type="button"
+              onClick={openTutorial}
+              aria-label="Open how to play tutorial"
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white/70 text-lg font-bold text-slate-900 shadow-sm transition hover:bg-white hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+            >
+              ?
+              {!hasSeenTutorial && (
+                <span className="pointer-events-none absolute -top-1 -right-1 rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none text-white shadow-sm">
+                  New
+                </span>
+              )}
+            </button>
+          </div>
           {/* <SettingsMenu /> */}
         </div>
 

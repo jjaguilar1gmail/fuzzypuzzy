@@ -214,17 +214,11 @@ export function TutorialSplash({ isOpen, onClose }: TutorialSplashProps) {
                 <div className="grid gap-3 md:grid-cols-2">
                   <TutorialCard
                     title="Welcome to Number Flow"
-                    punchline=""
+                    punchline="Fill every square in order."
                     className="md:col-span-2"
                   >
-                    <div className="flex flex-col gap-4 md:flex-row md:items-center">
+                    <div className="flex flex-col gap-2 md:flex-row md:items-center">
                       <div className="flex-1">
-                        <p
-                          id="tutorial-heading"
-                          className="text-2xl font-extrabold text-slate-900"
-                        >
-                          Fill every square in order.
-                        </p>
                         <p className="text-base text-slate-700">
                           Tap any filled number, place the next value in a neighbor square (diagonals count) so the chain never breaks.
                         </p>
