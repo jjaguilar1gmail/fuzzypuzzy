@@ -93,6 +93,7 @@ const GuidedGrid = memo(function GuidedGrid() {
   const reopenCompletionSummary = useGameStore(
     (store) => store.reopenCompletionSummary
   );
+  const interactionsLocked = isComplete;
 
   // Sync sequence state with game store
   useEffect(() => {
@@ -234,6 +235,7 @@ const GuidedGrid = memo(function GuidedGrid() {
     e: React.PointerEvent<SVGRectElement>,
     cell: (typeof board)[number][number]
   ) => {
+    if (interactionsLocked) return;
     if (cell.value !== null && !cell.given) {
       e.preventDefault();
       startHold(cell.position);
@@ -256,6 +258,7 @@ const GuidedGrid = memo(function GuidedGrid() {
   }, [board]);
 
   const handleCellClick = (row: number, col: number) => {
+    if (interactionsLocked) return;
     if (skipNextClickRef.current) {
       skipNextClickRef.current = false;
       return;
@@ -275,6 +278,19 @@ const GuidedGrid = memo(function GuidedGrid() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent, row: number, col: number) => {
+    if (interactionsLocked) {
+      if (
+        e.key === 'Enter' ||
+        e.key === ' ' ||
+        e.key === 'Backspace' ||
+        e.key === 'Delete' ||
+        (e.key === 'z' && (e.ctrlKey || e.metaKey)) ||
+        (e.key === 'y' && (e.ctrlKey || e.metaKey))
+      ) {
+        e.preventDefault();
+      }
+      return;
+    }
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       handleCellClick(row, col);
@@ -611,7 +627,8 @@ const GuidedGrid = memo(function GuidedGrid() {
       <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
         <button
           onClick={() => toggleGuide(!state.guideEnabled)}
-          className={`px-4 py-2 rounded-md font-medium transition-colors border ${
+          disabled={interactionsLocked}
+          className={`px-4 py-2 rounded-md font-medium transition-colors border disabled:cursor-not-allowed disabled:opacity-60 ${
             state.guideEnabled
               ? 'border-primary bg-primary text-primary-foreground hover:bg-primary-strong'
               : 'border-border bg-surface-muted text-copy hover:bg-surface'
@@ -622,7 +639,7 @@ const GuidedGrid = memo(function GuidedGrid() {
         </button>
         <button
           onClick={undo}
-          disabled={!canUndo}
+          disabled={interactionsLocked || !canUndo}
           className="px-4 py-2 border border-border bg-surface-muted text-copy hover:bg-surface disabled:bg-disabled disabled:text-disabled-text disabled:border-disabled-border disabled:opacity-60 rounded-md font-medium transition-colors"
           aria-label="Undo last move"
         >
@@ -630,7 +647,7 @@ const GuidedGrid = memo(function GuidedGrid() {
         </button>
         <button
           onClick={redo}
-          disabled={!canRedo}
+          disabled={interactionsLocked || !canRedo}
           className="px-4 py-2 border border-border bg-surface-muted text-copy hover:bg-surface disabled:bg-disabled disabled:text-disabled-text disabled:border-disabled-border disabled:opacity-60 rounded-md font-medium transition-colors"
           aria-label="Redo last move"
         >
@@ -639,7 +656,7 @@ const GuidedGrid = memo(function GuidedGrid() {
         <button
           type="button"
           onClick={requestBoardClear}
-          disabled={!hasPlayerEntries}
+          disabled={interactionsLocked || !hasPlayerEntries}
           className="px-4 py-2 border border-border bg-surface-muted text-copy hover:bg-surface disabled:bg-disabled disabled:text-disabled-text disabled:border-disabled-border disabled:opacity-60 rounded-md font-medium transition-colors text-sm"
           aria-label="Clear all filled cells and start over"
         >
