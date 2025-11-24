@@ -19,6 +19,7 @@ export const numericSymbolSet: SymbolSet = {
       ? cellSize * GIVEN_FONT_RATIO
       : cellSize * PLAYER_FONT_RATIO;
 
+    let indicator: ReactNode = null;
     return (
       <motion.text
         x={center}

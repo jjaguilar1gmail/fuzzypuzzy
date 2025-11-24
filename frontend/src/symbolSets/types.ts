@@ -8,6 +8,8 @@ export type CellSymbolProps = {
   isEmpty: boolean;
   isGuideTarget: boolean;
   cellSize: number;
+  isChainStart: boolean;
+  isChainEnd: boolean;
 };
 
 export type SymbolSet = {

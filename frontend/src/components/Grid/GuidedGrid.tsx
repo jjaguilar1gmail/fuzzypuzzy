@@ -5,6 +5,7 @@ import { useGuidedSequenceFlow } from '@/sequence';
 import type { Position, MistakeEvent, SequenceDirection } from '@/sequence/types';
 import { cssVar, gridPalette, statusPalette } from '@/styles/colorTokens';
 import { numericSymbolSet } from '@/symbolSets/numericSymbolSet';
+import { deriveSymbolRange } from '@/symbolSets/valueRange';
 
 const HOLD_DURATION_MS = 650;
 const BOARD_PADDING = 8;
@@ -95,6 +96,12 @@ const GuidedGrid = memo(function GuidedGrid() {
     (store) => store.reopenCompletionSummary
   );
   const interactionsLocked = isComplete;
+
+  const boardSize = board.length || puzzle?.size || 0;
+  const { startValue, endValue } = useMemo(
+    () => deriveSymbolRange(puzzle, boardSize),
+    [puzzle, boardSize]
+  );
 
   // Sync sequence state with game store
   useEffect(() => {
@@ -457,6 +464,33 @@ const GuidedGrid = memo(function GuidedGrid() {
             const holdProgress = isHoldTarget ? holdIndicator.progress : 0;
             const holdRadius = cellSize / 2 - HOLD_RING_MARGIN;
             const holdCircumference = 2 * Math.PI * holdRadius;
+            const isChainStart = cell.value === startValue;
+            const isChainEnd = cell.value === endValue;
+            const chainRole = isChainStart ? 'start' : isChainEnd ? 'end' : null;
+            let badgePath: string | null = null;
+            if (chainRole === 'start') {
+              const badgeInset = 2;
+              const badgeSize = cellSize * 0.34;
+              const startX = x + badgeInset;
+              const startY = y + badgeInset;
+              const cornerRadius = 3;
+              badgePath = `M ${startX} ${startY + cornerRadius} Q ${startX} ${startY} ${
+                startX + cornerRadius
+              } ${startY} L ${startX + badgeSize} ${startY} L ${startX} ${
+                startY + badgeSize
+              } Z`;
+            } else if (chainRole === 'end') {
+              const badgeInset = 2;
+              const badgeSize = cellSize * 0.34;
+              const startX = x + cellSize - badgeInset;
+              const startY = y + badgeInset;
+              const cornerRadius = 3;
+              badgePath = `M ${startX} ${startY + cornerRadius} Q ${startX} ${startY} ${
+                startX - cornerRadius
+              } ${startY} L ${startX - badgeSize} ${startY} L ${startX} ${
+                startY + badgeSize
+              } Z`;
+            }
             const symbolProps = {
               value: cell.value,
               isGiven,
@@ -465,6 +499,8 @@ const GuidedGrid = memo(function GuidedGrid() {
               isEmpty: !hasValue,
               isGuideTarget: isHighlighted,
               cellSize,
+              isChainStart,
+              isChainEnd,
             };
             const symbolElement = numericSymbolSet.renderCell(symbolProps);
 
@@ -530,6 +566,21 @@ const GuidedGrid = memo(function GuidedGrid() {
                     rx={3}
                     pointerEvents="none"
                     opacity={0.8}
+                  />
+                )}
+
+                {/* Chain baseline overlay */}
+                {badgePath && (
+                  <path
+                    d={badgePath}
+                    fill={
+                      chainRole === 'start'
+                        ? statusPalette.primary
+                        : statusPalette.success
+                    }
+                    fillOpacity={0.75}
+                    stroke="none"
+                    pointerEvents="none"
                   />
                 )}
 
