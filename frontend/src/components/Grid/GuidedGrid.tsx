@@ -4,6 +4,7 @@ import { memo, useMemo, useEffect, useState, useRef } from 'react';
 import { useGuidedSequenceFlow } from '@/sequence';
 import type { Position, MistakeEvent, SequenceDirection } from '@/sequence/types';
 import { cssVar, gridPalette, statusPalette } from '@/styles/colorTokens';
+import { numericSymbolSet } from '@/symbolSets/numericSymbolSet';
 
 const HOLD_DURATION_MS = 650;
 const BOARD_PADDING = 8;
@@ -456,11 +457,20 @@ const GuidedGrid = memo(function GuidedGrid() {
             const holdProgress = isHoldTarget ? holdIndicator.progress : 0;
             const holdRadius = cellSize / 2 - HOLD_RING_MARGIN;
             const holdCircumference = 2 * Math.PI * holdRadius;
+            const symbolProps = {
+              value: cell.value,
+              isGiven,
+              isSelected: isAnchor,
+              isError: isMistake,
+              isEmpty: !hasValue,
+              isGuideTarget: isHighlighted,
+              cellSize,
+            };
+            const symbolElement = numericSymbolSet.renderCell(symbolProps);
 
             // Determine fill color based on cell state
             let fillColor = gridPalette.cellSurface;
             if (isAnchor) fillColor = gridPalette.anchorFill;
-            else if (isHighlighted) fillColor = gridPalette.target;
             else if (isMistake) fillColor = gridPalette.mistakeFill;
             else if (isGiven) fillColor = gridPalette.given;
 
@@ -470,9 +480,6 @@ const GuidedGrid = memo(function GuidedGrid() {
             if (isAnchor) {
               strokeColor = gridPalette.anchorStroke;
               strokeWidth = 3;
-            } else if (isHighlighted) {
-              strokeColor = statusPalette.primary;
-              strokeWidth = 2;
             } else if (isMistake) {
               strokeColor = gridPalette.mistakeStroke;
               strokeWidth = 2;
@@ -527,22 +534,33 @@ const GuidedGrid = memo(function GuidedGrid() {
                 )}
 
                 {/* Cell value */}
-                {hasValue && (
-                  <motion.text
-                    x={x + cellSize / 2}
-                    y={y + cellSize / 2}
-                    textAnchor="middle"
-                    dominantBaseline="central"
-                    fontSize={isGiven ? 24 : 22}
-                    fontWeight={isGiven ? 'bold' : 'normal'}
-                    fill={isGiven ? statusPalette.text : statusPalette.primary}
+                {symbolElement && (
+                  <g transform={`translate(${x} ${y})`}>{symbolElement}</g>
+                )}
+
+                {/* Guide highlight overlay */}
+                {isHighlighted && !hasValue && state.guideEnabled && (
+                  <motion.rect
+                    x={x + 3}
+                    y={y + 3}
+                    width={cellSize - 6}
+                    height={cellSize - 6}
+                    rx={3}
+                    fill={cssVar('--color-grid-target', 0.35)}
+                    stroke={statusPalette.primary}
+                    strokeWidth={1.5}
                     pointerEvents="none"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ duration: 0.15, type: 'spring' }}
-                  >
-                    {cell.value}
-                  </motion.text>
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{
+                      opacity: [0.5, 0.9, 0.5],
+                      scale: [0.98, 1, 0.98],
+                    }}
+                    transition={{
+                      duration: 1.2,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }}
+                  />
                 )}
 
                 {/* Highlight pulse for anchor */}

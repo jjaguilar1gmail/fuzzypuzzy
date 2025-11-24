@@ -2,6 +2,7 @@ import { useGameStore } from '@/state/gameStore';
 import { motion } from 'framer-motion';
 import { memo, useMemo, useState, useEffect } from 'react';
 import { gridPalette, statusPalette } from '@/styles/colorTokens';
+import { numericSymbolSet } from '@/symbolSets/numericSymbolSet';
 
 const GRID_SAFE_MARGIN = 32;
 
@@ -69,6 +70,16 @@ const Grid = memo(function Grid() {
             selectedCell?.row === r && selectedCell?.col === c;
           const isGiven = cell.given;
           const hasValue = cell.value !== null;
+          const symbolProps = {
+            value: cell.value,
+            isGiven,
+            isSelected,
+            isError: false,
+            isEmpty: !hasValue,
+            isGuideTarget: false,
+            cellSize,
+          };
+          const symbolElement = numericSymbolSet.renderCell(symbolProps);
 
           const fillColor = isGiven
             ? gridPalette.given
@@ -109,22 +120,8 @@ const Grid = memo(function Grid() {
               />
 
               {/* Cell value */}
-              {hasValue && (
-                <motion.text
-                  x={x + cellSize / 2}
-                  y={y + cellSize / 2}
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  fontSize={isGiven ? 24 : 22}
-                  fontWeight={isGiven ? 'bold' : 'normal'}
-                    fill={isGiven ? statusPalette.text : statusPalette.primary}
-                  pointerEvents="none"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ duration: 0.15, type: 'spring' }}
-                >
-                  {cell.value}
-                </motion.text>
+              {symbolElement && (
+                <g transform={`translate(${x} ${y})`}>{symbolElement}</g>
               )}
 
               {/* Candidate marks */}
