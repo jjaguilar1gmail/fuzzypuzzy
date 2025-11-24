@@ -30,3 +30,16 @@ export const statusPalette = {
   textMuted: cssVar('--color-text-muted'),
   border: cssVar('--color-border'),
 };
+
+export const paletteB = [
+  cssVar('--color-symbol-b0'),
+  cssVar('--color-symbol-b1'),
+  cssVar('--color-symbol-b2'),
+  cssVar('--color-symbol-b3'),
+  cssVar('--color-symbol-b4'),
+];
+
+export const symbolAccent = {
+  anchorHighlight: cssVar('--color-symbol-anchor-highlight'),
+  anchorHighlightStroke: cssVar('--color-symbol-anchor-highlight-stroke'),
+};

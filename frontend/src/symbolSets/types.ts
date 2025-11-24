@@ -10,6 +10,14 @@ export type CellSymbolProps = {
   cellSize: number;
   isChainStart: boolean;
   isChainEnd: boolean;
+  linearIndex?: number;
+  totalCells?: number;
+};
+
+export type SymbolSetPreviewProps = {
+  value: number;
+  totalCells: number;
+  cellSize: number;
 };
 
 export type SymbolSet = {
@@ -17,4 +25,5 @@ export type SymbolSet = {
   name: string;
   kind?: 'numeric' | 'shape' | 'hybrid';
   renderCell: (props: CellSymbolProps) => ReactNode;
+  renderPreview?: (props: SymbolSetPreviewProps) => ReactNode;
 };

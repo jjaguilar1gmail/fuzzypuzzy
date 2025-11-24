@@ -2,10 +2,12 @@ import { useGameStore } from '@/state/gameStore';
 import { motion } from 'framer-motion';
 import { memo, useMemo, useState, useEffect } from 'react';
 import { gridPalette, statusPalette } from '@/styles/colorTokens';
-import { numericSymbolSet } from '@/symbolSets/numericSymbolSet';
 import { deriveSymbolRange } from '@/symbolSets/valueRange';
+import { getDefaultSymbolSet } from '@/symbolSets/registry';
 
 const GRID_SAFE_MARGIN = 32;
+
+const activeSymbolSet = getDefaultSymbolSet();
 
 const Grid = memo(function Grid() {
   const grid = useGameStore((state) => state.grid);
@@ -41,6 +43,7 @@ const Grid = memo(function Grid() {
   if (!grid || !dimensions) return null;
 
   const { cellSize, gap, totalSize } = dimensions;
+  const totalCells = gridSize * gridSize;
 
   const baseRenderSize = totalSize;
   const availableWidth =
@@ -104,6 +107,7 @@ const Grid = memo(function Grid() {
               startY + badgeSize
             } Z`;
           }
+          const linearIndex = cell.value !== null ? cell.value - 1 : undefined;
           const symbolProps = {
             value: cell.value,
             isGiven,
@@ -114,8 +118,11 @@ const Grid = memo(function Grid() {
             cellSize,
             isChainStart,
             isChainEnd,
+            linearIndex,
+            totalCells,
           };
-          const symbolElement = numericSymbolSet.renderCell(symbolProps);
+          const symbolElement = activeSymbolSet.renderCell(symbolProps);
+          const showNeutralBadges = activeSymbolSet.id === 'paletteB-shapes';
 
           const fillColor = isGiven
             ? gridPalette.given
@@ -155,12 +162,33 @@ const Grid = memo(function Grid() {
                 whileTap={{ scale: 0.95 }}
               />
 
+              {/* Cell value */}
+              {symbolElement && (
+                <g transform={`translate(${x} ${y})`}>{symbolElement}</g>
+              )}
+
+              {/* Given underline */}
+              {isGiven && (
+                <rect
+                  x={x + 6}
+                  y={y + cellSize - 4}
+                  width={cellSize - 12}
+                  height={2}
+                  fill={statusPalette.text}
+                  rx={1}
+                  pointerEvents="none"
+                  opacity={0.85}
+                />
+              )}
+
               {/* Chain baseline overlay */}
               {badgePath && (
                 <path
                   d={badgePath}
                   fill={
-                    chainRole === 'start'
+                    showNeutralBadges
+                      ? 'rgb(var(--color-text))'
+                      : chainRole === 'start'
                       ? statusPalette.primary
                       : statusPalette.success
                   }
@@ -168,11 +196,6 @@ const Grid = memo(function Grid() {
                   stroke="none"
                   pointerEvents="none"
                 />
-              )}
-
-              {/* Cell value */}
-              {symbolElement && (
-                <g transform={`translate(${x} ${y})`}>{symbolElement}</g>
               )}
 
               {/* Candidate marks */}
