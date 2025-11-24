@@ -616,26 +616,17 @@ const GuidedGrid = memo(function GuidedGrid() {
 
                 {/* Highlight pulse for anchor */}
                 {isAnchor && (
-                  <motion.rect
-                    x={x}
-                    y={y}
-                    width={cellSize}
-                    height={cellSize}
+                  <rect
+                    x={x + 1.5}
+                    y={y + 1.5}
+                    width={cellSize - 3}
+                    height={cellSize - 3}
                     fill="none"
                     stroke={gridPalette.anchorStroke}
                     strokeWidth={2}
-                    rx={4}
+                    rx={5}
                     pointerEvents="none"
-                    initial={{ opacity: 0.5, scale: 1 }}
-                    animate={{
-                      opacity: [0.5, 1, 0.5],
-                      scale: [1, 1.05, 1],
-                    }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                    }}
+                    opacity={0.85}
                   />
                 )}
 
