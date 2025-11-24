@@ -5,6 +5,7 @@ import { useGuidedSequenceFlow } from '@/sequence';
 import type { Position, MistakeEvent, SequenceDirection } from '@/sequence/types';
 import { cssVar, gridPalette, statusPalette } from '@/styles/colorTokens';
 import { numericSymbolSet } from '@/symbolSets/numericSymbolSet';
+import { deriveSymbolRange } from '@/symbolSets/valueRange';
 
 const HOLD_DURATION_MS = 650;
 const BOARD_PADDING = 8;
@@ -95,6 +96,12 @@ const GuidedGrid = memo(function GuidedGrid() {
     (store) => store.reopenCompletionSummary
   );
   const interactionsLocked = isComplete;
+
+  const boardSize = board.length || puzzle?.size || 0;
+  const { startValue, endValue } = useMemo(
+    () => deriveSymbolRange(puzzle, boardSize),
+    [puzzle, boardSize]
+  );
 
   // Sync sequence state with game store
   useEffect(() => {
@@ -457,6 +464,33 @@ const GuidedGrid = memo(function GuidedGrid() {
             const holdProgress = isHoldTarget ? holdIndicator.progress : 0;
             const holdRadius = cellSize / 2 - HOLD_RING_MARGIN;
             const holdCircumference = 2 * Math.PI * holdRadius;
+            const isChainStart = cell.value === startValue;
+            const isChainEnd = cell.value === endValue;
+            const chainRole = isChainStart ? 'start' : isChainEnd ? 'end' : null;
+            let badgePath: string | null = null;
+            if (chainRole === 'start') {
+              const badgeInset = 2;
+              const badgeSize = cellSize * 0.34;
+              const startX = x + badgeInset;
+              const startY = y + badgeInset;
+              const cornerRadius = 3;
+              badgePath = `M ${startX} ${startY + cornerRadius} Q ${startX} ${startY} ${
+                startX + cornerRadius
+              } ${startY} L ${startX + badgeSize} ${startY} L ${startX} ${
+                startY + badgeSize
+              } Z`;
+            } else if (chainRole === 'end') {
+              const badgeInset = 2;
+              const badgeSize = cellSize * 0.34;
+              const startX = x + cellSize - badgeInset;
+              const startY = y + badgeInset;
+              const cornerRadius = 3;
+              badgePath = `M ${startX} ${startY + cornerRadius} Q ${startX} ${startY} ${
+                startX - cornerRadius
+              } ${startY} L ${startX - badgeSize} ${startY} L ${startX} ${
+                startY + badgeSize
+              } Z`;
+            }
             const symbolProps = {
               value: cell.value,
               isGiven,
@@ -465,6 +499,8 @@ const GuidedGrid = memo(function GuidedGrid() {
               isEmpty: !hasValue,
               isGuideTarget: isHighlighted,
               cellSize,
+              isChainStart,
+              isChainEnd,
             };
             const symbolElement = numericSymbolSet.renderCell(symbolProps);
 
@@ -533,6 +569,21 @@ const GuidedGrid = memo(function GuidedGrid() {
                   />
                 )}
 
+                {/* Chain baseline overlay */}
+                {badgePath && (
+                  <path
+                    d={badgePath}
+                    fill={
+                      chainRole === 'start'
+                        ? statusPalette.primary
+                        : statusPalette.success
+                    }
+                    fillOpacity={0.75}
+                    stroke="none"
+                    pointerEvents="none"
+                  />
+                )}
+
                 {/* Cell value */}
                 {symbolElement && (
                   <g transform={`translate(${x} ${y})`}>{symbolElement}</g>
@@ -565,26 +616,17 @@ const GuidedGrid = memo(function GuidedGrid() {
 
                 {/* Highlight pulse for anchor */}
                 {isAnchor && (
-                  <motion.rect
-                    x={x}
-                    y={y}
-                    width={cellSize}
-                    height={cellSize}
+                  <rect
+                    x={x + 1.5}
+                    y={y + 1.5}
+                    width={cellSize - 3}
+                    height={cellSize - 3}
                     fill="none"
                     stroke={gridPalette.anchorStroke}
                     strokeWidth={2}
-                    rx={4}
+                    rx={5}
                     pointerEvents="none"
-                    initial={{ opacity: 0.5, scale: 1 }}
-                    animate={{
-                      opacity: [0.5, 1, 0.5],
-                      scale: [1, 1.05, 1],
-                    }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                    }}
+                    opacity={0.85}
                   />
                 )}
 

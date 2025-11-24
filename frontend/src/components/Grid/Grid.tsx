@@ -3,11 +3,14 @@ import { motion } from 'framer-motion';
 import { memo, useMemo, useState, useEffect } from 'react';
 import { gridPalette, statusPalette } from '@/styles/colorTokens';
 import { numericSymbolSet } from '@/symbolSets/numericSymbolSet';
+import { deriveSymbolRange } from '@/symbolSets/valueRange';
 
 const GRID_SAFE_MARGIN = 32;
 
 const Grid = memo(function Grid() {
   const grid = useGameStore((state) => state.grid);
+  const gridSize = grid?.size ?? 0;
+  const puzzle = useGameStore((state) => state.puzzle);
   const selectedCell = useGameStore((state) => state.selectedCell);
   const selectCell = useGameStore((state) => state.selectCell);
 
@@ -24,12 +27,16 @@ const Grid = memo(function Grid() {
 
   // Memoize grid dimensions to prevent recalculation
   const dimensions = useMemo(() => {
-    if (!grid) return null;
+    if (!gridSize) return null;
     const cellSize = 60;
     const gap = 2;
-    const totalSize = grid.size * cellSize + (grid.size - 1) * gap;
+    const totalSize = gridSize * cellSize + (gridSize - 1) * gap;
     return { cellSize, gap, totalSize };
-  }, [grid?.size]);
+  }, [gridSize]);
+
+  const { startValue, endValue } = useMemo(() => {
+    return deriveSymbolRange(puzzle, gridSize);
+  }, [puzzle, gridSize]);
 
   if (!grid || !dimensions) return null;
 
@@ -70,6 +77,33 @@ const Grid = memo(function Grid() {
             selectedCell?.row === r && selectedCell?.col === c;
           const isGiven = cell.given;
           const hasValue = cell.value !== null;
+          const isChainStart = cell.value === startValue;
+          const isChainEnd = cell.value === endValue;
+          const chainRole = isChainStart ? 'start' : isChainEnd ? 'end' : null;
+          let badgePath: string | null = null;
+          if (chainRole === 'start') {
+            const badgeInset = 2;
+            const badgeSize = cellSize * 0.34;
+            const startX = x + badgeInset;
+            const startY = y + badgeInset;
+            const cornerRadius = 3;
+            badgePath = `M ${startX} ${startY + cornerRadius} Q ${startX} ${startY} ${
+              startX + cornerRadius
+            } ${startY} L ${startX + badgeSize} ${startY} L ${startX} ${
+              startY + badgeSize
+            } Z`;
+          } else if (chainRole === 'end') {
+            const badgeInset = 2;
+            const badgeSize = cellSize * 0.34;
+            const startX = x + cellSize - badgeInset;
+            const startY = y + badgeInset;
+            const cornerRadius = 3;
+            badgePath = `M ${startX} ${startY + cornerRadius} Q ${startX} ${startY} ${
+              startX - cornerRadius
+            } ${startY} L ${startX - badgeSize} ${startY} L ${startX} ${
+              startY + badgeSize
+            } Z`;
+          }
           const symbolProps = {
             value: cell.value,
             isGiven,
@@ -78,6 +112,8 @@ const Grid = memo(function Grid() {
             isEmpty: !hasValue,
             isGuideTarget: false,
             cellSize,
+            isChainStart,
+            isChainEnd,
           };
           const symbolElement = numericSymbolSet.renderCell(symbolProps);
 
@@ -118,6 +154,21 @@ const Grid = memo(function Grid() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               />
+
+              {/* Chain baseline overlay */}
+              {badgePath && (
+                <path
+                  d={badgePath}
+                  fill={
+                    chainRole === 'start'
+                      ? statusPalette.primary
+                      : statusPalette.success
+                  }
+                  fillOpacity={0.75}
+                  stroke="none"
+                  pointerEvents="none"
+                />
+              )}
 
               {/* Cell value */}
               {symbolElement && (
