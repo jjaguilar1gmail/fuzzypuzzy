@@ -9,6 +9,7 @@ const GRID_SAFE_MARGIN = 32;
 
 const Grid = memo(function Grid() {
   const grid = useGameStore((state) => state.grid);
+  const gridSize = grid?.size ?? 0;
   const puzzle = useGameStore((state) => state.puzzle);
   const selectedCell = useGameStore((state) => state.selectedCell);
   const selectCell = useGameStore((state) => state.selectCell);
@@ -26,16 +27,16 @@ const Grid = memo(function Grid() {
 
   // Memoize grid dimensions to prevent recalculation
   const dimensions = useMemo(() => {
-    if (!grid) return null;
+    if (!gridSize) return null;
     const cellSize = 60;
     const gap = 2;
-    const totalSize = grid.size * cellSize + (grid.size - 1) * gap;
+    const totalSize = gridSize * cellSize + (gridSize - 1) * gap;
     return { cellSize, gap, totalSize };
-  }, [grid?.size]);
+  }, [gridSize]);
 
   const { startValue, endValue } = useMemo(() => {
-    return deriveSymbolRange(puzzle, grid?.size ?? 0);
-  }, [puzzle, grid?.size]);
+    return deriveSymbolRange(puzzle, gridSize);
+  }, [puzzle, gridSize]);
 
   if (!grid || !dimensions) return null;
 
