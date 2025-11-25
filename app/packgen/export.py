@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from generate.models import GeneratedPuzzle
 
@@ -58,6 +58,20 @@ def export_puzzle(
         puzzle_json['solution'] = solution
     else:
         puzzle_json['solution'] = None
+
+    metrics_block = {
+        'timings_ms': puzzle.timings_ms,
+        'solver': puzzle.solver_metrics,
+    }
+
+    if puzzle.structural_metrics:
+        metrics_block['structure'] = puzzle.structural_metrics
+    if puzzle.mask_metrics:
+        metrics_block['mask'] = puzzle.mask_metrics
+    if puzzle.repair_metrics:
+        metrics_block['repair'] = puzzle.repair_metrics
+
+    puzzle_json['metrics'] = metrics_block
     
     # Write to file
     output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -73,6 +87,7 @@ def export_pack_metadata(
     puzzle_ids: List[str],
     difficulty_counts: Dict[str, int],
     size_distribution: Dict[str, int],
+    metrics: Optional[dict] = None,
 ):
     """Export pack metadata to JSON format matching contract schema.
     
@@ -84,6 +99,7 @@ def export_pack_metadata(
         puzzle_ids: List of puzzle IDs in this pack
         difficulty_counts: Count per difficulty level
         size_distribution: Count per grid size
+        metrics: Optional aggregate metrics for the pack
     """
     metadata = {
         'schema_version': '1.0',
@@ -97,6 +113,8 @@ def export_pack_metadata(
     
     if description:
         metadata['description'] = description
+    if metrics:
+        metadata['metrics'] = metrics
     
     # Write to file
     output_file.parent.mkdir(parents=True, exist_ok=True)

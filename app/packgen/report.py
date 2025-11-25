@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 from dataclasses import dataclass, asdict
 
 
@@ -18,6 +18,7 @@ class GenerationReport:
     size_breakdown: Dict[str, int]
     average_generation_time_ms: float
     total_time_sec: float
+    metrics: Optional[Dict[str, dict]] = None
     
     @property
     def success_rate(self) -> float:
@@ -75,6 +76,13 @@ def write_report(report: GenerationReport, output_file: Path, format: str = 'jso
             lines.append("Size Distribution:")
             for size, count in report.size_breakdown.items():
                 lines.append(f"  {size}×{size}: {count}")
+            lines.append("")
+        
+        if report.metrics:
+            lines.append("Aggregate Metrics:")
+            for metric_name, stats in report.metrics.items():
+                lines.append(f"  {metric_name}: {stats}")
+            lines.append("")
         
         with open(output_file, 'w') as f:
             f.write('\n'.join(lines))

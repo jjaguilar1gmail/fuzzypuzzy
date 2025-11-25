@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import List, Dict, Tuple
 from datetime import datetime
 import random
+from statistics import mean
 
 from generate.generator import Generator
 from generate.models import GeneratedPuzzle
@@ -65,6 +66,63 @@ def _update_packs_index(
     index_file.parent.mkdir(parents=True, exist_ok=True)
     with open(index_file, 'w') as f:
         json.dump(packs, f, indent=2)
+
+
+def _summarize_series(values: List[float]) -> Dict[str, float] | None:
+    """Return aggregate statistics for a numeric series."""
+    cleaned = [v for v in values if v is not None]
+    if not cleaned:
+        return None
+    return {
+        'avg': round(mean(cleaned), 2),
+        'min': round(min(cleaned), 2),
+        'max': round(max(cleaned), 2),
+    }
+
+
+def _build_pack_metrics(puzzles: List[GeneratedPuzzle]) -> Dict[str, dict] | None:
+    """Compute aggregate metrics for the pack."""
+    if not puzzles:
+        return None
+    
+    metrics: Dict[str, dict] = {}
+    
+    generation_times = [
+        puzzle.timings_ms.get('generation')
+        for puzzle in puzzles
+        if puzzle.timings_ms
+    ]
+    clue_densities = [
+        puzzle.solver_metrics.get('clue_density')
+        for puzzle in puzzles
+        if puzzle.solver_metrics
+    ]
+    anchor_gap_avgs = [
+        puzzle.structural_metrics.get('anchors', {}).get('gaps', {}).get('avg')
+        for puzzle in puzzles
+        if puzzle.structural_metrics
+    ]
+    branching_factors = [
+        puzzle.structural_metrics.get('branching', {}).get('average_branching_factor')
+        for puzzle in puzzles
+        if puzzle.structural_metrics
+    ]
+    
+    time_stats = _summarize_series(generation_times)
+    density_stats = _summarize_series(clue_densities)
+    anchor_gap_stats = _summarize_series(anchor_gap_avgs)
+    branching_stats = _summarize_series(branching_factors)
+    
+    if time_stats:
+        metrics['generation_time_ms'] = time_stats
+    if density_stats:
+        metrics['clue_density'] = density_stats
+    if anchor_gap_stats:
+        metrics['anchor_gap'] = anchor_gap_stats
+    if branching_stats:
+        metrics['branching_factor'] = branching_stats
+    
+    return metrics or None
 
 
 def generate_pack(
@@ -160,6 +218,8 @@ def generate_pack(
                 # Generator.generate_puzzle returns GeneratedPuzzle or None
                 if result is not None and result.uniqueness_verified:
                     success = True
+                    if isinstance(result.timings_ms, dict):
+                        result.timings_ms["generation"] = round(elapsed_ms, 2)
                     generated_puzzles.append((puzzle_id, result, size, difficulty))
                     difficulty_stats[difficulty]['generated'] += 1
                     size_counts[str(size)] += 1
@@ -202,6 +262,9 @@ def generate_pack(
         if count > 0
     }
     
+    puzzle_objects = [result for _, result, _, _ in generated_puzzles]
+    pack_metrics = _build_pack_metrics(puzzle_objects)
+
     # Export pack metadata
     puzzle_ids = [puzzle_id for puzzle_id, _, _, _ in generated_puzzles]
     metadata_file = outdir / "metadata.json"
@@ -213,6 +276,7 @@ def generate_pack(
         puzzle_ids=puzzle_ids,
         difficulty_counts=difficulty_counts,
         size_distribution=size_distribution,
+        metrics=pack_metrics,
     )
     
     # Update packs index.json
@@ -239,6 +303,7 @@ def generate_pack(
         size_breakdown=size_counts,
         average_generation_time_ms=avg_time_ms,
         total_time_sec=0,  # Will be set by CLI
+        metrics=pack_metrics,
     )
     
     return pack_id, report

@@ -14,6 +14,7 @@ from .validator import Validator
 from .models import GenerationConfig, GeneratedPuzzle
 from util.rng import RNG
 from .anchor_policy import get_policy, select_anchors, ANCHOR_KIND_HARD, ANCHOR_KIND_SOFT, ANCHOR_KIND_REPAIR, ANCHOR_KIND_ENDPOINT
+from .metrics import StructuralInputs, build_structural_metrics
 from hidato_io.exporters import ascii_print
 
 def show_current_puzzle(puzzle_size,cells):
@@ -505,15 +506,64 @@ class Generator:
         # Extract givens for metadata
         givens = [(pos.row, pos.col, grid.get_cell(pos).value) 
                  for pos in current_givens]
+        sorted_givens = sorted(givens)
         
         end_time = time.time()
-        
+
+        mask_metrics_block = {
+            "mask_enabled": config.mask_enabled,
+            "mask_pattern_id": mask_pattern_id,
+            "mask_cells_count": len(mask_cells),
+            "mask_density": len(mask_cells) / (size * size) if size > 0 else 0.0,
+            "mask_attempts": mask_attempts,
+        }
+
+        extended_solver_metrics = {
+            **solver_metrics,
+            "path_coverage": path_result.coverage,
+            "path_reason": path_result.reason,
+            "anchor_count": _anchor_metrics.anchor_count,
+            "anchor_hard_count": _anchor_metrics.hard_count,
+            "anchor_soft_count": _anchor_metrics.soft_count,
+            "anchor_repair_count": _anchor_metrics.repair_count,
+            "anchor_endpoint_count": _anchor_metrics.endpoint_count,
+            "anchor_positions": _anchor_metrics.positions,
+            "anchor_policy_name": _anchor_metrics.policy_name,
+            "anchor_selection_reason": _anchor_metrics.anchor_selection_reason,
+            "anchor_min_index_gap_enforced": _anchor_metrics.min_index_gap_enforced,
+            "anchor_adjacency_mode": _anchor_metrics.adjacency_mode,
+            "mask_enabled": mask_metrics_block["mask_enabled"],
+            "mask_pattern_id": mask_metrics_block["mask_pattern_id"],
+            "mask_cells_count": mask_metrics_block["mask_cells_count"],
+            "mask_density": mask_metrics_block["mask_density"],
+            "mask_attempts": mask_metrics_block["mask_attempts"],
+            "structural_repair_used": False,
+            "ambiguity_regions_detected": 0,
+        }
+
+        structural_metrics = build_structural_metrics(
+            StructuralInputs(
+                size=size,
+                givens=sorted_givens,
+                path=path,
+                anchor_positions=_anchor_metrics.positions,
+                solver_metrics=extended_solver_metrics,
+            )
+        )
+
+        timings_ms = {
+            "total": int((end_time - start_time) * 1000),
+            "path_build": path_build_ms,
+            "solve": 0,  # SolverResult doesn't track elapsed_ms currently
+            "uniqueness": 0,  # TODO: track separately
+        }
+
         # Create result (T023: Include mask cells in blocked_cells)
         return GeneratedPuzzle(
             size=size,
             allow_diagonal=allow_diagonal,
             blocked_cells=all_blocked,  # Include mask cells
-            givens=sorted(givens),
+            givens=sorted_givens,
             solution=sorted(solution),
             difficulty_label=assessed_label,  # T019: Use assessed difficulty
             difficulty_score=assessed_score,
@@ -524,36 +574,11 @@ class Generator:
             path_mode=path_mode,
             clue_mode=clue_mode,
             symmetry=symmetry,
-            timings_ms={
-                "total": int((end_time - start_time) * 1000),
-                "path_build": path_build_ms,
-                "solve": 0,  # SolverResult doesn't track elapsed_ms currently
-                "uniqueness": 0,  # TODO: track separately
-            },
-            solver_metrics={
-                **solver_metrics,  # T019: Include computed metrics
-                "path_coverage": path_result.coverage,
-                "path_reason": path_result.reason,
-                # T054: Include anchor metrics
-                "anchor_count": _anchor_metrics.anchor_count,
-                "anchor_hard_count": _anchor_metrics.hard_count,
-                "anchor_soft_count": _anchor_metrics.soft_count,
-                "anchor_repair_count": _anchor_metrics.repair_count,
-                "anchor_endpoint_count": _anchor_metrics.endpoint_count,
-                "anchor_positions": _anchor_metrics.positions,
-                "anchor_policy_name": _anchor_metrics.policy_name,
-                "anchor_selection_reason": _anchor_metrics.anchor_selection_reason,
-                "anchor_min_index_gap_enforced": _anchor_metrics.min_index_gap_enforced,
-                "anchor_adjacency_mode": _anchor_metrics.adjacency_mode,
-                # T005/T010: Mask & repair metrics (populated from mask generation)
-                "mask_enabled": config.mask_enabled,
-                "mask_pattern_id": mask_pattern_id,
-                "mask_cells_count": len(mask_cells),
-                "mask_density": len(mask_cells) / (size * size) if size > 0 else 0.0,
-                "mask_attempts": mask_attempts,
-                "structural_repair_used": False,
-                "ambiguity_regions_detected": 0,
-            },
+            timings_ms=timings_ms,
+            solver_metrics=extended_solver_metrics,
+            mask_metrics=mask_metrics_block,
+            repair_metrics=None,
+            structural_metrics=structural_metrics,
         )
     
     @staticmethod
