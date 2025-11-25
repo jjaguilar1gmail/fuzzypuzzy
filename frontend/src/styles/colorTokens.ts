@@ -38,8 +38,3 @@ export const paletteB = [
   cssVar('--color-symbol-b3'),
   cssVar('--color-symbol-b4'),
 ];
-
-export const symbolAccent = {
-  anchorHighlight: cssVar('--color-symbol-anchor-highlight'),
-  anchorHighlightStroke: cssVar('--color-symbol-anchor-highlight-stroke'),
-};

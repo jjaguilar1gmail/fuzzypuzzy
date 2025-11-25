@@ -42,8 +42,6 @@
   --color-symbol-b2: 248 154 84;
   --color-symbol-b3: 177 93 228;
   --color-symbol-b4: 146 186 64;
-  --color-symbol-anchor-highlight: 255 207 92;
-  --color-symbol-anchor-highlight-stroke: 255 145 35;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -81,8 +79,6 @@
     --color-symbol-b2: 237 131 52;
     --color-symbol-b3: 149 63 199;
     --color-symbol-b4: 122 156 52;
-    --color-symbol-anchor-highlight: 255 219 120;
-    --color-symbol-anchor-highlight-stroke: 255 180 61;
   }
 }
 
@@ -122,8 +118,6 @@
   --color-symbol-b2: 237 131 52;
   --color-symbol-b3: 149 63 199;
   --color-symbol-b4: 122 156 52;
-  --color-symbol-anchor-highlight: 255 219 120;
-  --color-symbol-anchor-highlight-stroke: 255 180 61;
 }
 
 /* Accessibility: High contrast focus indicators (WCAG AA) */

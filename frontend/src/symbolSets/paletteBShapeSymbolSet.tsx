@@ -44,10 +44,9 @@ const getRadius = (idxInBucket: number, bucketSize: number, cellSize: number): n
   return t * cellSize * RADIUS_RATIO;
 };
 
-const renderPaletteBGlyph = (
+export const getPaletteBColorContext = (
   value: number,
   totalCells: number,
-  cellSize: number,
   overrideLinearIndex?: number
 ) => {
   const counts = computeBucketCounts(totalCells || value);
@@ -59,9 +58,27 @@ const renderPaletteBGlyph = (
     effectiveIndex,
     counts
   );
-  const bgColor = paletteB[bucketIdx % NUM_BUCKETS];
-  const circleColor = paletteB[(bucketIdx + 1) % NUM_BUCKETS];
-  const radius = getRadius(idxInBucket, bucketSize, cellSize);
+  return {
+    bucketIdx,
+    idxInBucket,
+    bucketSize,
+    bucketColor: paletteB[bucketIdx % NUM_BUCKETS],
+    circleColor: paletteB[(bucketIdx + 1) % NUM_BUCKETS],
+  };
+};
+
+const renderPaletteBGlyph = (
+  value: number,
+  totalCells: number,
+  cellSize: number,
+  overrideLinearIndex?: number
+) => {
+  const context = getPaletteBColorContext(
+    value,
+    totalCells,
+    overrideLinearIndex
+  );
+  const radius = getRadius(context.idxInBucket, context.bucketSize, cellSize);
   const center = cellSize / 2;
 
   return (
@@ -71,7 +88,7 @@ const renderPaletteBGlyph = (
         y={0}
         width={cellSize}
         height={cellSize}
-        fill={bgColor}
+        fill={context.bucketColor}
         rx={CELL_CORNER_RADIUS}
         ry={CELL_CORNER_RADIUS}
         pointerEvents="none"
@@ -81,7 +98,7 @@ const renderPaletteBGlyph = (
           cx={center}
           cy={center}
           r={radius}
-          fill={circleColor}
+          fill={context.circleColor}
           pointerEvents="none"
         />
       )}

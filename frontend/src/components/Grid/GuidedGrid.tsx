@@ -15,10 +15,10 @@ import {
   gridPalette,
   statusPalette,
   paletteB,
-  symbolAccent,
 } from '@/styles/colorTokens';
 import { deriveSymbolRange } from '@/symbolSets/valueRange';
 import { getDefaultSymbolSet } from '@/symbolSets/registry';
+import { getPaletteBColorContext } from '@/symbolSets/paletteBShapeSymbolSet';
 
 const HOLD_DURATION_MS = 650;
 const BOARD_PADDING = 8;
@@ -550,6 +550,14 @@ const GuidedGrid = memo(function GuidedGrid() {
             }
             const linearIndex =
               cell.value !== null ? cell.value - 1 : undefined;
+            const paletteContext =
+              isPaletteBSet && cell.value !== null
+                ? getPaletteBColorContext(
+                    cell.value,
+                    totalCells || boardSize * boardSize,
+                    typeof linearIndex === 'number' ? linearIndex : undefined
+                  )
+                : null;
             const symbolProps = {
               value: cell.value,
               isGiven,
@@ -567,8 +575,8 @@ const GuidedGrid = memo(function GuidedGrid() {
             const showNeutralBadges = isPaletteBSet;
 
             // Determine fill color based on cell state
-            const anchorFillColor = isPaletteBSet
-              ? symbolAccent.anchorHighlight
+            const anchorFillColor = paletteContext
+              ? paletteContext.circleColor
               : gridPalette.anchorFill;
             let fillColor = gridPalette.cellSurface;
             if (isAnchor) fillColor = anchorFillColor;
@@ -576,8 +584,8 @@ const GuidedGrid = memo(function GuidedGrid() {
             else if (isGiven) fillColor = gridPalette.given;
 
             // Determine stroke color
-            const anchorStrokeColor = isPaletteBSet
-              ? symbolAccent.anchorHighlightStroke
+            const anchorStrokeColor = paletteContext
+              ? paletteContext.circleColor
               : gridPalette.anchorStroke;
             let strokeColor = statusPalette.border;
             let strokeWidth = 1;
@@ -707,10 +715,10 @@ const GuidedGrid = memo(function GuidedGrid() {
                     height={cellSize - 3}
                     fill="none"
                     stroke={anchorStrokeColor}
-                    strokeWidth={isPaletteBSet ? 3 : 2}
+                    strokeWidth={isPaletteBSet ? 5 : 2}
                     rx={5}
                     pointerEvents="none"
-                    opacity={0.85}
+                    opacity={1}
                   />
                 )}
 
