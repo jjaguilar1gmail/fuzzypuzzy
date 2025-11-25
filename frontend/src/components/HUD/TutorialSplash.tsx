@@ -33,7 +33,7 @@ const goalExample: MiniCell[] = [
   { value: 3, status: 'path' },
   { value: 9, status: 'given' },
   { value: 8, status: 'path' },
-  { value: 4, status: 'path' },
+  { value: 4, status: 'given' },
   { value: 7, status: 'path' },
   { value: 6, status: 'path' },
   { value: 5, status: 'path' },
@@ -49,6 +49,38 @@ const controlBadges = [
 const MINI_CELL_SIZE = 46;
 const MINI_GAP = 3;
 const MINI_PADDING = 8;
+
+const MINI_BADGE_SIZE = 16;
+const MINI_BADGE_CORNER_RADIUS = 7;
+
+const startBadgePath = `M 0 ${MINI_BADGE_CORNER_RADIUS} Q 0 0 ${MINI_BADGE_CORNER_RADIUS} 0 L ${MINI_BADGE_SIZE} 0 L 0 ${MINI_BADGE_SIZE} Z`;
+const endBadgePath = `M ${MINI_BADGE_SIZE} ${MINI_BADGE_CORNER_RADIUS} Q ${MINI_BADGE_SIZE} 0 ${
+  MINI_BADGE_SIZE - MINI_BADGE_CORNER_RADIUS
+} 0 L 0 0 L ${MINI_BADGE_SIZE} ${MINI_BADGE_SIZE} Z`;
+
+const StartBadge = () => (
+  <svg
+    className="absolute left-[2px] top-[2px]"
+    width={MINI_BADGE_SIZE}
+    height={MINI_BADGE_SIZE}
+    viewBox={`0 0 ${MINI_BADGE_SIZE} ${MINI_BADGE_SIZE}`}
+    aria-hidden="true"
+  >
+    <path d={startBadgePath} fill="rgb(var(--color-primary))" />
+  </svg>
+);
+
+const EndBadge = () => (
+  <svg
+    className="absolute right-[2px] top-[2px]"
+    width={MINI_BADGE_SIZE}
+    height={MINI_BADGE_SIZE}
+    viewBox={`0 0 ${MINI_BADGE_SIZE} ${MINI_BADGE_SIZE}`}
+    aria-hidden="true"
+  >
+    <path d={endBadgePath} fill="rgb(var(--color-success))" />
+  </svg>
+);
 
 function MiniGrid({
   cells,
@@ -89,18 +121,34 @@ function MiniGrid({
           gap: MINI_GAP,
         }}
       >
-        {cells.map((cell, idx) => (
-          <div
-            key={idx}
-            className={`flex items-center justify-center rounded-lg text-base font-semibold ${statusStyles[cell.status]}`}
-            style={{
-              width: MINI_CELL_SIZE,
-              height: MINI_CELL_SIZE,
-            }}
-          >
-            {cell.value ?? ''}
-          </div>
-        ))}
+        {cells.map((cell, idx) => {
+          const isStart = cell.value === 1;
+          const isEnd = cell.value === cells.length;
+          return (
+            <div
+              key={idx}
+              className="relative"
+              style={{
+                width: MINI_CELL_SIZE,
+                height: MINI_CELL_SIZE,
+              }}
+            >
+              <div
+                className={`flex h-full w-full items-center justify-center rounded-lg text-base font-semibold ${statusStyles[cell.status]}`}
+              >
+                {cell.value ?? ''}
+              </div>
+              {isStart && <StartBadge />}
+              {isEnd && <EndBadge />}
+              {cell.status === 'given' && (
+                <span
+                  className="absolute left-[6px] right-[6px] bottom-[6px] h-1 rounded-full bg-copy"
+                  aria-hidden="true"
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
       {points && points.length > 0 && (
         <svg
