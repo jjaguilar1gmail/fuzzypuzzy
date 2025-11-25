@@ -7,3 +7,6 @@ __pycache__/
 testing_archive/
 *.log
 *.tmp
+
+# Packgen playground files, i.e. where i generate puzzles and evaluate them
+playground_outputs/
