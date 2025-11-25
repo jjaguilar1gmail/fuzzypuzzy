@@ -1,13 +1,7 @@
 ﻿import { useGameStore, getPuzzleIdentity } from '@/state/gameStore';
 import { motion } from 'framer-motion';
-import {
-  memo,
-  useMemo,
-  useEffect,
-  useState,
-  useRef,
-  type ReactNode,
-} from 'react';
+import { memo, useMemo, useEffect, useState, useRef } from 'react';
+import type { ReactNode } from 'react';
 import { useGuidedSequenceFlow } from '@/sequence';
 import type { Position, MistakeEvent, SequenceDirection } from '@/sequence/types';
 import {
@@ -364,13 +358,14 @@ const GuidedGrid = memo(function GuidedGrid() {
       state.nextTarget ?? globalSequenceState?.nextTarget ?? null;
     if (nextTargetValue !== null) {
       nextIndicatorText = `Next: ${nextTargetValue}`;
-      const previewNode = shouldShowPreview
-        ? activeSymbolSet.renderPreview({
-            value: nextTargetValue,
-            totalCells,
-            cellSize: NEXT_PREVIEW_SIZE,
-          })
-        : null;
+      const previewNode =
+        shouldShowPreview && typeof activeSymbolSet.renderPreview === 'function'
+          ? activeSymbolSet.renderPreview({
+              value: nextTargetValue,
+              totalCells,
+              cellSize: NEXT_PREVIEW_SIZE,
+            })
+          : null;
       const visibleLabel = hideNumericNextLabel ? 'Next:' : nextIndicatorText;
       nextIndicatorContent = (
         <span className="flex items-center gap-3">
