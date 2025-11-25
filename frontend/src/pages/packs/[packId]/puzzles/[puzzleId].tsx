@@ -6,9 +6,7 @@ import { Puzzle, Pack } from '@/domain/puzzle';
 import { loadPuzzle, loadPack } from '@/lib/loaders/packs';
 import { useGameStore } from '@/state/gameStore';
 import { useProgressStore } from '@/state/progressStore';
-import Grid from '@/components/Grid/Grid';
-import Palette from '@/components/Palette/Palette';
-import BottomSheet from '@/components/Palette/BottomSheet';
+import GuidedGrid from '@/components/Grid/GuidedGrid';
 import CompletionModal from '@/components/HUD/CompletionModal';
 import { SessionStats } from '@/components/HUD/SessionStats';
 
@@ -152,17 +150,9 @@ export default function PackPuzzlePage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.15 }}
-          className="grid lg:grid-cols-[1fr_auto] gap-8 items-start"
+          className="flex justify-center"
         >
-          <div className="flex justify-center">
-            <Grid />
-          </div>
-          
-          <div className="lg:sticky lg:top-8">
-            <BottomSheet>
-              <Palette />
-            </BottomSheet>
-          </div>
+          <GuidedGrid />
         </motion.div>
 
         {/* Navigation controls */}

@@ -12,6 +12,17 @@ export const CellValueSchema = z.object({
 /**
  * Zod schema for Puzzle from contracts/puzzle.schema.json (draft-07)
  */
+const MetricsSchema = z
+  .object({
+    timings_ms: z.record(z.string(), z.number()).optional(),
+    solver: z.record(z.string(), z.unknown()).optional(),
+    structure: z.record(z.string(), z.unknown()).optional(),
+    mask: z.record(z.string(), z.unknown()).optional(),
+    repair: z.record(z.string(), z.unknown()).optional(),
+  })
+  .passthrough()
+  .optional();
+
 export const PuzzleSchema = z.object({
   schema_version: z.string().optional().default('1.0'),
   id: z.string(),
@@ -23,6 +34,7 @@ export const PuzzleSchema = z.object({
   max_gap: z.union([z.number().int().max(12), z.null()]).optional(),
   givens: z.array(CellValueSchema).min(1),
   solution: z.array(CellValueSchema).nullable().optional(),
+  metrics: MetricsSchema,
 });
 
 export type PuzzleInput = z.input<typeof PuzzleSchema>;

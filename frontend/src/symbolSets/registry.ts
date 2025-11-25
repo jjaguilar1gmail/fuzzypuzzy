@@ -9,7 +9,7 @@ const registry = {
 
 export type SymbolSetId = keyof typeof registry;
 
-const DEFAULT_SYMBOL_SET_ID: SymbolSetId = 'numeric';
+const DEFAULT_SYMBOL_SET_ID: SymbolSetId = 'paletteB-shapes';
 
 export const listSymbolSets = (): SymbolSet[] => Object.values(registry);
 

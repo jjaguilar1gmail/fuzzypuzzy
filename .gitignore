@@ -10,3 +10,4 @@ testing_archive/
 
 # Packgen playground files, i.e. where i generate puzzles and evaluate them
 playground_outputs/
+frontend/public/packs/playground/
