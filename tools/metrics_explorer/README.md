@@ -32,7 +32,13 @@ Features include:
 - 2D/3D scatter plots, histograms, and box plots with configurable axes,
   coloring, and sizing.
 - Built-in metric guide and analysis tips to help interpret the telemetry.
+- Scatter plots support in-app point picking when the optional
+  `streamlit-plotly-events` dependency is installed (see requirements.txt);
+  otherwise they fall back to a dropdown selector.
 - Download of the normalized metrics as CSV for additional analysis.
+
+> **Tip:** If the interactive dependency is unavailable, the table and dropdown
+> selectors still let you inspect specific puzzles.
 
 The tool is intended for developers and puzzle designers; it lives under
 `tools/` so it does not interfere with the production game frontend.

@@ -4,11 +4,19 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Dict, Iterable, Tuple
+from typing import Dict, Tuple
 
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+
+try:
+    from streamlit_plotly_events import plotly_events
+
+    HAS_INTERACTIVE_SCATTER = True
+except ImportError:
+    plotly_events = None
+    HAS_INTERACTIVE_SCATTER = False
 
 
 st.set_page_config(page_title="Pack Metrics Explorer", layout="wide")
@@ -64,7 +72,7 @@ def _extract_record(puzzle_data: Dict) -> Dict:
 
 
 @st.cache_data(show_spinner=True)
-def load_pack(pack_dir: str) -> Tuple[Dict, pd.DataFrame]:
+def load_pack(pack_dir: str) -> Tuple[Dict, pd.DataFrame, Dict[str, Dict]]:
     """Load pack metadata and puzzle metrics into a DataFrame."""
     pack_path = Path(pack_dir)
     metadata_file = pack_path / "metadata.json"
@@ -79,9 +87,14 @@ def load_pack(pack_dir: str) -> Tuple[Dict, pd.DataFrame]:
         metadata = json.load(f)
 
     rows = []
+    puzzle_lookup: Dict[str, Dict] = {}
     for puzzle_file in sorted(puzzles_dir.glob("*.json")):
         with puzzle_file.open("r", encoding="utf-8") as f:
-            rows.append(_extract_record(json.load(f)))
+            data = json.load(f)
+            rows.append(_extract_record(data))
+            puzzle_id = data.get("id")
+            if puzzle_id:
+                puzzle_lookup[puzzle_id] = data
 
     if not rows:
         raise ValueError(f"No puzzles found in {puzzles_dir}")
@@ -90,7 +103,7 @@ def load_pack(pack_dir: str) -> Tuple[Dict, pd.DataFrame]:
     numeric_cols = frame.select_dtypes(include=["number"]).columns
     frame[numeric_cols] = frame[numeric_cols].apply(pd.to_numeric, errors="ignore")
 
-    return metadata, frame
+    return metadata, frame, puzzle_lookup
 
 
 def sidebar_filters(df: pd.DataFrame) -> pd.DataFrame:
@@ -128,8 +141,12 @@ def sidebar_filters(df: pd.DataFrame) -> pd.DataFrame:
     return filtered
 
 
-def choose_chart(df: pd.DataFrame):
-    """Render chart controls and display a plotly visualization."""
+def choose_chart(df: pd.DataFrame, puzzle_lookup: Dict[str, Dict], enable_interactive: bool) -> str | None:
+    """Render chart controls and display a plotly visualization.
+
+    Returns:
+        Selected puzzle_id when clicking on scatter plots, else None.
+    """
     st.subheader("Visualization")
     if df.empty:
         st.info("No puzzles match the current filters.")
@@ -145,43 +162,110 @@ def choose_chart(df: pd.DataFrame):
 
     hover_fields = ["puzzle_id", "size", "difficulty", "clue_count"]
 
+    selected_puzzle_id = None
+
     if chart_type == "Scatter (2D)":
         if len(numeric_cols) < 2:
             st.warning("Need at least two numeric metrics for scatter plot.")
             return
-        x_col = st.selectbox("X axis", numeric_cols, index=0)
-        y_col = st.selectbox("Y axis", numeric_cols, index=min(1, len(numeric_cols) - 1))
-        color_col = st.selectbox("Color", ["(none)"] + all_cols, index=all_cols.index("difficulty") + 1 if "difficulty" in all_cols else 0)
-        size_col = st.selectbox("Size", ["(none)"] + numeric_cols, index=0)
+        x_col = st.selectbox("X axis", numeric_cols, index=0, key="scatter-x")
+        y_index = min(1, len(numeric_cols) - 1)
+        y_col = st.selectbox("Y axis", numeric_cols, index=y_index, key="scatter-y")
+        color_options = ["(none)"] + all_cols
+        color_index = color_options.index("difficulty") if "difficulty" in all_cols else 0
+        color_col = st.selectbox("Color", color_options, index=color_index, key="scatter-color")
+        size_col = st.selectbox("Size", ["(none)"] + numeric_cols, index=0, key="scatter-size")
+        plot_df = df.dropna(subset=[x_col, y_col])
+        if plot_df.empty:
+            st.info("No data available for the selected axes. Try a different metric combination.")
+            return None
         fig = px.scatter(
-            df,
+            plot_df,
             x=x_col,
             y=y_col,
             color=None if color_col == "(none)" else color_col,
             size=None if size_col == "(none)" else size_col,
             hover_data=hover_fields,
+            custom_data=["puzzle_id"],
         )
         st.plotly_chart(fig, use_container_width=True)
+        if enable_interactive and HAS_INTERACTIVE_SCATTER:
+            with st.expander("Click to preview (beta)", expanded=True):
+                events = plotly_events(
+                    fig,
+                    click_event=True,
+                    hover_event=False,
+                    select_event=False,
+                    override_height=400,
+                    key=f"click-{x_col}-{y_col}",
+                )
+                if events:
+                    selected_puzzle_id = events[0]["customdata"][0]
+        else:
+            st.warning(
+                "Install `streamlit-plotly-events` (see tools/metrics_explorer/requirements.txt) for clickable plots."
+            )
+        if not selected_puzzle_id:
+            selection_key = f"scatter-select-{x_col}-{y_col}"
+            selected_puzzle_id = st.selectbox(
+                "Choose puzzle to preview",
+                plot_df["puzzle_id"],
+                index=0,
+                key=selection_key,
+            )
     elif chart_type == "Scatter (3D)":
         if len(numeric_cols) < 3:
             st.warning("Need at least three numeric metrics for 3D scatter.")
             return
-        x_col = st.selectbox("X axis", numeric_cols, index=0, key="3d_x")
-        y_col = st.selectbox("Y axis", numeric_cols, index=1, key="3d_y")
-        z_col = st.selectbox("Z axis", numeric_cols, index=2, key="3d_z")
-        color_col = st.selectbox("Color", ["(none)"] + all_cols, key="3d_color")
+        x_col = st.selectbox("X axis", numeric_cols, index=0, key="scatter3d-x")
+        y_index = min(1, len(numeric_cols) - 1)
+        z_index = min(2, len(numeric_cols) - 1)
+        y_col = st.selectbox("Y axis", numeric_cols, index=y_index, key="scatter3d-y")
+        z_col = st.selectbox("Z axis", numeric_cols, index=z_index, key="scatter3d-z")
+        color_options = ["(none)"] + all_cols
+        color_index = color_options.index("difficulty") if "difficulty" in all_cols else 0
+        color_col = st.selectbox("Color", color_options, index=color_index, key="scatter3d-color")
+        plot_df = df.dropna(subset=[x_col, y_col, z_col])
+        if plot_df.empty:
+            st.info("No data available for the selected axes. Try a different metric combination.")
+            return None
         fig = px.scatter_3d(
-            df,
+            plot_df,
             x=x_col,
             y=y_col,
             z=z_col,
             color=None if color_col == "(none)" else color_col,
             hover_data=hover_fields,
+            custom_data=["puzzle_id"],
         )
         st.plotly_chart(fig, use_container_width=True)
+        if enable_interactive and HAS_INTERACTIVE_SCATTER:
+            with st.expander("Click to preview (beta)", expanded=True):
+                events = plotly_events(
+                    fig,
+                    click_event=True,
+                    hover_event=False,
+                    select_event=False,
+                    override_height=400,
+                    key=f"click3d-{x_col}-{y_col}-{z_col}",
+                )
+                if events:
+                    selected_puzzle_id = events[0]["customdata"][0]
+        else:
+            st.warning(
+                "Install `streamlit-plotly-events` (see tools/metrics_explorer/requirements.txt) for clickable plots."
+            )
+        if not selected_puzzle_id:
+            selection_key = f"scatter3d-select-{x_col}-{y_col}-{z_col}"
+            selected_puzzle_id = st.selectbox(
+                "Choose puzzle to preview",
+                plot_df["puzzle_id"],
+                index=0,
+                key=selection_key,
+            )
     elif chart_type == "Histogram":
-        metric = st.selectbox("Metric", numeric_cols)
-        color_col = st.selectbox("Color", ["(none)"] + all_cols, key="hist_color")
+        metric = st.selectbox("Metric", numeric_cols, index=0, key="hist-metric")
+        color_col = st.selectbox("Color", ["(none)"] + all_cols, index=0, key="hist-color")
         fig = px.histogram(
             df,
             x=metric,
@@ -190,10 +274,9 @@ def choose_chart(df: pd.DataFrame):
         )
         st.plotly_chart(fig, use_container_width=True)
     elif chart_type == "Box":
-        metric = st.selectbox("Metric", numeric_cols, key="box_metric")
-        group = st.selectbox(
-            "Group by", ["difficulty", "size"] + [c for c in all_cols if c not in ("difficulty", "size")]
-        )
+        metric = st.selectbox("Metric", numeric_cols, index=0, key="box-metric")
+        group_options = ["difficulty", "size"] + [c for c in all_cols if c not in ("difficulty", "size")]
+        group = st.selectbox("Group by", group_options, index=0, key="box-group")
         fig = px.box(
             df,
             x=group,
@@ -201,6 +284,8 @@ def choose_chart(df: pd.DataFrame):
             points="all",
         )
         st.plotly_chart(fig, use_container_width=True)
+
+    return selected_puzzle_id
 
 
 def pack_summary(metadata: Dict, df: pd.DataFrame):
@@ -213,6 +298,67 @@ def pack_summary(metadata: Dict, df: pd.DataFrame):
     st.sidebar.json(metadata.get("difficulty_counts", {}))
     st.sidebar.write("Size distribution:")
     st.sidebar.json(metadata.get("size_distribution", {}))
+
+
+def render_puzzle_preview(puzzle: Dict):
+    """Display puzzle grid and key metrics."""
+    if not puzzle:
+        return
+
+    st.subheader(f"Puzzle {puzzle.get('id')} preview")
+    cols = st.columns(2)
+    with cols[0]:
+        st.markdown(
+            f"""
+            - **Pack**: `{puzzle.get('pack_id')}`
+            - **Size**: {puzzle.get('size')}×{puzzle.get('size')}
+            - **Difficulty**: {puzzle.get('difficulty')}
+            - **Clues**: {puzzle.get('clue_count')}
+            """
+        )
+    with cols[1]:
+        solver = puzzle.get("metrics", {}).get("solver", {})
+        structure = puzzle.get("metrics", {}).get("structure", {})
+        st.markdown(
+            f"""
+            - Clue density: {solver.get('clue_density')}
+            - Logic ratio: {solver.get('logic_ratio')}
+            - Search nodes: {solver.get('nodes')}
+            - Branching factor: {structure.get('branching', {}).get('average_branching_factor')}
+            """
+        )
+
+    size = puzzle.get("size", 0)
+    style_rows = []
+    givens_set = {(g["row"], g["col"]) for g in puzzle.get("givens", []) if g.get("row") is not None}
+    solution_lookup = {
+        (cell["row"], cell["col"]): cell["value"] for cell in (puzzle.get("solution") or [])
+    }
+    grid = []
+    for r in range(size):
+        row_vals = []
+        row_styles = []
+        for c in range(size):
+            pos = (r, c)
+            if pos in givens_set:
+                row_vals.append(solution_lookup.get(pos, ""))
+                row_styles.append("background-color:#262626;color:#ffd166;font-weight:bold;")
+            elif pos in solution_lookup:
+                row_vals.append(solution_lookup[pos])
+                row_styles.append("background-color:#1f1f1f;color:#f8f8f2;")
+            else:
+                row_vals.append("")
+                row_styles.append("background-color:#1f1f1f;")
+        grid.append(row_vals)
+        style_rows.append(row_styles)
+
+    dataframe = pd.DataFrame(grid, columns=[f"C{c+1}" for c in range(size)])
+    def style_func(row_index):
+        def inner(row):
+            return style_rows[row_index]
+        return inner
+    styled = dataframe.style.apply(lambda row: style_rows[row.name], axis=1)
+    st.dataframe(styled, use_container_width=True, height=min(500, 60 * size))
 
 
 def render_metric_guide():
@@ -266,7 +412,7 @@ def main():
         pack_path = base_path
 
     try:
-        metadata, df = load_pack(str(pack_path))
+        metadata, df, puzzle_lookup = load_pack(str(pack_path))
     except Exception as exc:
         st.error(f"Could not load pack: {exc}")
         if detected_packs:
@@ -276,8 +422,19 @@ def main():
     pack_summary(metadata, df)
     render_metric_guide()
 
+    enable_interactive = False
+    if HAS_INTERACTIVE_SCATTER:
+        enable_interactive = st.sidebar.checkbox(
+            "Enable scatter click preview (beta)", value=False,
+            help="Requires streamlit-plotly-events; may impact dropdown usability."
+        )
+    else:
+        st.sidebar.info("Install `streamlit-plotly-events` then restart to enable click preview.")
+
     filtered = sidebar_filters(df)
-    choose_chart(filtered)
+    selected_id = choose_chart(filtered, puzzle_lookup, enable_interactive)
+    if selected_id:
+        render_puzzle_preview(puzzle_lookup.get(selected_id))
 
     st.subheader("Data")
     st.dataframe(filtered, use_container_width=True)
