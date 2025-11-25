@@ -37,6 +37,11 @@
   --color-grid-mistake-fill: 254 226 226;
   --color-grid-mistake-stroke: 220 38 38;
   --color-grid-hold-stroke: 220 38 38;
+  --color-symbol-b0: 49 93 173;
+  --color-symbol-b1: 55 186 229;
+  --color-symbol-b2: 248 154 84;
+  --color-symbol-b3: 177 93 228;
+  --color-symbol-b4: 146 186 64;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -69,6 +74,11 @@
     --color-grid-mistake-fill: 127 29 29;
     --color-grid-mistake-stroke: 252 165 165;
     --color-grid-hold-stroke: 248 113 113;
+    --color-symbol-b0: 32 68 129;
+    --color-symbol-b1: 47 167 206;
+    --color-symbol-b2: 237 131 52;
+    --color-symbol-b3: 149 63 199;
+    --color-symbol-b4: 122 156 52;
   }
 }
 
@@ -103,6 +113,11 @@
   --color-grid-mistake-fill: 127 29 29;
   --color-grid-mistake-stroke: 252 165 165;
   --color-grid-hold-stroke: 248 113 113;
+  --color-symbol-b0: 32 68 129;
+  --color-symbol-b1: 47 167 206;
+  --color-symbol-b2: 237 131 52;
+  --color-symbol-b3: 149 63 199;
+  --color-symbol-b4: 122 156 52;
 }
 
 /* Accessibility: High contrast focus indicators (WCAG AA) */

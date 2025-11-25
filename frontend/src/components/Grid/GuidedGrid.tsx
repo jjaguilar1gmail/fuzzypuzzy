@@ -1,17 +1,25 @@
 ﻿import { useGameStore, getPuzzleIdentity } from '@/state/gameStore';
 import { motion } from 'framer-motion';
 import { memo, useMemo, useEffect, useState, useRef } from 'react';
+import type { ReactNode } from 'react';
 import { useGuidedSequenceFlow } from '@/sequence';
 import type { Position, MistakeEvent, SequenceDirection } from '@/sequence/types';
-import { cssVar, gridPalette, statusPalette } from '@/styles/colorTokens';
-import { numericSymbolSet } from '@/symbolSets/numericSymbolSet';
+import {
+  cssVar,
+  gridPalette,
+  statusPalette,
+  paletteB,
+} from '@/styles/colorTokens';
 import { deriveSymbolRange } from '@/symbolSets/valueRange';
+import { getDefaultSymbolSet } from '@/symbolSets/registry';
+import { getPaletteBColorContext } from '@/symbolSets/paletteBShapeSymbolSet';
 
 const HOLD_DURATION_MS = 650;
 const BOARD_PADDING = 8;
 const GRID_SAFE_MARGIN = 32;
 const HOLD_RING_MARGIN = 2;
 const HOLD_RING_STROKE_WIDTH = 4;
+const NEXT_PREVIEW_SIZE = 36;
 
 const DIRECTION_OPTIONS: Array<{
   value: SequenceDirection;
@@ -35,6 +43,8 @@ const PlusMinusGlyph = ({ variant }: { variant: 'plus' | 'minus' }) => (
 /**
  * Grid component integrated with guided sequence flow
  */
+const activeSymbolSet = getDefaultSymbolSet();
+
 const GuidedGrid = memo(function GuidedGrid() {
   const puzzle = useGameStore((state) => state.puzzle);
   const puzzleInstance = useGameStore((state) => state.puzzleInstance);
@@ -98,6 +108,8 @@ const GuidedGrid = memo(function GuidedGrid() {
   const interactionsLocked = isComplete;
 
   const boardSize = board.length || puzzle?.size || 0;
+  const columnCount = board[0]?.length ?? boardSize;
+  const totalCells = boardSize * columnCount;
   const { startValue, endValue } = useMemo(
     () => deriveSymbolRange(puzzle, boardSize),
     [puzzle, boardSize]
@@ -330,16 +342,52 @@ const GuidedGrid = memo(function GuidedGrid() {
       ? Math.min(baseRenderSize, availableWidth)
       : baseRenderSize;
 
-  let nextIndicatorLabel: string;
+  const isPaletteBSet = activeSymbolSet.id === 'paletteB-shapes';
+  const hideNumericNextLabel = isPaletteBSet;
+  const showPaletteSwatch = isPaletteBSet;
+  const shouldShowPreview =
+    typeof activeSymbolSet.renderPreview === 'function' &&
+    activeSymbolSet.id !== 'numeric';
+  let nextIndicatorText: string;
+  let nextIndicatorContent: React.ReactNode;
   if (isComplete) {
-    nextIndicatorLabel = 'Puzzle complete!';
+    nextIndicatorText = 'Puzzle complete!';
+    nextIndicatorContent = nextIndicatorText;
   } else {
     const nextTargetValue =
       state.nextTarget ?? globalSequenceState?.nextTarget ?? null;
-    nextIndicatorLabel =
-      nextTargetValue !== null
-        ? `Next: ${nextTargetValue}`
-        : 'Select a clue to continue';
+    if (nextTargetValue !== null) {
+      nextIndicatorText = `Next: ${nextTargetValue}`;
+      const previewNode =
+        shouldShowPreview && typeof activeSymbolSet.renderPreview === 'function'
+          ? activeSymbolSet.renderPreview({
+              value: nextTargetValue,
+              totalCells,
+              cellSize: NEXT_PREVIEW_SIZE,
+            })
+          : null;
+      const visibleLabel = hideNumericNextLabel ? 'Next:' : nextIndicatorText;
+      nextIndicatorContent = (
+        <span className="flex items-center gap-3">
+          <span>{visibleLabel}</span>
+          {previewNode && (
+            <span
+              className="inline-flex shrink-0 items-center justify-center"
+              aria-hidden="true"
+              style={{
+                width: NEXT_PREVIEW_SIZE,
+                height: NEXT_PREVIEW_SIZE,
+              }}
+            >
+              {previewNode}
+            </span>
+          )}
+        </span>
+      );
+    } else {
+      nextIndicatorText = 'Select a clue to continue';
+      nextIndicatorContent = nextIndicatorText;
+    }
   }
 
   const pillClassName = `inline-flex h-12 items-center rounded-full border px-4 sm:px-6 text-base font-semibold transition-all ${
@@ -383,11 +431,15 @@ const GuidedGrid = memo(function GuidedGrid() {
             className={`${pillClassName} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary`}
             style={pillStyle}
           >
-            {nextIndicatorLabel}
+            {nextIndicatorContent}
           </button>
         ) : (
-          <div className={pillClassName} style={pillStyle}>
-            {nextIndicatorLabel}
+          <div
+            className={pillClassName}
+            style={pillStyle}
+            aria-label={nextIndicatorText}
+          >
+            {nextIndicatorContent}
           </div>
         )}
         <div
@@ -491,6 +543,16 @@ const GuidedGrid = memo(function GuidedGrid() {
                 startY + badgeSize
               } Z`;
             }
+            const linearIndex =
+              cell.value !== null ? cell.value - 1 : undefined;
+            const paletteContext =
+              isPaletteBSet && cell.value !== null
+                ? getPaletteBColorContext(
+                    cell.value,
+                    totalCells || boardSize * boardSize,
+                    typeof linearIndex === 'number' ? linearIndex : undefined
+                  )
+                : null;
             const symbolProps = {
               value: cell.value,
               isGiven,
@@ -501,21 +563,30 @@ const GuidedGrid = memo(function GuidedGrid() {
               cellSize,
               isChainStart,
               isChainEnd,
+              linearIndex,
+              totalCells,
             };
-            const symbolElement = numericSymbolSet.renderCell(symbolProps);
+            const symbolElement = activeSymbolSet.renderCell(symbolProps);
+            const showNeutralBadges = isPaletteBSet;
 
             // Determine fill color based on cell state
+            const anchorFillColor = paletteContext
+              ? paletteContext.circleColor
+              : gridPalette.anchorFill;
             let fillColor = gridPalette.cellSurface;
-            if (isAnchor) fillColor = gridPalette.anchorFill;
+            if (isAnchor) fillColor = anchorFillColor;
             else if (isMistake) fillColor = gridPalette.mistakeFill;
             else if (isGiven) fillColor = gridPalette.given;
 
             // Determine stroke color
+            const anchorStrokeColor = paletteContext
+              ? paletteContext.circleColor
+              : gridPalette.anchorStroke;
             let strokeColor = statusPalette.border;
             let strokeWidth = 1;
             if (isAnchor) {
-              strokeColor = gridPalette.anchorStroke;
-              strokeWidth = 3;
+              strokeColor = statusPalette.border;
+              strokeWidth = 1;
             } else if (isMistake) {
               strokeColor = gridPalette.mistakeStroke;
               strokeWidth = 2;
@@ -569,12 +640,33 @@ const GuidedGrid = memo(function GuidedGrid() {
                   />
                 )}
 
+                {/* Cell value */}
+                {symbolElement && (
+                  <g transform={`translate(${x} ${y})`}>{symbolElement}</g>
+                )}
+
+                {/* Given underline */}
+                {isGiven && (
+                  <rect
+                    x={x + 6}
+                    y={y + cellSize - 4}
+                    width={cellSize - 12}
+                    height={2}
+                    fill={statusPalette.text}
+                    rx={1}
+                    pointerEvents="none"
+                    opacity={0.85}
+                  />
+                )}
+
                 {/* Chain baseline overlay */}
                 {badgePath && (
                   <path
                     d={badgePath}
                     fill={
-                      chainRole === 'start'
+                      showNeutralBadges
+                        ? 'rgb(var(--color-text))'
+                        : chainRole === 'start'
                         ? statusPalette.primary
                         : statusPalette.success
                     }
@@ -582,11 +674,6 @@ const GuidedGrid = memo(function GuidedGrid() {
                     stroke="none"
                     pointerEvents="none"
                   />
-                )}
-
-                {/* Cell value */}
-                {symbolElement && (
-                  <g transform={`translate(${x} ${y})`}>{symbolElement}</g>
                 )}
 
                 {/* Guide highlight overlay */}
@@ -622,11 +709,11 @@ const GuidedGrid = memo(function GuidedGrid() {
                     width={cellSize - 3}
                     height={cellSize - 3}
                     fill="none"
-                    stroke={gridPalette.anchorStroke}
-                    strokeWidth={2}
+                    stroke={anchorStrokeColor}
+                    strokeWidth={isPaletteBSet ? 5 : 2}
                     rx={5}
                     pointerEvents="none"
-                    opacity={0.85}
+                    opacity={1}
                   />
                 )}
 
@@ -730,6 +817,23 @@ const GuidedGrid = memo(function GuidedGrid() {
           <p className="text-sm text-copy-muted">
             Click a number to start building the sequence
           </p>
+        </div>
+      )}
+      {showPaletteSwatch && (
+        <div className="mt-6 flex flex-col items-center text-xs text-copy-muted">
+          <span className="font-semibold uppercase tracking-wide text-copy">
+            Color progression
+          </span>
+          <div className="mt-1 flex gap-1" role="img" aria-label="Symbol color progression">
+            {paletteB.map((color, idx) => (
+              <span
+                key={`${color}-${idx}`}
+                className="h-3 w-8 rounded-full"
+                style={{ backgroundColor: color }}
+                aria-label={`Color ${idx + 1}`}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>
