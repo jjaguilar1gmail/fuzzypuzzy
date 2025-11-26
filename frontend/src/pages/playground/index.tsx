@@ -295,19 +295,27 @@ export default function PlaygroundPage() {
                         </div>
                       )}
                     </div>
-                    {currentPuzzle.metrics?.structure?.anchors && (
+                    {Boolean(currentPuzzle.metrics?.structure?.anchors) && (
                       <div className="mt-4 text-xs text-slate-400">
                         <p className="font-semibold text-slate-300 mb-1">Anchor spacing</p>
                         <pre className="bg-slate-950/60 rounded-lg p-2 overflow-x-auto">
-                          {JSON.stringify(currentPuzzle.metrics.structure.anchors, null, 2)}
+                          {JSON.stringify(
+                            currentPuzzle.metrics?.structure?.anchors as Record<string, unknown>,
+                            null,
+                            2
+                          )}
                         </pre>
                       </div>
                     )}
-                    {currentPuzzle.metrics?.mask && (
+                    {Boolean(currentPuzzle.metrics?.mask) && (
                       <div className="mt-4 text-xs text-slate-400">
                         <p className="font-semibold text-slate-300 mb-1">Mask</p>
                         <pre className="bg-slate-950/60 rounded-lg p-2 overflow-x-auto">
-                          {JSON.stringify(currentPuzzle.metrics.mask, null, 2)}
+                          {JSON.stringify(
+                            currentPuzzle.metrics?.mask as Record<string, unknown>,
+                            null,
+                            2
+                          )}
                         </pre>
                       </div>
                     )}
