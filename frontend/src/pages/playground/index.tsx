@@ -30,7 +30,27 @@ const formatMs = (value?: number) => {
   return `${value.toFixed(0)} ms`;
 };
 
+const PLAYGROUND_ENABLED = true;
+
 export default function PlaygroundPage() {
+  if (!PLAYGROUND_ENABLED) {
+    return (
+      <main className="min-h-screen bg-slate-950 text-slate-100 p-6">
+        <div className="max-w-3xl mx-auto space-y-4 text-center">
+          <h1 className="text-3xl font-semibold">Sandbox Disabled</h1>
+          <p className="text-slate-400">
+            The metrics playground is temporarily disabled in this build. Run a production build or
+            re-enable it in <code className="text-xs bg-slate-900 px-1 py-0.5 rounded">/src/pages/playground/index.tsx</code> to
+            continue testing packs locally.
+          </p>
+          <Link href="/" className="text-primary hover:underline">
+            Return to the main game
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
   const [packs, setPacks] = useState<PackSummary[]>([]);
   const [packState, setPackState] = useState<LoadState>('idle');
   const [puzzleState, setPuzzleState] = useState<LoadState>('idle');
