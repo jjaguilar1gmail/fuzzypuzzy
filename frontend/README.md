@@ -165,6 +165,21 @@ python -m app.packgen.cli \
 
 The CLI automatically updates `public/packs/index.json` when generating packs.
 
+### Metrics Playground
+
+For private playtesting, you can stage packs inside `public/packs/playground/`
+without touching the daily experience. Place each experimental pack under
+`public/packs/playground/<pack-id>/` (same structure as normal packs) and list
+them inside `public/packs/playground/index.json`. Then open
+[`/playground`](http://localhost:3000/playground) to launch the sandbox UI:
+
+- pick any sandbox pack and puzzle from a side panel
+- play the puzzle with the regular grid + palette
+- inspect the recorded metrics (generation timings, solver stats, structure)
+
+The sandbox never reads from `public/packs/index.json`, so daily packs remain
+isolated.
+
 ## Configuration
 
 ### Environment Variables

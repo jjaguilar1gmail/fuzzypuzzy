@@ -23,6 +23,15 @@ export interface CellValue {
 /**
  * A single Hidato puzzle.
  */
+export interface PuzzleMetrics {
+  timings_ms?: Record<string, number>;
+  solver?: Record<string, unknown>;
+  structure?: Record<string, unknown>;
+  mask?: Record<string, unknown>;
+  repair?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
 export interface Puzzle {
   schema_version?: string;
   id: string;
@@ -34,6 +43,7 @@ export interface Puzzle {
   max_gap?: number | null;
   givens: CellValue[];
   solution?: CellValue[] | null;
+  metrics?: PuzzleMetrics;
 }
 
 /**

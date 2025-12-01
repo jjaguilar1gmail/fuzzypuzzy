@@ -162,6 +162,8 @@ class GeneratedPuzzle:
     mask_metrics: Optional[dict] = None
     # US2: Repair metrics
     repair_metrics: Optional[dict] = None
+    # Structural metrics
+    structural_metrics: Optional[dict] = None
     
     def to_json(self):
         """Serialize to dict for JSON export."""

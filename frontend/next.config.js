@@ -6,7 +6,7 @@ const nextConfig = {
    * Allow local devices hitting the dev server via LAN IP.
    * Prevents upcoming Next.js versions from blocking the origin.
    */
-  allowedDevOrigins: ['http://192.168.5.244:3000'],
+  allowedDevOrigins: ['http://192.168.5.244:3000','http://192.168.1.192:3000'],
 };
 
 export default nextConfig;

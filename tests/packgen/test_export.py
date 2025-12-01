@@ -9,27 +9,75 @@ from app.packgen.export import export_puzzle, export_pack_metadata, validate_aga
 def sample_generated_puzzle():
     """Sample puzzle from generator for export testing."""
     from generate.models import GeneratedPuzzle
-    from core.puzzle import Puzzle
-    from core.position import Position
     
-    # Create minimal valid puzzle
+    size = 5
     givens = [
-        Position(0, 0, 1),
-        Position(0, 4, 5),
-        Position(2, 2, 13),
-        Position(4, 4, 25),
+        (0, 0, 1),
+        (0, 4, 5),
+        (2, 2, 13),
+        (4, 4, 25),
     ]
-    
-    puzzle = Puzzle(rows=5, cols=5, allow_diagonal=True, givens=givens)
+    solution = [(r, c, r * size + c + 1) for r in range(size) for c in range(size)]
+    clue_density = len(givens) / (size * size)
+    structural_metrics = {
+        'givens': {
+            'total': len(givens),
+            'density': clue_density,
+            'row_counts': [2, 0, 1, 0, 1],
+            'column_counts': [1, 1, 1, 0, 1],
+            'quadrants': {
+                'top_left': 1,
+                'top_right': 1,
+                'bottom_left': 0,
+                'bottom_right': 2,
+            },
+        },
+        'anchors': {
+            'count': 2,
+            'density': 0.08,
+            'gaps': {'min': None, 'max': None, 'avg': None},
+        },
+        'branching': {
+            'nodes': 0,
+            'depth': 0,
+            'steps': len(givens),
+            'average_branching_factor': 0.0,
+            'search_ratio': 0.0,
+        },
+    }
     
     return GeneratedPuzzle(
-        puzzle=puzzle,
+        size=size,
+        allow_diagonal=True,
+        blocked_cells=[],
+        givens=givens,
+        solution=solution,
+        difficulty_label='easy',
+        difficulty_score=0.1,
+        clue_count=len(givens),
+        uniqueness_verified=True,
+        attempts_used=1,
         seed=12345,
-        difficulty='easy',
-        clue_count=4,
-        max_gap=8,
-        generation_time_ms=150,
-        success=True,
+        path_mode='serpentine',
+        clue_mode='anchor_removal_v1',
+        symmetry=None,
+        timings_ms={'total': 120, 'path_build': 10, 'solve': 15, 'uniqueness': 20, 'generation': 120},
+        solver_metrics={
+            'clue_density': clue_density,
+            'logic_ratio': 1.0,
+            'nodes': 0,
+            'depth': 0,
+            'steps': len(givens),
+        },
+        mask_metrics={
+            'mask_enabled': False,
+            'mask_pattern_id': None,
+            'mask_cells_count': 0,
+            'mask_density': 0.0,
+            'mask_attempts': 0,
+        },
+        repair_metrics=None,
+        structural_metrics=structural_metrics,
     )
 
 
@@ -106,6 +154,18 @@ def test_export_puzzle_includes_solution_when_requested(sample_generated_puzzle,
         assert len(data['solution']) == data['size'] * data['size']
 
 
+def test_export_puzzle_includes_metrics_block(sample_generated_puzzle, tmp_path):
+    """Exported puzzle should include nested metrics."""
+    output_file = tmp_path / "puzzle.json"
+    export_puzzle(sample_generated_puzzle, output_file, puzzle_id="0001", pack_id="test")
+
+    data = json.loads(output_file.read_text())
+    assert 'metrics' in data
+    assert 'timings_ms' in data['metrics']
+    assert 'solver' in data['metrics']
+    assert 'structure' in data['metrics']
+
+
 def test_export_pack_metadata_structure(tmp_path):
     """Pack metadata should match schema structure."""
     output_file = tmp_path / "metadata.json"
@@ -123,6 +183,7 @@ def test_export_pack_metadata_structure(tmp_path):
         puzzle_ids=puzzle_ids,
         difficulty_counts=difficulty_counts,
         size_distribution=size_distribution,
+        metrics={'generation_time_ms': {'avg': 100.0, 'min': 90.0, 'max': 120.0}},
     )
     
     with open(output_file, 'r') as f:
@@ -134,6 +195,8 @@ def test_export_pack_metadata_structure(tmp_path):
     assert data['difficulty_counts'] == difficulty_counts
     assert data['size_distribution'] == size_distribution
     assert 'created_at' in data
+    assert 'metrics' in data
+    assert 'generation_time_ms' in data['metrics']
 
 
 def test_validate_against_schema_accepts_valid_puzzle(sample_generated_puzzle, tmp_path):

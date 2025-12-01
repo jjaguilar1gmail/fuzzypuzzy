@@ -25,6 +25,9 @@ def sample_report_data():
         },
         'average_generation_time_ms': 245.3,
         'total_time_sec': 2.5,
+        'metrics': {
+            'generation_time_ms': {'avg': 200.0, 'min': 150.0, 'max': 260.0}
+        },
     }
 
 
@@ -93,6 +96,19 @@ def test_report_calculates_success_rate(sample_report_data, tmp_path):
     
     if 'success_rate' in data:
         assert abs(data['success_rate'] - expected_rate) < 0.01
+
+
+def test_report_includes_metrics_block(sample_report_data, tmp_path):
+    """Report JSON should include aggregate metrics when available."""
+    report_file = tmp_path / "report.json"
+    report = GenerationReport(**sample_report_data)
+    write_report(report, report_file)
+
+    with open(report_file, 'r') as f:
+        data = json.load(f)
+
+    assert 'metrics' in data
+    assert 'generation_time_ms' in data['metrics']
 
 
 def test_report_human_readable_output(sample_report_data, tmp_path):
