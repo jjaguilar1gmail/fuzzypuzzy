@@ -40,6 +40,44 @@ export function SessionStats() {
     return () => window.clearInterval(id);
   }, [timerRunning, tickTimer]);
 
+  useEffect(() => {
+    if (typeof document === 'undefined' || typeof window === 'undefined') {
+      return;
+    }
+
+    const handleVisibility = () => {
+      const state = useGameStore.getState();
+      if (!state.puzzle) return;
+      if (document.hidden) {
+        state.stopTimer();
+      } else if (!state.timerRunning && !state.isComplete) {
+        state.startTimer();
+      }
+    };
+
+    const handleBlur = () => {
+      const state = useGameStore.getState();
+      if (!state.puzzle) return;
+      state.stopTimer();
+    };
+
+    const handleFocus = () => {
+      const state = useGameStore.getState();
+      if (!state.puzzle || state.isComplete) return;
+      state.startTimer();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [puzzle?.id]);
+
   if (!puzzle) return null;
 
   const moveDisplay = formatMoveStat(moveCount, puzzle);

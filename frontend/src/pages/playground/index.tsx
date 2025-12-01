@@ -32,24 +32,24 @@ const formatMs = (value?: number) => {
 
 const PLAYGROUND_ENABLED = true;
 
-export default function PlaygroundPage() {
-  if (!PLAYGROUND_ENABLED) {
-    return (
-      <main className="min-h-screen bg-slate-950 text-slate-100 p-6">
-        <div className="max-w-3xl mx-auto space-y-4 text-center">
-          <h1 className="text-3xl font-semibold">Sandbox Disabled</h1>
-          <p className="text-slate-400">
-            The metrics playground is temporarily disabled in this build. Run a production build or
-            re-enable it in <code className="text-xs bg-slate-900 px-1 py-0.5 rounded">/src/pages/playground/index.tsx</code> to
-            continue testing packs locally.
-          </p>
-          <Link href="/" className="text-primary hover:underline">
-            Return to the main game
-          </Link>
-        </div>
-      </main>
-    );
-  }
+function PlaygroundDisabled() {
+  return (
+    <main className="min-h-screen bg-slate-950 text-slate-100 p-6">
+      <div className="max-w-3xl mx-auto space-y-4 text-center">
+        <h1 className="text-3xl font-semibold">Sandbox Disabled</h1>
+        <p className="text-slate-400">
+          The metrics playground is temporarily disabled. Re-enable it in{' '}
+          <code className="text-xs bg-slate-900 px-1 py-0.5 rounded">src/pages/playground/index.tsx</code> or run a production build to continue testing locally.
+        </p>
+        <Link href="/" className="text-primary hover:underline">
+          Return to the main game
+        </Link>
+      </div>
+    </main>
+  );
+}
+
+function PlaygroundEnabled() {
 
   const [packs, setPacks] = useState<PackSummary[]>([]);
   const [packState, setPackState] = useState<LoadState>('idle');
@@ -315,12 +315,12 @@ export default function PlaygroundPage() {
                         </div>
                       )}
                     </div>
-                    {Boolean(currentPuzzle.metrics?.structure?.anchors) && (
-                      <div className="mt-4 text-xs text-slate-400">
-                        <p className="font-semibold text-slate-300 mb-1">Anchor spacing</p>
-                        <pre className="bg-slate-950/60 rounded-lg p-2 overflow-x-auto">
-                          {JSON.stringify(
-                            currentPuzzle.metrics?.structure?.anchors as Record<string, unknown>,
+                {Boolean(currentPuzzle.metrics?.structure?.anchors) && (
+                  <div className="mt-4 text-xs text-slate-400">
+                    <p className="font-semibold text-slate-300 mb-1">Anchor spacing</p>
+                    <pre className="bg-slate-950/60 rounded-lg p-2 overflow-x-auto">
+                      {JSON.stringify(
+                        currentPuzzle.metrics?.structure?.anchors as Record<string, unknown>,
                             null,
                             2
                           )}
@@ -354,4 +354,8 @@ export default function PlaygroundPage() {
       </main>
     </>
   );
+}
+
+export default function PlaygroundPage() {
+  return PLAYGROUND_ENABLED ? <PlaygroundEnabled /> : <PlaygroundDisabled />;
 }
