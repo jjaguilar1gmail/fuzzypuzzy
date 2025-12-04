@@ -15,7 +15,7 @@ import { Puzzle } from '@/domain/puzzle';
 const mockPuzzle: Puzzle = {
   id: 'daily-test',
   size: 5,
-  difficulty: 'medium',
+  difficulty: 'classic',
   seed: 42,
   clue_count: 10,
   givens: [

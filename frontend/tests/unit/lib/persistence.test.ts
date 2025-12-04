@@ -7,7 +7,7 @@ const samplePuzzle: Puzzle = {
   id: '0001',
   pack_id: 'hard_5x5_soln',
   size: 5,
-  difficulty: 'hard',
+  difficulty: 'expert',
   seed: 1,
   clue_count: 5,
   givens: [],

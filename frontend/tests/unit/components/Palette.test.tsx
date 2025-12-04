@@ -55,7 +55,7 @@ describe('Palette Component (Mock)', () => {
     const mockPuzzle: Puzzle = {
       id: 'test',
       size: 5,
-      difficulty: 'easy',
+      difficulty: 'classic',
       seed: 1,
       clue_count: 2,
       givens: [
@@ -77,7 +77,7 @@ describe('Palette Component (Mock)', () => {
     const mockPuzzle: Puzzle = {
       id: 'test',
       size: 3,
-      difficulty: 'easy',
+      difficulty: 'classic',
       seed: 1,
       clue_count: 1,
       givens: [{ row: 0, col: 0, value: 1 }],
@@ -101,7 +101,7 @@ describe('Palette Component (Mock)', () => {
     const mockPuzzle: Puzzle = {
       id: 'test',
       size: 3,
-      difficulty: 'easy',
+      difficulty: 'classic',
       seed: 1,
       clue_count: 1,
       givens: [{ row: 0, col: 0, value: 1 }],
@@ -124,7 +124,7 @@ describe('Palette Component (Mock)', () => {
     const mockPuzzle: Puzzle = {
       id: 'test',
       size: 3,
-      difficulty: 'easy',
+      difficulty: 'classic',
       seed: 1,
       clue_count: 1,
       givens: [{ row: 0, col: 0, value: 1 }],

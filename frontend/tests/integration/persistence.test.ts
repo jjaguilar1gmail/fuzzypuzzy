@@ -66,7 +66,7 @@ describe('Persistence Round-Trip', () => {
     const mockPuzzle: Puzzle = {
       id: 'persist-test',
       size: 3,
-      difficulty: 'easy',
+      difficulty: 'classic',
       seed: 1,
       clue_count: 2,
       givens: [
@@ -101,7 +101,7 @@ describe('Persistence Round-Trip', () => {
     const mockPuzzle: Puzzle = {
       id: 'candidates-test',
       size: 3,
-      difficulty: 'easy',
+      difficulty: 'classic',
       seed: 1,
       clue_count: 1,
       givens: [{ row: 0, col: 0, value: 1 }],

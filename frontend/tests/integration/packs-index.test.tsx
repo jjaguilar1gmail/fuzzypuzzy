@@ -11,11 +11,11 @@ vi.mock('@/lib/loaders/packs', () => ({
 
 const mockPacks = [
   {
-    id: 'easy-pack',
-    title: 'Easy Puzzles',
+    id: 'classic-pack',
+    title: 'Classic Puzzles',
     description: 'Beginner-friendly puzzles',
     puzzle_count: 10,
-    difficulty_counts: { easy: 10, medium: 0, hard: 0, extreme: 0 },
+    difficulty_counts: { classic: 10 },
     created_at: '2025-01-01T00:00:00Z',
   },
   {
@@ -23,15 +23,15 @@ const mockPacks = [
     title: 'Mixed Challenge',
     description: 'Variety of difficulties',
     puzzle_count: 20,
-    difficulty_counts: { easy: 5, medium: 10, hard: 5, extreme: 0 },
+    difficulty_counts: { classic: 12, expert: 8 },
     created_at: '2025-01-02T00:00:00Z',
   },
   {
-    id: 'hard-pack',
+    id: 'expert-pack',
     title: 'Expert Only',
     description: 'Advanced puzzles',
     puzzle_count: 8,
-    difficulty_counts: { easy: 0, medium: 0, hard: 5, extreme: 3 },
+    difficulty_counts: { expert: 8 },
     created_at: '2025-01-03T00:00:00Z',
   },
 ];
@@ -45,44 +45,41 @@ describe('Packs Index Filtering', () => {
     render(<PacksIndexPage />);
     
     await waitFor(() => {
-      expect(screen.getByText('Easy Puzzles')).toBeInTheDocument();
+      expect(screen.getByText('Classic Puzzles')).toBeInTheDocument();
       expect(screen.getByText('Mixed Challenge')).toBeInTheDocument();
       expect(screen.getByText('Expert Only')).toBeInTheDocument();
     });
   });
 
-  it('should filter packs by easy difficulty', async () => {
+  it('should filter packs by classic difficulty', async () => {
     const user = userEvent.setup();
     render(<PacksIndexPage />);
     
     // Wait for initial load
     await waitFor(() => {
-      expect(screen.getByText('Easy Puzzles')).toBeInTheDocument();
+      expect(screen.getByText('Classic Puzzles')).toBeInTheDocument();
     });
 
-    // Click easy filter
-    const easyFilter = screen.getByRole('button', { name: /easy/i });
-    await user.click(easyFilter);
+    const classicFilter = screen.getByRole('button', { name: /classic/i });
+    await user.click(classicFilter);
 
-    // Should show packs with easy puzzles
-    expect(screen.getByText('Easy Puzzles')).toBeInTheDocument();
+    expect(screen.getByText('Classic Puzzles')).toBeInTheDocument();
     expect(screen.getByText('Mixed Challenge')).toBeInTheDocument();
     expect(screen.queryByText('Expert Only')).not.toBeInTheDocument();
   });
 
-  it('should filter packs by hard difficulty', async () => {
+  it('should filter packs by expert difficulty', async () => {
     const user = userEvent.setup();
     render(<PacksIndexPage />);
     
     await waitFor(() => {
-      expect(screen.getByText('Easy Puzzles')).toBeInTheDocument();
+      expect(screen.getByText('Classic Puzzles')).toBeInTheDocument();
     });
 
-    const hardFilter = screen.getByRole('button', { name: /hard/i });
-    await user.click(hardFilter);
+    const expertFilter = screen.getByRole('button', { name: /expert/i });
+    await user.click(expertFilter);
 
-    // Should show only packs with hard puzzles
-    expect(screen.queryByText('Easy Puzzles')).not.toBeInTheDocument();
+    expect(screen.queryByText('Classic Puzzles')).not.toBeInTheDocument();
     expect(screen.getByText('Mixed Challenge')).toBeInTheDocument();
     expect(screen.getByText('Expert Only')).toBeInTheDocument();
   });
@@ -92,12 +89,11 @@ describe('Packs Index Filtering', () => {
     render(<PacksIndexPage />);
     
     await waitFor(() => {
-      expect(screen.getByText('Easy Puzzles')).toBeInTheDocument();
+      expect(screen.getByText('Classic Puzzles')).toBeInTheDocument();
     });
 
-    // Apply filter
-    const easyFilter = screen.getByRole('button', { name: /easy/i });
-    await user.click(easyFilter);
+    const classicFilter = screen.getByRole('button', { name: /classic/i });
+    await user.click(classicFilter);
 
     expect(screen.queryByText('Expert Only')).not.toBeInTheDocument();
 
@@ -106,7 +102,7 @@ describe('Packs Index Filtering', () => {
     await user.click(clearFilter);
 
     // All packs should be visible again
-    expect(screen.getByText('Easy Puzzles')).toBeInTheDocument();
+    expect(screen.getByText('Classic Puzzles')).toBeInTheDocument();
     expect(screen.getByText('Mixed Challenge')).toBeInTheDocument();
     expect(screen.getByText('Expert Only')).toBeInTheDocument();
   });

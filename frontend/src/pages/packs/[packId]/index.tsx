@@ -47,10 +47,8 @@ export default function PackDetailPage() {
   }
 
   const difficultyColors: Record<Difficulty, string> = {
-    easy: 'bg-green-100 text-green-800',
-    medium: 'bg-yellow-100 text-yellow-800',
-    hard: 'bg-orange-100 text-orange-800',
-    extreme: 'bg-red-100 text-red-800',
+    classic: 'bg-blue-100 text-blue-800',
+    expert: 'bg-purple-100 text-purple-800',
   };
 
   return (
@@ -87,7 +85,7 @@ export default function PackDetailPage() {
                       <span
                         key={diff}
                         className={`px-3 py-1 rounded font-medium ${
-                          difficultyColors[diff as Difficulty]
+                          difficultyColors[diff as Difficulty] ?? 'bg-gray-100 text-gray-700'
                         }`}
                       >
                         {count} {diff}
