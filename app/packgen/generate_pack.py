@@ -10,6 +10,7 @@ from statistics import mean
 
 from generate.generator import Generator
 from generate.models import GeneratedPuzzle
+from generate.difficulty_levels import difficulty_metadata_payload
 from .export import export_puzzle, export_pack_metadata
 from .report import GenerationReport
 
@@ -123,6 +124,35 @@ def _build_pack_metrics(puzzles: List[GeneratedPuzzle]) -> Dict[str, dict] | Non
         metrics['branching_factor'] = branching_stats
     
     return metrics or None
+
+
+def _summarize_actual_difficulties(
+    puzzles: List[GeneratedPuzzle],
+) -> Tuple[Dict[str, int], Dict[str, Dict[str, int]]]:
+    """Return counts per primary difficulty and per intermediate level."""
+    if not puzzles:
+        return {}, {}
+
+    difficulty_counts: Dict[str, int] = {}
+    level_counts: Dict[str, Dict[str, int]] = {}
+
+    for puzzle in puzzles:
+        label = puzzle.difficulty_label or "unclassified"
+        difficulty_counts[label] = difficulty_counts.get(label, 0) + 1
+
+        if puzzle.intermediate_level:
+            level_bucket = level_counts.setdefault(label, {"1": 0, "2": 0, "3": 0})
+            key = str(puzzle.intermediate_level)
+            if key in level_bucket:
+                level_bucket[key] += 1
+            else:
+                level_bucket[key] = 1
+
+    # Drop empty intermediate buckets
+    level_counts = {label: {lvl: count for lvl, count in buckets.items() if count > 0}
+                    for label, buckets in level_counts.items()}
+
+    return difficulty_counts, level_counts
 
 
 def generate_pack(
@@ -249,10 +279,10 @@ def generate_pack(
             include_solution=include_solution,
         )
     
-    # Calculate difficulty and size distributions
-    difficulty_counts = {
-        diff: stats['generated'] 
-        for diff, stats in difficulty_stats.items() 
+    # Calculate distributions
+    requested_difficulty_counts = {
+        diff: stats['generated']
+        for diff, stats in difficulty_stats.items()
         if stats['generated'] > 0
     }
     
@@ -264,6 +294,8 @@ def generate_pack(
     
     puzzle_objects = [result for _, result, _, _ in generated_puzzles]
     pack_metrics = _build_pack_metrics(puzzle_objects)
+    actual_difficulty_counts, level_counts = _summarize_actual_difficulties(puzzle_objects)
+    difficulty_model = difficulty_metadata_payload()
 
     # Export pack metadata
     puzzle_ids = [puzzle_id for puzzle_id, _, _, _ in generated_puzzles]
@@ -274,9 +306,11 @@ def generate_pack(
         title=title,
         description=description,
         puzzle_ids=puzzle_ids,
-        difficulty_counts=difficulty_counts,
+        difficulty_counts=actual_difficulty_counts,
         size_distribution=size_distribution,
         metrics=pack_metrics,
+        difficulty_model=difficulty_model,
+        level_counts=level_counts,
     )
     
     # Update packs index.json
@@ -286,7 +320,7 @@ def generate_pack(
         title=title,
         description=description,
         puzzle_count=len(generated_puzzles),
-        difficulty_counts=difficulty_counts,
+        difficulty_counts=actual_difficulty_counts,
         size_distribution=size_distribution,
     )
     

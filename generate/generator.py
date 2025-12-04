@@ -12,6 +12,12 @@ from .path_builder import PathBuilder
 from .clue_placer import CluePlacer
 from .validator import Validator
 from .models import GenerationConfig, GeneratedPuzzle
+from .difficulty_levels import (
+    assign_intermediate_level,
+    classify_primary_difficulty,
+    compute_difficulty_scores,
+    DEFAULT_THRESHOLDS,
+)
 from util.rng import RNG
 from .anchor_policy import get_policy, select_anchors, ANCHOR_KIND_HARD, ANCHOR_KIND_SOFT, ANCHOR_KIND_REPAIR, ANCHOR_KIND_ENDPOINT
 from .metrics import StructuralInputs, build_structural_metrics
@@ -478,12 +484,11 @@ class Generator:
         # Final validation (T016): Re-solve to confirm  
         # Note: We validated uniqueness during removal; this confirms solvability
         final_solve_result = Solver.solve(final_puzzle, mode='logic_v3', 
-                                          max_nodes=2000, max_time_ms=10000)
+                                          max_nodes=2000, max_time_ms=80000,timeout_ms=80000)
         
         # T017: Compute metrics from solve
         if final_solve_result.solved:
             solver_metrics = compute_metrics(final_puzzle, final_solve_result)
-            assessed_label, assessed_score = assess_difficulty(solver_metrics)
         else:
             # Puzzle may be very hard; use fallback metrics
             import sys
@@ -500,8 +505,7 @@ class Generator:
                 'steps': len(final_solve_result.steps),
                 'strategy_hits': {},
             }
-            assessed_label = difficulty or "extreme"
-            assessed_score = 1.0
+            # Keep solver metrics usable downstream.
         
         # Extract givens for metadata
         givens = [(pos.row, pos.col, grid.get_cell(pos).value) 
@@ -551,6 +555,22 @@ class Generator:
             )
         )
 
+        branching_metrics = (structural_metrics or {}).get("branching", {})
+        search_ratio = branching_metrics.get("search_ratio")
+        avg_branching = branching_metrics.get("average_branching_factor")
+        clue_count = len(current_givens)
+        difficulty_score_1, difficulty_score_2 = compute_difficulty_scores(
+            clue_count,
+            search_ratio,
+            avg_branching,
+        )
+        primary_difficulty = classify_primary_difficulty(clue_count)
+        intermediate_level = assign_intermediate_level(
+            primary_difficulty,
+            difficulty_score_1,
+            DEFAULT_THRESHOLDS,
+        )
+
         timings_ms = {
             "total": int((end_time - start_time) * 1000),
             "path_build": path_build_ms,
@@ -565,9 +585,9 @@ class Generator:
             blocked_cells=all_blocked,  # Include mask cells
             givens=sorted_givens,
             solution=sorted(solution),
-            difficulty_label=assessed_label,  # T019: Use assessed difficulty
-            difficulty_score=assessed_score,
-            clue_count=len(current_givens),
+            difficulty_label=primary_difficulty,
+            difficulty_score=difficulty_score_1,
+            clue_count=clue_count,
             uniqueness_verified=True,
             attempts_used=attempts_used,
             seed=actual_seed,
@@ -576,6 +596,9 @@ class Generator:
             symmetry=symmetry,
             timings_ms=timings_ms,
             solver_metrics=extended_solver_metrics,
+            difficulty_score_1=difficulty_score_1,
+            difficulty_score_2=difficulty_score_2,
+            intermediate_level=intermediate_level,
             mask_metrics=mask_metrics_block,
             repair_metrics=None,
             structural_metrics=structural_metrics,
