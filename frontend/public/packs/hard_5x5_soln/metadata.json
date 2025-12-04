@@ -25,11 +25,39 @@
     "0020"
   ],
   "difficulty_counts": {
-    "hard": 20
+    "expert": 20
   },
   "size_distribution": {
     "5": 20
   },
   "created_at": "2025-11-13T21:52:59.903211Z",
-  "description": "Initial set of 5x5 hard puzzles with solutions"
+  "description": "Initial set of 5x5 hard puzzles with solutions",
+  "intermediate_level_counts": {
+    "expert": {
+      "1": 20
+    }
+  },
+  "difficulty_model": {
+    "primary_split": {
+      "metric": "clue_count",
+      "classic_min_clues": 11
+    },
+    "intermediate_levels": {
+      "metric": "difficulty_score_1",
+      "thresholds": {
+        "classic": {
+          "p33": 0.3771,
+          "p66": 0.481863
+        },
+        "expert": {
+          "p33": 0.87664,
+          "p66": 1.217636
+        }
+      }
+    },
+    "scores": {
+      "difficulty_score_1": "(1 - clue_count/12) + search_ratio + average_branching_factor/200",
+      "difficulty_score_2": "search_ratio + average_branching_factor/200"
+    }
+  }
 }

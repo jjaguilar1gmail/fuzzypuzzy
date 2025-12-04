@@ -45,11 +45,39 @@
     "0040"
   ],
   "difficulty_counts": {
-    "hard": 40
+    "classic": 40
   },
   "size_distribution": {
     "7": 40
   },
   "created_at": "2025-11-18T18:44:15.762437Z",
-  "description": "Initial set of 7x7 hard puzzles"
+  "description": "Initial set of 7x7 hard puzzles",
+  "intermediate_level_counts": {
+    "classic": {
+      "1": 40
+    }
+  },
+  "difficulty_model": {
+    "primary_split": {
+      "metric": "clue_count",
+      "classic_min_clues": 11
+    },
+    "intermediate_levels": {
+      "metric": "difficulty_score_1",
+      "thresholds": {
+        "classic": {
+          "p33": 0.3771,
+          "p66": 0.481863
+        },
+        "expert": {
+          "p33": 0.87664,
+          "p66": 1.217636
+        }
+      }
+    },
+    "scores": {
+      "difficulty_score_1": "(1 - clue_count/12) + search_ratio + average_branching_factor/200",
+      "difficulty_score_2": "search_ratio + average_branching_factor/200"
+    }
+  }
 }
