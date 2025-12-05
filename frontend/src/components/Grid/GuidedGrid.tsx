@@ -456,6 +456,10 @@ const GuidedGrid = memo(function GuidedGrid() {
                   color: statusPalette.primaryForeground,
                 }
               : undefined;
+            const computedButtonStyle = {
+              WebkitTapHighlightColor: 'transparent',
+              ...buttonStyle,
+            };
             return (
               <button
                 key={option.value}
@@ -463,11 +467,11 @@ const GuidedGrid = memo(function GuidedGrid() {
                 onClick={() => setStepDirection(option.value)}
                 aria-pressed={isActive}
                 aria-label={option.aria}
-                style={buttonStyle}
-                className={`flex h-full min-w-[44px] items-center justify-center gap-2 px-2.5 text-sm font-semibold leading-none transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 sm:min-w-0 sm:px-4 sm:leading-tight border ${
+                style={computedButtonStyle}
+                className={`flex h-full min-w-[44px] items-center justify-center gap-2 px-2.5 text-sm font-semibold leading-none transition-colors focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 sm:min-w-0 sm:px-4 sm:leading-tight ${
                   isActive
                     ? 'focus-visible:outline-primary text-primary-foreground'
-                    : 'border-border bg-surface text-copy-muted hover:bg-surface-muted focus-visible:outline-border'
+                    : 'bg-surface text-copy-muted hover:bg-surface-muted focus-visible:outline-border'
                 }`}
               >
                 <span className="flex h-12 w-12 items-center justify-center sm:h-auto sm:w-auto">

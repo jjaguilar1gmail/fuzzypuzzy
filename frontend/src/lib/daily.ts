@@ -1,218 +1,209 @@
-import { PackSummary, Puzzle } from '@/domain/puzzle';
-import { loadPacksList, loadPack, loadPuzzle } from '@/lib/loaders/packs';
+import { DAILY_CONFIG, DAILY_CONFIG as DAILY_SETTINGS, WEEKLY_LEVEL_ROTATION, type DailyConfig, type DailySizeConfig, getConfiguredSizesForDifficulty } from '@/config/dailySettings';
+import { Difficulty, IntermediateLevel, Puzzle } from '@/domain/puzzle';
+import { loadPuzzle } from '@/lib/loaders/packs';
 
-/**
- * Daily puzzle size options.
- */
-export type DailySizeId = 'small' | 'medium' | 'large';
+export type DailyDifficultyId = Difficulty;
+export type DailySizeOption = DailySizeConfig;
 
-export interface DailySizeOption {
-  id: DailySizeId;
-  rows: number;
-  cols: number;
-  label: string;
-  order: number;
+export interface DailySelection {
+  difficulty: DailyDifficultyId;
+  size?: number;
 }
 
-/**
- * Available daily puzzle size options.
- */
-export const DAILY_SIZE_OPTIONS: Record<DailySizeId, DailySizeOption> = {
-  small: { id: 'small', rows: 5, cols: 5, label: 'Small (5×5)', order: 1 },
-  medium: { id: 'medium', rows: 6, cols: 6, label: 'Medium (6×6)', order: 2 },
-  large: { id: 'large', rows: 7, cols: 7, label: 'Large (7×7)', order: 3 },
-};
+interface DailyCatalogEntry {
+  pack_id?: string;
+  pack_slug: string;
+  puzzle_id: string;
+  difficulty: Difficulty;
+  size: number;
+  intermediate_level: IntermediateLevel;
+}
 
-/**
- * Default daily puzzle size for first-time visitors.
- */
-export const DEFAULT_DAILY_SIZE: DailySizeId = 'medium';
+interface DailyCatalogData {
+  entries: DailyCatalogEntry[];
+}
 
-/**
- * Simple hash function for date -> number.
- */
+let catalogCache: DailyCatalogEntry[] | null = null;
+let catalogPromise: Promise<DailyCatalogEntry[]> | null = null;
+
+function allowedSizes(difficulty?: Difficulty): number[] {
+  return getConfiguredSizesForDifficulty(difficulty).map((option) => option.size);
+}
+
+function availableSizesForDifficulty(entries: DailyCatalogEntry[], difficulty: Difficulty): number[] {
+  const allowed = new Set(allowedSizes(difficulty));
+  const result = new Set<number>();
+  entries.forEach((entry) => {
+    if (entry.difficulty === difficulty && allowed.has(entry.size)) {
+      result.add(entry.size);
+    }
+  });
+  return Array.from(result);
+}
+
+export function getDailyConfig(): DailyConfig {
+  return DAILY_CONFIG;
+}
+
+export function getDailySizeOptions(): DailySizeOption[] {
+  return DAILY_SETTINGS.sizes;
+}
+
+export function getDefaultDailySelection(): DailySelection {
+  return {
+    difficulty: DAILY_SETTINGS.defaultDifficulty,
+    size: DAILY_SETTINGS.mixSizes ? undefined : DAILY_SETTINGS.defaultSize,
+  };
+}
+
+async function loadCatalog(): Promise<DailyCatalogEntry[]> {
+  if (catalogCache) {
+    return catalogCache;
+  }
+  if (!catalogPromise) {
+    catalogPromise = fetch('/daily_catalog.json', { cache: 'no-store' })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error('Failed to load daily catalog');
+        }
+        return res.json() as Promise<DailyCatalogData>;
+      })
+      .then((data) => data.entries);
+  }
+  catalogCache = await catalogPromise;
+  return catalogCache;
+}
+
 function hashDate(date: Date): number {
-  // Use local date (YYYY-MM-DD) so puzzle changes at local midnight
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const dateStr = `${year}-${month}-${day}`;
-  
+  const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+    date.getDate(),
+  ).padStart(2, '0')}`;
   let hash = 0;
-  for (let i = 0; i < dateStr.length; i++) {
-    hash = (hash << 5) - hash + dateStr.charCodeAt(i);
-    hash = hash & hash; // Convert to 32-bit integer
+  for (let i = 0; i < iso.length; i += 1) {
+    hash = (hash << 5) - hash + iso.charCodeAt(i);
+    hash |= 0;
   }
   return Math.abs(hash);
-}
-
-/**
- * Hash function for (date, sizeId) -> number.
- * Provides deterministic selection per (date, size) combination.
- */
-function hashDateAndSize(date: Date, sizeId: DailySizeId): number {
-  const dateHash = hashDate(date);
-  const sizeHash = DAILY_SIZE_OPTIONS[sizeId].order;
-  // Combine hashes: date determines base, size provides offset
-  return dateHash + (sizeHash * 1000);
-}
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function getLocalDayIndex(date: Date): number {
-  const midnight = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  return Math.floor(midnight.getTime() / DAY_MS);
 }
 
 function positiveModulo(value: number, modulus: number): number {
   return ((value % modulus) + modulus) % modulus;
 }
 
-type PuzzleRef = { packId: string; puzzleId: string };
-
-function sortRefs(refs: PuzzleRef[]): PuzzleRef[] {
-  return refs.sort((a, b) => {
-    if (a.packId === b.packId) {
-      return a.puzzleId.localeCompare(b.puzzleId);
-    }
-    return a.packId.localeCompare(b.packId);
-  });
+export function getIntermediateLevelForDate(date = new Date()): IntermediateLevel {
+  const day = date.getDay();
+  return WEEKLY_LEVEL_ROTATION[day] ?? 1;
 }
 
-function refsFromSummary(packs: PackSummary[], sizeKey?: string): PuzzleRef[] {
-  const refs: PuzzleRef[] = [];
-  for (const pack of packs) {
-    const catalog = pack.size_catalog;
-    if (!catalog) continue;
-
-    if (sizeKey) {
-      const ids = catalog[sizeKey];
-      if (!ids || ids.length === 0) continue;
-      ids.forEach((puzzleId) => refs.push({ packId: pack.id, puzzleId }));
-      continue;
-    }
-
-    Object.values(catalog).forEach((ids) => {
-      ids.forEach((puzzleId) => refs.push({ packId: pack.id, puzzleId }));
-    });
-  }
-  return refs.length > 0 ? sortRefs(refs) : refs;
+function computeSeed(date: Date, selection: DailySelection, level: number): number {
+  const base = hashDate(date);
+  const diffOffset = selection.difficulty === 'classic' ? 211 : 977;
+  const sizeOffset = selection.size ? selection.size * 131 : 0;
+  return base + diffOffset + sizeOffset + level * 17;
 }
 
-async function refsFromLegacyData(
-  packs: PackSummary[],
-  sizeFilter?: number
-): Promise<PuzzleRef[]> {
-  const refs: PuzzleRef[] = [];
-  const packDetails: Array<{ packId: string; puzzles: string[] }> = [];
-  const filterValue = typeof sizeFilter === 'number' ? sizeFilter : null;
+function filterEntries(
+  entries: DailyCatalogEntry[],
+  selection: DailySelection,
+  targetLevel: IntermediateLevel,
+) {
+  const allowed = new Set(allowedSizes(selection.difficulty));
+  const allowedSizesForDiff = new Set(availableSizesForDifficulty(entries, selection.difficulty));
+  const desiredSize =
+    selection.size && allowedSizesForDiff.has(selection.size) ? selection.size : undefined;
 
-  for (const packSummary of packs) {
-    const pack = await loadPack(packSummary.id);
-    packDetails.push({ packId: pack.id, puzzles: [...pack.puzzles].sort((a, b) => a.localeCompare(b)) });
+  let matches = entries.filter(
+    (entry) =>
+      entry.difficulty === selection.difficulty &&
+      allowed.has(entry.size) &&
+      (desiredSize ? entry.size === desiredSize : true),
+  );
+
+  if (matches.length === 0) {
+    matches = entries.filter(
+      (entry) => entry.difficulty === selection.difficulty && allowed.has(entry.size),
+    );
   }
 
-  for (const { packId, puzzles } of packDetails) {
-    for (const puzzleId of puzzles) {
-      if (filterValue !== null) {
-        try {
-          const puzzle = await loadPuzzle(packId, puzzleId);
-          if (puzzle.size === filterValue) {
-            refs.push({ packId, puzzleId });
-          }
-        } catch (err) {
-          console.warn(
-            `Puzzle ${puzzleId} in pack ${packId} not found while building daily pool`,
-            err
-          );
-        }
-      } else {
-        refs.push({ packId, puzzleId });
-      }
+  if (matches.length === 0) {
+    matches = entries.filter((entry) => entry.difficulty === selection.difficulty);
+  }
+
+  if (matches.length === 0) {
+    return [];
+  }
+
+  const levelMatches = matches.filter((entry) => entry.intermediate_level === targetLevel);
+  if (levelMatches.length > 0) {
+    return levelMatches;
+  }
+
+  // fallback: find closest level buckets by absolute difference
+  const grouped = matches.reduce<Record<number, DailyCatalogEntry[]>>((acc, entry) => {
+    acc[entry.intermediate_level] = acc[entry.intermediate_level] || [];
+    acc[entry.intermediate_level].push(entry);
+    return acc;
+  }, {});
+
+  const sortedLevels = Object.keys(grouped)
+    .map((lvl) => Number(lvl))
+    .sort((a, b) => Math.abs(a - targetLevel) - Math.abs(b - targetLevel));
+
+  for (const lvl of sortedLevels) {
+    if (grouped[lvl]?.length) {
+      return grouped[lvl];
     }
   }
-
-  return refs.length > 0 ? sortRefs(refs) : refs;
+  return matches;
 }
 
-async function loadPuzzleFromRefs(refs: PuzzleRef[], startIndex: number): Promise<Puzzle | null> {
-  if (refs.length === 0) return null;
-
-  const normalizedStart = positiveModulo(startIndex, refs.length);
-  for (let attempts = 0; attempts < refs.length; attempts++) {
-    const index = (normalizedStart + attempts) % refs.length;
-    const ref = refs[index];
+async function loadPuzzleFromEntries(
+  entries: DailyCatalogEntry[],
+  startIndex: number,
+): Promise<Puzzle | null> {
+  if (entries.length === 0) {
+    return null;
+  }
+  const normalizedStart = positiveModulo(startIndex, entries.length);
+  for (let attempts = 0; attempts < entries.length; attempts += 1) {
+    const index = (normalizedStart + attempts) % entries.length;
+    const entry = entries[index];
     try {
-      const puzzle = await loadPuzzle(ref.packId, ref.puzzleId);
+      const slug = entry.pack_slug || entry.pack_id;
+      if (!slug) {
+        continue;
+      }
+      // eslint-disable-next-line no-await-in-loop
+      const puzzle = await loadPuzzle(slug, entry.puzzle_id);
       return puzzle;
     } catch (err) {
       console.warn(
-        `Puzzle ${ref.puzzleId} in pack ${ref.packId} not found, trying next`,
-        err
+        `Failed to load puzzle ${entry.puzzle_id} from pack ${entry.pack_id}, trying fallback`,
+        err,
       );
     }
   }
   return null;
 }
 
-/**
- * Get today's daily puzzle from available packs.
- * Deterministic: same (date, sizeId) -> same puzzle (modulo available pool).
- * Falls back to next available if target is missing.
- * @param sizeId - Optional size filter; if omitted, returns any size
- */
-export async function getDailyPuzzle(sizeId?: DailySizeId): Promise<Puzzle | null> {
-  try {
-    const packs = await loadPacksList();
-    if (packs.length === 0) return null;
-
-    const today = new Date();
-
-    if (sizeId) {
-      const targetSize = DAILY_SIZE_OPTIONS[sizeId].rows;
-      const sizeKey = String(targetSize);
-      let refs = refsFromSummary(packs, sizeKey);
-      if (refs.length === 0) {
-        refs = await refsFromLegacyData(packs, targetSize);
-      }
-
-      if (refs.length === 0) {
-        return null;
-      }
-
-      const dayIndex = getLocalDayIndex(today);
-      const rotationSeed = dayIndex + DAILY_SIZE_OPTIONS[sizeId].order;
-      return await loadPuzzleFromRefs(refs, rotationSeed);
-    }
-
-    let refs = refsFromSummary(packs);
-    if (refs.length === 0) {
-      refs = await refsFromLegacyData(packs);
-    }
-    if (refs.length === 0) {
-      return null;
-    }
-
-    const hash = hashDate(today);
-    const startIndex = hash % refs.length;
-    return await loadPuzzleFromRefs(refs, startIndex);
-  } catch (err) {
-    console.error('Failed to load daily puzzle:', err);
+export async function getDailyPuzzle(
+  selection: DailySelection,
+  date = new Date(),
+): Promise<Puzzle | null> {
+  const catalog = await loadCatalog();
+  const targetLevel = getIntermediateLevelForDate(date);
+  const pool = filterEntries(catalog, selection, targetLevel);
+  if (pool.length === 0) {
     return null;
   }
+  const seed = computeSeed(date, selection, targetLevel);
+  return loadPuzzleFromEntries(pool, seed);
 }
 
-/**
- * Get the daily puzzle ID (for caching/persistence keys).
- * @param sizeId - Optional size identifier for size-specific keys
- */
-export function getDailyPuzzleKey(sizeId?: DailySizeId): string {
-  const today = new Date();
-  // Use local date so puzzle changes at local midnight
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-  const dateStr = `${year}-${month}-${day}`;
-  
-  return sizeId ? `daily-${dateStr}-${sizeId}` : `daily-${dateStr}`;
+export function getDailyPuzzleKey(selection: DailySelection, date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const base = `daily-${year}-${month}-${day}-${selection.difficulty}`;
+  return selection.size ? `${base}-${selection.size}` : base;
 }

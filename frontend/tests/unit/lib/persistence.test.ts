@@ -22,10 +22,10 @@ describe('persistence identity checks', () => {
   });
 
   it('skips restoring when persisted puzzle identity mismatches', () => {
-    const key = 'hpz:v1:state:daily-2025-11-18-small';
+    const key = 'hpz:v1:state:daily-2025-11-18-classic';
     const mismatchedState = {
       schema_version: '1.1',
-      puzzle_id: 'daily-2025-11-18-small',
+      puzzle_id: 'daily-2025-11-18-classic',
       pack_id: 'hard_5x5_soln',
       puzzle_identity: 'hard_5x5_soln:9999',
       cell_entries: {},
@@ -36,16 +36,16 @@ describe('persistence identity checks', () => {
 
     localStorage.setItem(key, JSON.stringify(mismatchedState));
 
-    const restored = loadGameState(samplePuzzle, undefined, 'daily-2025-11-18-small');
+    const restored = loadGameState(samplePuzzle, undefined, 'daily-2025-11-18-classic');
     expect(restored).toBe(false);
     expect(localStorage.getItem(key)).toBeNull();
   });
 
   it('skips restoring legacy daily saves that lack puzzle identity', () => {
-    const key = 'hpz:v1:state:daily-2025-11-18-small';
+    const key = 'hpz:v1:state:daily-2025-11-18-classic';
     const legacyState = {
       schema_version: '1.1',
-      puzzle_id: 'daily-2025-11-18-small',
+      puzzle_id: 'daily-2025-11-18-classic',
       pack_id: 'hard_5x5_soln',
       cell_entries: {},
       candidates: {},
@@ -55,7 +55,7 @@ describe('persistence identity checks', () => {
 
     localStorage.setItem(key, JSON.stringify(legacyState));
 
-    const restored = loadGameState(samplePuzzle, undefined, 'daily-2025-11-18-small');
+    const restored = loadGameState(samplePuzzle, undefined, 'daily-2025-11-18-classic');
     expect(restored).toBe(false);
     expect(localStorage.getItem(key)).toBeNull();
   });
