@@ -13,10 +13,8 @@ const getScaledPipRadius = (pipCount: number, cellSize: number): number => {
   }
 
   const capped = Math.min(pipCount, MAX_SCALED_PIP_COUNT);
-  const t =
-    MAX_SCALED_PIP_COUNT === 1
-      ? 1
-      : (capped - 1) / (MAX_SCALED_PIP_COUNT - 1);
+  const denominator = MAX_SCALED_PIP_COUNT - 1;
+  const t = denominator <= 0 ? 1 : (capped - 1) / denominator;
   const ratio =
     MIN_PIP_RADIUS_RATIO + t * (MAX_PIP_RADIUS_RATIO - MIN_PIP_RADIUS_RATIO);
   return cellSize * ratio;
