@@ -82,6 +82,32 @@ function initializeSequenceState(
   };
 }
 
+function buildStateWithAutoAnchor(
+  baseBoard: BoardCell[][],
+  maxValue: number,
+  stepDirection: SequenceDirection
+): SequenceState {
+  const baseState = initializeSequenceState(stepDirection);
+  const chainInfo = computeChain(baseBoard, maxValue);
+  let resultState: SequenceState = {
+    ...baseState,
+    chainEndValue: chainInfo.chainEndValue,
+    chainLength: chainInfo.chainLength,
+  };
+
+  const autoAnchorPos = findAnchorWithCandidates(baseBoard, stepDirection);
+  if (autoAnchorPos) {
+    resultState = selectAnchorTransition(
+      resultState,
+      baseBoard,
+      maxValue,
+      autoAnchorPos
+    ).state;
+  }
+
+  return resultState;
+}
+
 /**
  * Find the lowest-value anchor that can immediately expose legal targets.
  * Considers contiguous chain skipping logic by reusing next-target derivation.
@@ -178,20 +204,19 @@ export function useGuidedSequenceFlow(
   callbacks?: { onPlacement?: () => void },
   initialBoard?: BoardCell[][] | null
 ): GuidedSequenceFlowAPI {
+  const initialBoardRef = useRef<BoardCell[][] | null>(null);
+  if (initialBoardRef.current === null) {
+    initialBoardRef.current = initialBoard || initializeBoard(rows, cols, givens);
+  }
   // Initialize board and state - use initialBoard if provided (for restoration)
-  const [board, setBoard] = useState(() => 
-    initialBoard || initializeBoard(rows, cols, givens)
-  );
+  const [board, setBoard] = useState(() => initialBoardRef.current as BoardCell[][]);
   const [state, setState] = useState(() => {
     const storedDirection = loadSequenceSettings()?.stepDirection ?? 'forward';
-    const initial = initializeSequenceState(storedDirection);
-    const boardForChain = initialBoard || initializeBoard(rows, cols, givens);
-    const chainInfo = computeChain(boardForChain, maxValue);
-    return {
-      ...initial,
-      chainEndValue: chainInfo.chainEndValue,
-      chainLength: chainInfo.chainLength,
-    };
+    return buildStateWithAutoAnchor(
+      initialBoardRef.current as BoardCell[][],
+      maxValue,
+      storedDirection
+    );
   });
 
   // Undo/redo stack
@@ -214,15 +239,14 @@ export function useGuidedSequenceFlow(
     const newBoard = initializeBoard(rows, cols, givens);
     const preferredDirection =
       loadSequenceSettings()?.stepDirection ?? 'forward';
-    const baseState = initializeSequenceState(preferredDirection);
-    const chainInfo = computeChain(newBoard, maxValue);
+    const newState = buildStateWithAutoAnchor(
+      newBoard,
+      maxValue,
+      preferredDirection
+    );
 
     setBoard(newBoard);
-    setState({
-      ...baseState,
-      chainEndValue: chainInfo.chainEndValue,
-      chainLength: chainInfo.chainLength,
-    });
+    setState(newState);
 
     undoRedoRef.current = new UndoRedoStack();
     setUndoRedoVersion(0);

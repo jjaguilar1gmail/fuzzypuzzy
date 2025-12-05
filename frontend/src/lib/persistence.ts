@@ -201,6 +201,14 @@ export function loadGameState(
 
     const identityForPuzzle = expectedIdentity ?? getPuzzleIdentity(puzzle);
 
+    const restoredTimerShouldRun =
+      (persistedState.completion_status ?? null) !== 'success' &&
+      !(persistedState.is_complete ?? false);
+    const timerRunning = restoredTimerShouldRun
+      ? true
+      : persistedState.timer_running ?? false;
+    const lastTick = timerRunning ? Date.now() : null;
+
     useGameStore.setState({
       grid: { ...grid },
       elapsedMs: persistedState.elapsed_ms,
@@ -208,7 +216,8 @@ export function loadGameState(
       completionStatus: persistedState.completion_status ?? null,
       isComplete: persistedState.is_complete ?? false,
       moveCount: persistedState.move_count ?? 0,
-      timerRunning: persistedState.timer_running ?? true, // Default to true for old saves
+      timerRunning,
+      lastTick,
       sequenceBoard: restoredSequenceBoard,
       sequenceBoardKey: restoredSequenceBoard ? identityForPuzzle : null,
       cellMistakeHistory,
