@@ -44,6 +44,11 @@ const PlusMinusGlyph = ({ variant }: { variant: 'plus' | 'minus' }) => (
  * Grid component integrated with guided sequence flow
  */
 const activeSymbolSet = getDefaultSymbolSet();
+const paletteBSymbolSetIds = new Set([
+  'paletteB-shapes',
+  'paletteB-dice',
+  'paletteB-dice-growing',
+]);
 
 const GuidedGrid = memo(function GuidedGrid() {
   const puzzle = useGameStore((state) => state.puzzle);
@@ -342,7 +347,7 @@ const GuidedGrid = memo(function GuidedGrid() {
       ? Math.min(baseRenderSize, availableWidth)
       : baseRenderSize;
 
-  const isPaletteBSet = activeSymbolSet.id === 'paletteB-shapes';
+  const isPaletteBSet = paletteBSymbolSetIds.has(activeSymbolSet.id);
   const hideNumericNextLabel = isPaletteBSet;
   const showPaletteSwatch = isPaletteBSet;
   const shouldShowPreview =
@@ -571,7 +576,14 @@ const GuidedGrid = memo(function GuidedGrid() {
               totalCells,
             };
             const symbolElement = activeSymbolSet.renderCell(symbolProps);
-            const showNeutralBadges = isPaletteBSet;
+            const badgeFillColor =
+              chainRole && paletteContext
+                ? paletteContext.circleColor
+                : chainRole === 'start'
+                ? statusPalette.primary
+                : chainRole === 'end'
+                ? statusPalette.success
+                : null;
 
             // Determine fill color based on cell state
             const anchorFillColor = paletteContext
@@ -664,17 +676,11 @@ const GuidedGrid = memo(function GuidedGrid() {
                 )}
 
                 {/* Chain baseline overlay */}
-                {badgePath && (
+                {badgePath && badgeFillColor && (
                   <path
                     d={badgePath}
-                    fill={
-                      showNeutralBadges
-                        ? 'rgb(var(--color-text))'
-                        : chainRole === 'start'
-                        ? statusPalette.primary
-                        : statusPalette.success
-                    }
-                    fillOpacity={0.75}
+                    fill={badgeFillColor}
+                    fillOpacity={1}
                     stroke="none"
                     pointerEvents="none"
                   />
