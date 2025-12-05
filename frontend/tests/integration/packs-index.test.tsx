@@ -15,7 +15,7 @@ const mockPacks = [
     title: 'Classic Puzzles',
     description: 'Beginner-friendly puzzles',
     puzzle_count: 10,
-    difficulty_counts: { classic: 10 },
+    difficulty_counts: { classic: 10, expert: 0 },
     created_at: '2025-01-01T00:00:00Z',
   },
   {
@@ -31,7 +31,7 @@ const mockPacks = [
     title: 'Expert Only',
     description: 'Advanced puzzles',
     puzzle_count: 8,
-    difficulty_counts: { expert: 8 },
+    difficulty_counts: { classic: 0, expert: 8 },
     created_at: '2025-01-03T00:00:00Z',
   },
 ];

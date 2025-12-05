@@ -23,7 +23,7 @@ describe('End-to-End User Flows', () => {
               id: 'test-pack',
               title: 'Test Pack',
               puzzle_count: 3,
-              difficulty_counts: { classic: 3 },
+              difficulty_counts: { classic: 3, expert: 0 },
               created_at: '2025-11-11T00:00:00Z'
             }
           ])
@@ -39,7 +39,7 @@ describe('End-to-End User Flows', () => {
             title: 'Test Pack',
             description: 'Test puzzles',
             puzzles: ['0001', '0002', '0003'],
-            difficulty_counts: { classic: 3 },
+            difficulty_counts: { classic: 3, expert: 0 },
             size_distribution: { '5': 3 },
             created_at: '2025-11-11T00:00:00Z'
           })

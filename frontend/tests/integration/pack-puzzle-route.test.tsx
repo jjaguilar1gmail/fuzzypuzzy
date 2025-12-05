@@ -39,7 +39,7 @@ const mockPack = {
   title: 'Test Pack',
   description: 'Test pack description',
   puzzles: ['0001', '0002', '0003', '0004', '0005'],
-  difficulty_counts: { classic: 5 },
+  difficulty_counts: { classic: 5, expert: 0 },
   size_distribution: { '5': 5 },
   created_at: '2025-01-01T00:00:00Z',
 };
