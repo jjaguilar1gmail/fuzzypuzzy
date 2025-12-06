@@ -12,7 +12,7 @@ const samplePuzzle: Puzzle = {
   id: 'demo',
   pack_id: 'pack',
   size: 2,
-  difficulty: 'easy',
+  difficulty: 'classic',
   seed: 1,
   clue_count: 2,
   givens: [{ row: 0, col: 0, value: 1 }],

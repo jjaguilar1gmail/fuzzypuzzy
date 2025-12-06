@@ -25,7 +25,11 @@ export function formatMoveStat(moveCount: number, puzzle: Puzzle | null): string
   return `${moveCount}`;
 }
 
-export function SessionStats() {
+interface SessionStatsProps {
+  variant?: 'standalone' | 'inline';
+}
+
+export function SessionStats({ variant = 'standalone' }: SessionStatsProps = {}) {
   const puzzle = useGameStore((state) => state.puzzle);
   const elapsedMs = useGameStore((state) => state.elapsedMs);
   const moveCount = useGameStore((state) => state.moveCount);
@@ -81,6 +85,21 @@ export function SessionStats() {
   if (!puzzle) return null;
 
   const moveDisplay = formatMoveStat(moveCount, puzzle);
+
+  if (variant === 'inline') {
+    return (
+      <>
+        <div className="flex items-center gap-1 text-sm text-copy">
+          <span className="font-medium text-copy-muted">Time</span>
+          <span className="font-semibold">{formatDuration(elapsedMs)}</span>
+        </div>
+        <div className="flex items-center gap-1 text-sm text-copy">
+          <span className="font-medium text-copy-muted">Moves</span>
+          <span className="font-semibold">{moveDisplay}</span>
+        </div>
+      </>
+    );
+  }
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-copy-muted">

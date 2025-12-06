@@ -21,7 +21,7 @@ const mockPuzzle = {
   id: '0003',
   pack_id: 'test-pack',
   size: 5,
-  difficulty: 'medium' as const,
+  difficulty: 'classic' as const,
   seed: 12345,
   clue_count: 8,
   max_gap: 8,
@@ -39,7 +39,7 @@ const mockPack = {
   title: 'Test Pack',
   description: 'Test pack description',
   puzzles: ['0001', '0002', '0003', '0004', '0005'],
-  difficulty_counts: { easy: 2, medium: 2, hard: 1, extreme: 0 },
+  difficulty_counts: { classic: 5, expert: 0 },
   size_distribution: { '5': 5 },
   created_at: '2025-01-01T00:00:00Z',
 };

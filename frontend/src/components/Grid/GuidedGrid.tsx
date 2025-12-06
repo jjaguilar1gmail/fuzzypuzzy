@@ -44,6 +44,11 @@ const PlusMinusGlyph = ({ variant }: { variant: 'plus' | 'minus' }) => (
  * Grid component integrated with guided sequence flow
  */
 const activeSymbolSet = getDefaultSymbolSet();
+const paletteBSymbolSetIds = new Set([
+  'paletteB-shapes',
+  'paletteB-dice',
+  'paletteB-dice-growing',
+]);
 
 const GuidedGrid = memo(function GuidedGrid() {
   const puzzle = useGameStore((state) => state.puzzle);
@@ -342,7 +347,7 @@ const GuidedGrid = memo(function GuidedGrid() {
       ? Math.min(baseRenderSize, availableWidth)
       : baseRenderSize;
 
-  const isPaletteBSet = activeSymbolSet.id === 'paletteB-shapes';
+  const isPaletteBSet = paletteBSymbolSetIds.has(activeSymbolSet.id);
   const hideNumericNextLabel = isPaletteBSet;
   const showPaletteSwatch = isPaletteBSet;
   const shouldShowPreview =
@@ -357,7 +362,8 @@ const GuidedGrid = memo(function GuidedGrid() {
     const nextTargetValue =
       state.nextTarget ?? globalSequenceState?.nextTarget ?? null;
     if (nextTargetValue !== null) {
-      nextIndicatorText = `Next: ${nextTargetValue}`;
+      const nextLabel = 'Next symbol';
+      nextIndicatorText = `${nextLabel}: ${nextTargetValue}`;
       const previewNode =
         shouldShowPreview && typeof activeSymbolSet.renderPreview === 'function'
           ? activeSymbolSet.renderPreview({
@@ -366,7 +372,9 @@ const GuidedGrid = memo(function GuidedGrid() {
               cellSize: NEXT_PREVIEW_SIZE,
             })
           : null;
-      const visibleLabel = hideNumericNextLabel ? 'Next:' : nextIndicatorText;
+      const visibleLabel = hideNumericNextLabel
+        ? `${nextLabel}:`
+        : nextIndicatorText;
       nextIndicatorContent = (
         <span className="flex items-center gap-3">
           <span>{visibleLabel}</span>
@@ -456,6 +464,10 @@ const GuidedGrid = memo(function GuidedGrid() {
                   color: statusPalette.primaryForeground,
                 }
               : undefined;
+            const computedButtonStyle = {
+              WebkitTapHighlightColor: 'transparent',
+              ...buttonStyle,
+            };
             return (
               <button
                 key={option.value}
@@ -463,11 +475,11 @@ const GuidedGrid = memo(function GuidedGrid() {
                 onClick={() => setStepDirection(option.value)}
                 aria-pressed={isActive}
                 aria-label={option.aria}
-                style={buttonStyle}
-                className={`flex h-full min-w-[44px] items-center justify-center gap-2 px-2.5 text-sm font-semibold leading-none transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 sm:min-w-0 sm:px-4 sm:leading-tight border ${
+                style={computedButtonStyle}
+                className={`flex h-full min-w-[44px] items-center justify-center gap-2 px-2.5 text-sm font-semibold leading-none transition-colors focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 sm:min-w-0 sm:px-4 sm:leading-tight ${
                   isActive
                     ? 'focus-visible:outline-primary text-primary-foreground'
-                    : 'border-border bg-surface text-copy-muted hover:bg-surface-muted focus-visible:outline-border'
+                    : 'bg-surface text-copy-muted hover:bg-surface-muted focus-visible:outline-border'
                 }`}
               >
                 <span className="flex h-12 w-12 items-center justify-center sm:h-auto sm:w-auto">
@@ -567,7 +579,14 @@ const GuidedGrid = memo(function GuidedGrid() {
               totalCells,
             };
             const symbolElement = activeSymbolSet.renderCell(symbolProps);
-            const showNeutralBadges = isPaletteBSet;
+            const badgeFillColor =
+              chainRole && paletteContext
+                ? paletteContext.circleColor
+                : chainRole === 'start'
+                ? statusPalette.primary
+                : chainRole === 'end'
+                ? statusPalette.success
+                : null;
 
             // Determine fill color based on cell state
             const anchorFillColor = paletteContext
@@ -582,6 +601,7 @@ const GuidedGrid = memo(function GuidedGrid() {
             const anchorStrokeColor = paletteContext
               ? paletteContext.circleColor
               : gridPalette.anchorStroke;
+            const anchorStrokeBaseWidth = isPaletteBSet ? 5 : 2;
             let strokeColor = statusPalette.border;
             let strokeWidth = 1;
             if (isAnchor) {
@@ -660,17 +680,11 @@ const GuidedGrid = memo(function GuidedGrid() {
                 )}
 
                 {/* Chain baseline overlay */}
-                {badgePath && (
+                {badgePath && badgeFillColor && (
                   <path
                     d={badgePath}
-                    fill={
-                      showNeutralBadges
-                        ? 'rgb(var(--color-text))'
-                        : chainRole === 'start'
-                        ? statusPalette.primary
-                        : statusPalette.success
-                    }
-                    fillOpacity={0.75}
+                    fill={badgeFillColor}
+                    fillOpacity={1}
                     stroke="none"
                     pointerEvents="none"
                   />
@@ -703,17 +717,31 @@ const GuidedGrid = memo(function GuidedGrid() {
 
                 {/* Highlight pulse for anchor */}
                 {isAnchor && (
-                  <rect
+                  <motion.rect
                     x={x + 1.5}
                     y={y + 1.5}
                     width={cellSize - 3}
                     height={cellSize - 3}
                     fill="none"
                     stroke={anchorStrokeColor}
-                    strokeWidth={isPaletteBSet ? 5 : 2}
+                    strokeWidth={anchorStrokeBaseWidth}
                     rx={5}
                     pointerEvents="none"
                     opacity={1}
+                    style={{ originX: 0.5, originY: 0.5 }}
+                    animate={{
+                      scale: [0.98, 1.05, 0.98],
+                      strokeWidth: [
+                        anchorStrokeBaseWidth,
+                        anchorStrokeBaseWidth + 2,
+                        anchorStrokeBaseWidth,
+                      ],
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }}
                   />
                 )}
 

@@ -840,12 +840,12 @@ def check_puzzle_uniqueness(puzzle: Puzzle, solver_mode: str) -> bool:
         # Fallback to old method for inconclusive cases
         from generate.uniqueness import count_solutions
         density = _compute_clue_density(puzzle)
-        node_cap = 5000
-        timeout_ms = 5000
+        node_cap = 4000
+        timeout_ms = 10000
         # Increase budgets for sparse diagonal puzzles
         if puzzle.constraints.allow_diagonal and density < SPARSE_DENSITY_THRESHOLD:
-            node_cap = 40000
-            timeout_ms = 20000
+            node_cap = 80000
+            timeout_ms = 40000
         fallback_result = count_solutions(puzzle, cap=2, node_cap=node_cap, timeout_ms=timeout_ms)
         if not fallback_result.is_unique and fallback_result.solutions_found >= 2:
             return False
@@ -1524,9 +1524,12 @@ def prune_puzzle(
         elif target_difficulty == "medium":
             min_density = config.pruning_target_density_medium_min
             max_density = config.pruning_target_density_medium_max
-        elif target_difficulty in ["hard", "extreme"]:
+        elif target_difficulty in "hard":
             min_density = config.pruning_target_density_hard_min
             max_density = config.pruning_target_density_hard_max
+        elif target_difficulty in "extreme":
+            min_density = config.pruning_target_density_extreme_min
+            max_density = config.pruning_target_density_extreme_max
 
         # Dynamic guardrail: for sparse 9x9+ diagonal puzzles with long head/tail,
         # enforce a higher minimum density to reduce ambiguity bands.

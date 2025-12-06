@@ -9,7 +9,9 @@ export interface Position {
 /**
  * Difficulty levels for puzzles.
  */
-export type Difficulty = 'easy' | 'medium' | 'hard' | 'extreme';
+export type Difficulty = 'classic' | 'expert';
+
+export type IntermediateLevel = 1 | 2 | 3;
 
 /**
  * Cell value with position.
@@ -41,6 +43,9 @@ export interface Puzzle {
   seed: number;
   clue_count: number;
   max_gap?: number | null;
+  difficulty_score_1?: number;
+  difficulty_score_2?: number;
+  intermediate_level?: IntermediateLevel;
   givens: CellValue[];
   solution?: CellValue[] | null;
   metrics?: PuzzleMetrics;
@@ -56,6 +61,18 @@ export interface Pack {
   description?: string;
   puzzles: string[];
   difficulty_counts?: Record<Difficulty, number>;
+  intermediate_level_counts?: Record<Difficulty, Partial<Record<`${IntermediateLevel}`, number>>>;
+  difficulty_model?: {
+    primary_split?: {
+      metric?: string;
+      classic_min_clues?: number;
+    };
+    intermediate_levels?: {
+      metric?: string;
+      thresholds?: Record<Difficulty, { p33: number; p66: number }>;
+    };
+    scores?: Record<string, string>;
+  };
   size_distribution?: Record<string, number>;
   size_catalog?: Record<string, string[]>;
   created_at: string;

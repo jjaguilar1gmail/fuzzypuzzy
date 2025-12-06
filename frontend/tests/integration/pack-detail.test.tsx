@@ -21,10 +21,8 @@ const mockPack = {
   description: 'A collection of test puzzles',
   puzzles: ['0001', '0002', '0003', '0004', '0005'],
   difficulty_counts: {
-    easy: 2,
-    medium: 2,
-    hard: 1,
-    extreme: 0,
+    classic: 3,
+    expert: 2,
   },
   size_distribution: {
     '5': 3,
@@ -67,9 +65,8 @@ describe('Pack Detail Page', () => {
     render(<PackDetailPage />);
     
     await waitFor(() => {
-      expect(screen.getByText(/2 easy/i)).toBeInTheDocument();
-      expect(screen.getByText(/2 medium/i)).toBeInTheDocument();
-      expect(screen.getByText(/1 hard/i)).toBeInTheDocument();
+      expect(screen.getByText(/3 classic/i)).toBeInTheDocument();
+      expect(screen.getByText(/2 expert/i)).toBeInTheDocument();
     });
   });
 

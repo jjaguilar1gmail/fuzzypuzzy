@@ -48,7 +48,8 @@ def count_solutions(puzzle, cap=2, node_cap=1000, timeout_ms=5000):
         )
         
         elapsed_ms = int((time.time() - start_time) * 1000)
-        
+        # if result["timed_out"]:
+        #     print("timed out")
         return UniquenessCheckResult(
             is_unique=(result['solutions_found'] == 1 and not result['timed_out'] and not result['exhausted']),
             solutions_found=result['solutions_found'],

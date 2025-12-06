@@ -130,7 +130,7 @@ export const SimplePuzzleExample: React.FC<SimplePuzzleProps> = ({
       {process.env.NODE_ENV === 'development' && (
         <div className="debug-info" style={{ marginTop: 20, fontSize: 12 }}>
           <div>Anchor: {api.state.anchorValue ?? 'none'}</div>
-          <div>Next: {api.state.nextTarget ?? 'none'}</div>
+          <div>Next symbol: {api.state.nextTarget ?? 'none'}</div>
           <div>Chain: {api.state.chainEndValue ?? 'empty'} (length {api.state.chainLength})</div>
           <div>Change Reason: {api.state.nextTargetChangeReason}</div>
           <div>Legal Targets: {api.state.legalTargets.length}</div>

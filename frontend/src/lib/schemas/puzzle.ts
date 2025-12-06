@@ -23,15 +23,20 @@ const MetricsSchema = z
   .passthrough()
   .optional();
 
+const DifficultyEnum = z.enum(['classic', 'expert']);
+
 export const PuzzleSchema = z.object({
   schema_version: z.string().optional().default('1.0'),
   id: z.string(),
   pack_id: z.string().optional(),
   size: z.number().int().min(5).max(10),
-  difficulty: z.enum(['easy', 'medium', 'hard', 'extreme']),
+  difficulty: DifficultyEnum,
   seed: z.number().int(),
   clue_count: z.number().int().min(1),
   max_gap: z.union([z.number().int().max(12), z.null()]).optional(),
+  difficulty_score_1: z.number().optional(),
+  difficulty_score_2: z.number().optional(),
+  intermediate_level: z.union([z.literal(1), z.literal(2), z.literal(3)]).optional(),
   givens: z.array(CellValueSchema).min(1),
   solution: z.array(CellValueSchema).nullable().optional(),
   metrics: MetricsSchema,

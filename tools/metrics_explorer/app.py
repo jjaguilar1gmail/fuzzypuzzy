@@ -32,6 +32,9 @@ METRIC_GUIDE = {
     "structure.anchors.density": "Anchors per path length. Sparse anchors may increase ambiguity.",
     "structure.branching.average_branching_factor": "Nodes/depth — rough average branching factor during solve.",
     "structure.branching.search_ratio": "1 - logic_ratio. Helps differentiate logic- vs search-heavy puzzles.",
+    "difficulty_score_1": "Composite heuristic: clue density proxy (clue_count/12) + search_ratio + branching factor/200.",
+    "difficulty_score_2": "Search-heavy heuristic: search_ratio + branching factor/200.",
+    "intermediate_level": "1-3 tier inside classic/expert derived from difficulty_score_1 percentiles.",
 }
 
 ANALYSIS_TIPS = [
@@ -64,6 +67,10 @@ def _extract_record(puzzle_data: Dict) -> Dict:
         "difficulty": puzzle_data.get("difficulty"),
         "clue_count": puzzle_data.get("clue_count"),
         "seed": puzzle_data.get("seed"),
+        "difficulty_score_1": puzzle_data.get("difficulty_score_1"),
+        "difficulty_score_2": puzzle_data.get("difficulty_score_2"),
+        "intermediate_level": puzzle_data.get("intermediate_level"),
+        "intermediate_level": puzzle_data.get("intermediate_level"),
     }
 
     metrics_block = puzzle_data.get("metrics", {})

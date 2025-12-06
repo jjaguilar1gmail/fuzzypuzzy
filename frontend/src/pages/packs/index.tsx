@@ -47,7 +47,11 @@ export default function PacksIndexPage() {
     );
   }
 
-  const difficulties: DifficultyFilter[] = ['all', 'easy', 'medium', 'hard', 'extreme'];
+  const difficulties: DifficultyFilter[] = ['all', 'classic', 'expert'];
+  const difficultyColors: Record<Difficulty, string> = {
+    classic: 'bg-blue-100 text-blue-800',
+    expert: 'bg-purple-100 text-purple-800',
+  };
 
   return (
     <main className="min-h-screen p-8">
@@ -115,13 +119,7 @@ export default function PacksIndexPage() {
                         <span
                           key={diff}
                           className={`px-2 py-1 rounded ${
-                            diff === 'easy'
-                              ? 'bg-green-100 text-green-800'
-                              : diff === 'medium'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : diff === 'hard'
-                              ? 'bg-orange-100 text-orange-800'
-                              : 'bg-red-100 text-red-800'
+                            difficultyColors[diff as Difficulty] ?? 'bg-gray-100 text-gray-700'
                           }`}
                         >
                           {count} {diff}

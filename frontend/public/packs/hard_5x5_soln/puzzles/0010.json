@@ -3,7 +3,7 @@
   "id": "0010",
   "pack_id": "hard_5x5_soln",
   "size": 5,
-  "difficulty": "hard",
+  "difficulty": "expert",
   "seed": 32726782,
   "clue_count": 9,
   "max_gap": null,
@@ -180,5 +180,8 @@
       "col": 4,
       "value": 3
     }
-  ]
+  ],
+  "difficulty_score_1": 0.25,
+  "difficulty_score_2": 0.0,
+  "intermediate_level": 1
 }

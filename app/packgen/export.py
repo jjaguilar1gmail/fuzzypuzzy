@@ -44,6 +44,9 @@ def export_puzzle(
         'clue_count': puzzle.clue_count,
         'max_gap': None,  # Not directly available in GeneratedPuzzle
         'givens': givens,
+        'difficulty_score_1': puzzle.difficulty_score_1,
+        'difficulty_score_2': puzzle.difficulty_score_2,
+        'intermediate_level': puzzle.intermediate_level,
     }
     
     # Include solution if requested
@@ -88,6 +91,8 @@ def export_pack_metadata(
     difficulty_counts: Dict[str, int],
     size_distribution: Dict[str, int],
     metrics: Optional[dict] = None,
+    difficulty_model: Optional[dict] = None,
+    level_counts: Optional[Dict[str, Dict[str, int]]] = None,
 ):
     """Export pack metadata to JSON format matching contract schema.
     
@@ -115,6 +120,10 @@ def export_pack_metadata(
         metadata['description'] = description
     if metrics:
         metadata['metrics'] = metrics
+    if difficulty_model:
+        metadata['difficulty_model'] = difficulty_model
+    if level_counts:
+        metadata['intermediate_level_counts'] = level_counts
     
     # Write to file
     output_file.parent.mkdir(parents=True, exist_ok=True)

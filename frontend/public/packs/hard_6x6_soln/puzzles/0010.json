@@ -3,7 +3,7 @@
   "id": "0010",
   "pack_id": "hard_6x6_soln",
   "size": 6,
-  "difficulty": "hard",
+  "difficulty": "classic",
   "seed": 32726782,
   "clue_count": 14,
   "max_gap": null,
@@ -260,5 +260,8 @@
       "col": 5,
       "value": 25
     }
-  ]
+  ],
+  "difficulty_score_1": -0.16666666666666674,
+  "difficulty_score_2": 0.0,
+  "intermediate_level": 1
 }

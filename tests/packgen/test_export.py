@@ -78,6 +78,9 @@ def sample_generated_puzzle():
         },
         repair_metrics=None,
         structural_metrics=structural_metrics,
+        difficulty_score_1=0.1,
+        difficulty_score_2=0.05,
+        intermediate_level=1,
     )
 
 
@@ -184,6 +187,11 @@ def test_export_pack_metadata_structure(tmp_path):
         difficulty_counts=difficulty_counts,
         size_distribution=size_distribution,
         metrics={'generation_time_ms': {'avg': 100.0, 'min': 90.0, 'max': 120.0}},
+        difficulty_model={
+            'primary_split': {'metric': 'clue_count', 'classic_min_clues': 11},
+            'intermediate_levels': {'metric': 'difficulty_score_1', 'thresholds': {}},
+        },
+        level_counts={'classic': {'1': 2, '2': 1}},
     )
     
     with open(output_file, 'r') as f:
@@ -197,6 +205,8 @@ def test_export_pack_metadata_structure(tmp_path):
     assert 'created_at' in data
     assert 'metrics' in data
     assert 'generation_time_ms' in data['metrics']
+    assert 'difficulty_model' in data
+    assert 'intermediate_level_counts' in data
 
 
 def test_validate_against_schema_accepts_valid_puzzle(sample_generated_puzzle, tmp_path):

@@ -3,7 +3,7 @@
   "id": "0015",
   "pack_id": "hard_7x7",
   "size": 7,
-  "difficulty": "easy",
+  "difficulty": "classic",
   "seed": 756012761,
   "clue_count": 31,
   "max_gap": null,
@@ -410,5 +410,8 @@
       "col": 6,
       "value": 31
     }
-  ]
+  ],
+  "difficulty_score_1": -1.5833333333333335,
+  "difficulty_score_2": 0.0,
+  "intermediate_level": 1
 }

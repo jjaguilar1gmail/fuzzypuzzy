@@ -4,7 +4,7 @@
     "title": "5x5 Hard Verified Solutions",
     "puzzle_count": 20,
     "difficulty_counts": {
-      "hard": 20
+      "expert": 20
     },
     "size_catalog": {
       "5": [
@@ -39,7 +39,7 @@
     "title": "6x6 Hard Verified Solutions",
     "puzzle_count": 20,
     "difficulty_counts": {
-      "hard": 20
+      "classic": 20
     },
     "size_catalog": {
       "6": [
@@ -73,7 +73,7 @@
     "title": "7x7 Hard Verified",
     "puzzle_count": 40,
     "difficulty_counts": {
-      "hard": 40
+      "classic": 40
     },
     "size_catalog": {
       "7": [

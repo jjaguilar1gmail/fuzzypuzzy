@@ -32,12 +32,12 @@ export const NextNumberIndicator: React.FC<NextNumberIndicatorProps> = ({
     >
       {nextTarget !== null ? (
         <div className="next-number-value" data-testid="next-number-value">
-          <span className="label">Next:</span>
+          <span className="label">Next symbol:</span>
           <span className="value">{nextTarget}</span>
         </div>
       ) : (
         <div className="next-number-neutral" data-testid="next-number-neutral">
-          <span className="label">Select a number</span>
+          <span className="label">Select a symbol</span>
         </div>
       )}
     </div>

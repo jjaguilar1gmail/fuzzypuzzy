@@ -42,6 +42,8 @@ class GenerationConfig:
     pruning_target_density_medium_max: float = 0.50
     pruning_target_density_hard_min: float = 0.24
     pruning_target_density_hard_max: float = 0.32
+    pruning_target_density_extreme_min: float = 0.15
+    pruning_target_density_extreme_max: float = 0.24
     pruning_linear_fallback_k: int = 6
     pruning_alternates_count: int = 5
     pruning_repair_topn: int = 5
@@ -158,6 +160,9 @@ class GeneratedPuzzle:
     timings_ms: dict
     solver_metrics: dict
     version: str = "1.0"
+    difficulty_score_1: Optional[float] = None
+    difficulty_score_2: Optional[float] = None
+    intermediate_level: Optional[int] = None
     # US1: Mask metrics
     mask_metrics: Optional[dict] = None
     # US2: Repair metrics
@@ -184,6 +189,9 @@ class GeneratedPuzzle:
             "symmetry": self.symmetry,
             "timings_ms": self.timings_ms,
             "solver_metrics": self.solver_metrics,
+            "difficulty_score_1": self.difficulty_score_1,
+            "difficulty_score_2": self.difficulty_score_2,
+            "intermediate_level": self.intermediate_level,
             "mask_metrics": self.mask_metrics,
             "repair_metrics": self.repair_metrics,
             "version": self.version,

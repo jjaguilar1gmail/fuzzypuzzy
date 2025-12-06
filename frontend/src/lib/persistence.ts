@@ -1,7 +1,6 @@
 import { useGameStore, getPuzzleIdentity } from '@/state/gameStore';
 import { Puzzle } from '@/domain/puzzle';
 import { getCell } from '@/domain/grid';
-import type { DailySizeId } from '@/lib/daily';
 import {
   CellMistakeHistory,
   markHistoryFromGrid,
@@ -43,11 +42,9 @@ function hydrateHistory(keys?: string[] | null): CellMistakeHistory {
   }, {});
 }
 
-function getStorageKey(puzzleId: string, sizeId?: DailySizeId): string {
-  // For daily puzzles, sizeId is already included in the puzzleId (e.g., "daily-2025-11-17-small")
-  // For pack puzzles, we add the sizeId suffix if provided
-  return sizeId && !puzzleId.startsWith('daily-') 
-    ? `hpz:v1:state:${puzzleId}:${sizeId}` 
+function getStorageKey(puzzleId: string, scope?: string): string {
+  return scope && !puzzleId.startsWith('daily-')
+    ? `hpz:v1:state:${puzzleId}:${scope}`
     : `hpz:v1:state:${puzzleId}`;
 }
 
@@ -56,7 +53,7 @@ function getStorageKey(puzzleId: string, sizeId?: DailySizeId): string {
  * @param puzzleId - The puzzle identifier (use daily key for daily puzzles)
  * @param sizeId - Optional size identifier (for non-daily puzzles only)
  */
-export function saveGameState(puzzleId: string, sizeId?: DailySizeId): void {
+export function saveGameState(puzzleId: string, scope?: string): void {
   const state = useGameStore.getState();
   const { grid, elapsedMs, undoStack, completionStatus, isComplete, moveCount, timerRunning } = state;
 
@@ -101,7 +98,7 @@ export function saveGameState(puzzleId: string, sizeId?: DailySizeId): void {
   };
 
   try {
-    localStorage.setItem(getStorageKey(puzzleId, sizeId), JSON.stringify(persistedState));
+    localStorage.setItem(getStorageKey(puzzleId, scope), JSON.stringify(persistedState));
   } catch (err) {
     console.error('Failed to save game state:', err);
   }
@@ -115,11 +112,11 @@ export function saveGameState(puzzleId: string, sizeId?: DailySizeId): void {
  */
 export function loadGameState(
   puzzle: Puzzle, 
-  sizeId?: DailySizeId,
+  scope?: string,
   overridePuzzleId?: string
 ): boolean {
   const puzzleId = overridePuzzleId || puzzle.id;
-  const key = getStorageKey(puzzleId, sizeId);
+  const key = getStorageKey(puzzleId, scope);
   const data = localStorage.getItem(key);
   
   if (!data) {
@@ -204,6 +201,14 @@ export function loadGameState(
 
     const identityForPuzzle = expectedIdentity ?? getPuzzleIdentity(puzzle);
 
+    const restoredTimerShouldRun =
+      (persistedState.completion_status ?? null) !== 'success' &&
+      !(persistedState.is_complete ?? false);
+    const timerRunning = restoredTimerShouldRun
+      ? true
+      : persistedState.timer_running ?? false;
+    const lastTick = timerRunning ? Date.now() : null;
+
     useGameStore.setState({
       grid: { ...grid },
       elapsedMs: persistedState.elapsed_ms,
@@ -211,7 +216,8 @@ export function loadGameState(
       completionStatus: persistedState.completion_status ?? null,
       isComplete: persistedState.is_complete ?? false,
       moveCount: persistedState.move_count ?? 0,
-      timerRunning: persistedState.timer_running ?? true, // Default to true for old saves
+      timerRunning,
+      lastTick,
       sequenceBoard: restoredSequenceBoard,
       sequenceBoardKey: restoredSequenceBoard ? identityForPuzzle : null,
       cellMistakeHistory,
@@ -254,7 +260,7 @@ export function loadGameState(
  * @param puzzleId - The puzzle identifier
  * @param sizeId - Optional size identifier for daily puzzles
  */
-export function clearGameState(puzzleId: string, sizeId?: DailySizeId): void {
-  const key = getStorageKey(puzzleId, sizeId);
+export function clearGameState(puzzleId: string, scope?: string): void {
+  const key = getStorageKey(puzzleId, scope);
   localStorage.removeItem(key);
 }

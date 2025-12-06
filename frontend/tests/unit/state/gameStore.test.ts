@@ -20,7 +20,7 @@ function createPuzzle(overrides: Partial<Puzzle> = {}): Puzzle {
     id: 'puzzle-1',
     pack_id: 'pack-a',
     size: 2,
-    difficulty: 'medium',
+    difficulty: 'classic',
     seed: 1,
     clue_count: 0,
     givens: [],

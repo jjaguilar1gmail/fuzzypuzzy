@@ -100,7 +100,7 @@ function createPuzzle(): Puzzle {
     id: 'puzzle-1',
     pack_id: 'pack-1',
     size: 2,
-    difficulty: 'easy',
+    difficulty: 'classic',
     seed: 0,
     clue_count: 1,
     givens: [{ row: 0, col: 0, value: 1 }],
@@ -196,7 +196,7 @@ describe('GuidedGrid next-number pill', () => {
 
     render(<GuidedGrid />);
 
-    const pillText = screen.getByText('Next: 12');
+    const pillText = screen.getByText('Next symbol: 12');
     expect(pillText).toBeInTheDocument();
     expect(pillText.closest('button')).toBeNull();
   });

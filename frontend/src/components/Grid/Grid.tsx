@@ -4,10 +4,16 @@ import { memo, useMemo, useState, useEffect } from 'react';
 import { gridPalette, statusPalette } from '@/styles/colorTokens';
 import { deriveSymbolRange } from '@/symbolSets/valueRange';
 import { getDefaultSymbolSet } from '@/symbolSets/registry';
+import { getPaletteBColorContext } from '@/symbolSets/paletteBShapeSymbolSet';
 
 const GRID_SAFE_MARGIN = 32;
 
 const activeSymbolSet = getDefaultSymbolSet();
+const paletteBSymbolSetIds = new Set([
+  'paletteB-shapes',
+  'paletteB-dice',
+  'paletteB-dice-growing',
+]);
 
 const Grid = memo(function Grid() {
   const grid = useGameStore((state) => state.grid);
@@ -44,6 +50,7 @@ const Grid = memo(function Grid() {
 
   const { cellSize, gap, totalSize } = dimensions;
   const totalCells = gridSize * gridSize;
+  const isPaletteBSet = paletteBSymbolSetIds.has(activeSymbolSet.id);
 
   const baseRenderSize = totalSize;
   const availableWidth =
@@ -108,6 +115,14 @@ const Grid = memo(function Grid() {
             } Z`;
           }
           const linearIndex = cell.value !== null ? cell.value - 1 : undefined;
+          const paletteContext =
+            isPaletteBSet && cell.value !== null
+              ? getPaletteBColorContext(
+                  cell.value,
+                  totalCells,
+                  typeof linearIndex === 'number' ? linearIndex : undefined
+                )
+              : null;
           const symbolProps = {
             value: cell.value,
             isGiven,
@@ -122,7 +137,14 @@ const Grid = memo(function Grid() {
             totalCells,
           };
           const symbolElement = activeSymbolSet.renderCell(symbolProps);
-          const showNeutralBadges = activeSymbolSet.id === 'paletteB-shapes';
+          const badgeFillColor =
+            chainRole && paletteContext
+              ? paletteContext.circleColor
+              : chainRole === 'start'
+              ? statusPalette.primary
+              : chainRole === 'end'
+              ? statusPalette.success
+              : null;
 
           const fillColor = isGiven
             ? gridPalette.given
@@ -182,16 +204,10 @@ const Grid = memo(function Grid() {
               )}
 
               {/* Chain baseline overlay */}
-              {badgePath && (
+              {badgePath && badgeFillColor && (
                 <path
                   d={badgePath}
-                  fill={
-                    showNeutralBadges
-                      ? 'rgb(var(--color-text))'
-                      : chainRole === 'start'
-                      ? statusPalette.primary
-                      : statusPalette.success
-                  }
+                  fill={badgeFillColor}
                   fillOpacity={0.75}
                   stroke="none"
                   pointerEvents="none"

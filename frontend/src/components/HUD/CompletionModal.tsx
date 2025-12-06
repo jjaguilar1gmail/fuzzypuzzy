@@ -5,14 +5,13 @@ import { formatDuration, formatMoveStat } from '@/components/HUD/SessionStats';
 import { Puzzle } from '@/domain/puzzle';
 import type { CellMistakeHistory } from '@/state/cellMistakeHistory';
 import { positionKey } from '@/domain/position';
-import type { DailySizeId } from '@/lib/daily';
 import { cssVar } from '@/styles/colorTokens';
 
 interface CompletionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPlayAgain?: () => void; // Optional callback for Play Again action
-  dailySize?: DailySizeId;
+  dailyLabel?: string;
   dateLabel?: string | null;
 }
 
@@ -20,7 +19,7 @@ export default function CompletionModal({
   isOpen,
   onClose,
   onPlayAgain,
-  dailySize,
+  dailyLabel,
   dateLabel,
 }: CompletionModalProps) {
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
@@ -32,10 +31,7 @@ export default function CompletionModal({
   const isCorrect = completionStatus !== 'incorrect';
   const moveStat = formatMoveStat(moveCount, puzzle);
 
-  const sizeLabel =
-    dailySize !== undefined
-      ? dailySize.charAt(0).toUpperCase() + dailySize.slice(1)
-      : null;
+  const sizeLabel = dailyLabel ?? null;
 
   const shareEnabled = isCorrect && puzzle;
 
