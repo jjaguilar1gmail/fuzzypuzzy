@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { ReactNode } from 'react';
+import { getDefaultSymbolSet } from '@/symbolSets/registry';
 
 interface TutorialSplashProps {
   isOpen: boolean;
@@ -27,6 +28,8 @@ const statusStyles: Record<MiniCellStatus, string> = {
     'bg-surface text-copy-muted border border-border dark:bg-surface-elevated dark:text-copy-muted',
 };
 
+const tutorialSymbolSet = getDefaultSymbolSet();
+
 const goalExample: MiniCell[] = [
   { value: 1, status: 'given' },
   { value: 2, status: 'path' },
@@ -49,6 +52,7 @@ const controlBadges = [
 const MINI_CELL_SIZE = 46;
 const MINI_GAP = 3;
 const MINI_PADDING = 8;
+const MINI_SYMBOL_SIZE = MINI_CELL_SIZE - 10;
 
 const MINI_BADGE_SIZE = 16;
 const MINI_BADGE_CORNER_RADIUS = 7;
@@ -81,6 +85,32 @@ const EndBadge = () => (
     <path d={endBadgePath} fill="rgb(var(--color-success))" />
   </svg>
 );
+
+const renderMiniSymbol = (value: number | undefined, totalCells: number) => {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  if (typeof tutorialSymbolSet.renderPreview === 'function') {
+    return (
+      <div
+        className="flex items-center justify-center"
+        style={{
+          width: MINI_SYMBOL_SIZE,
+          height: MINI_SYMBOL_SIZE,
+        }}
+      >
+        {tutorialSymbolSet.renderPreview({
+          value,
+          totalCells,
+          cellSize: MINI_SYMBOL_SIZE,
+        })}
+      </div>
+    );
+  }
+
+  return <span className="text-xl font-semibold text-copy">{value}</span>;
+};
 
 function MiniGrid({
   cells,
@@ -136,7 +166,7 @@ function MiniGrid({
               <div
                 className={`flex h-full w-full items-center justify-center rounded-lg text-base font-semibold ${statusStyles[cell.status]}`}
               >
-                {cell.value ?? ''}
+                {renderMiniSymbol(cell.value, cells.length)}
               </div>
               {isStart && <StartBadge />}
               {isEnd && <EndBadge />}
