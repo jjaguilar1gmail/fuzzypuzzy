@@ -196,7 +196,7 @@ describe('GuidedGrid next-number pill', () => {
 
     render(<GuidedGrid />);
 
-    const pillText = screen.getByText('Next: 12');
+    const pillText = screen.getByText('Next symbol: 12');
     expect(pillText).toBeInTheDocument();
     expect(pillText.closest('button')).toBeNull();
   });

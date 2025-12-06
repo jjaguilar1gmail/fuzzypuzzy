@@ -18,6 +18,7 @@ import { SessionStats } from '@/components/HUD/SessionStats';
 import SettingsMenu from '@/components/HUD/SettingsMenu';
 import { SequenceAnnouncer } from '@/sequence/components';
 import { TutorialSplash } from '@/components/HUD/TutorialSplash';
+import { getDefaultSymbolSet } from '@/symbolSets/registry';
 
 const DAILY_SETTINGS_CONFIG = getDailyConfig();
 
@@ -95,6 +96,11 @@ export default function HomePage() {
   const resetMistakeHistory = useGameStore((state) => state.resetMistakeHistory);
   const sequenceState = useGameStore((state) => state.sequenceState);
   const recentMistakes = useGameStore((state) => state.recentMistakes);
+  const activeSymbolSet = useMemo(() => getDefaultSymbolSet(), []);
+  const previewTotalCells = useMemo(() => {
+    const size = puzzle?.size ?? selection.size ?? 6;
+    return size * size;
+  }, [puzzle?.size, selection.size]);
   const pageViewportStyle = { minHeight: 'var(--app-viewport-height)' };
   const dateLabel = useMemo(
     () =>
@@ -413,7 +419,12 @@ export default function HomePage() {
         />
       )}
 
-      <TutorialSplash isOpen={isTutorialOpen} onClose={closeTutorial} />
+      <TutorialSplash
+        isOpen={isTutorialOpen}
+        onClose={closeTutorial}
+        symbolSet={activeSymbolSet}
+        previewTotalCells={previewTotalCells}
+      />
     </main>
   );
 }

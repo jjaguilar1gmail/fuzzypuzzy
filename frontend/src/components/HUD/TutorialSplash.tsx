@@ -2,10 +2,14 @@ import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { getDefaultSymbolSet } from '@/symbolSets/registry';
+import type { SymbolSet } from '@/symbolSets/types';
+import { getPaletteBColorContext } from '@/symbolSets/paletteBShapeSymbolSet';
 
 interface TutorialSplashProps {
   isOpen: boolean;
   onClose: () => void;
+  symbolSet?: SymbolSet;
+  previewTotalCells?: number;
 }
 
 type MiniCellStatus = 'given' | 'path' | 'target' | 'anchor' | 'empty';
@@ -17,28 +21,26 @@ interface MiniCell {
 
 const statusStyles: Record<MiniCellStatus, string> = {
   given:
-    'bg-copy-muted/20 text-copy font-bold border border-border dark:bg-surface-muted/60 dark:text-copy',
+    'text-copy font-bold border border-border bg-transparent',
   path:
-    'bg-primary/5 text-primary border border-primary-muted dark:bg-primary/15 dark:text-primary',
+    'text-primary border border-primary/60 bg-transparent',
   anchor:
-    'bg-warning/30 text-copy border border-warning font-bold dark:bg-warning/40 dark:text-copy',
+    'text-copy border border-warning bg-warning/15 font-bold',
   target:
-    'bg-primary/5 text-primary border-2 border-dashed border-primary dark:bg-primary/20 dark:text-primary',
+    'text-primary border-2 border-dashed border-primary bg-transparent',
   empty:
-    'bg-surface text-copy-muted border border-border dark:bg-surface-elevated dark:text-copy-muted',
+    'text-copy-muted border border-border bg-transparent',
 };
-
-const tutorialSymbolSet = getDefaultSymbolSet();
 
 const goalExample: MiniCell[] = [
   { value: 1, status: 'given' },
   { value: 2, status: 'path' },
-  { value: 3, status: 'path' },
+  { value: 3, status: 'given' },
   { value: 9, status: 'given' },
   { value: 8, status: 'path' },
   { value: 4, status: 'given' },
   { value: 7, status: 'path' },
-  { value: 6, status: 'path' },
+  { value: 6, status: 'given' },
   { value: 5, status: 'path' },
 ];
 
@@ -62,7 +64,13 @@ const endBadgePath = `M ${MINI_BADGE_SIZE} ${MINI_BADGE_CORNER_RADIUS} Q ${MINI_
   MINI_BADGE_SIZE - MINI_BADGE_CORNER_RADIUS
 } 0 L 0 0 L ${MINI_BADGE_SIZE} ${MINI_BADGE_SIZE} Z`;
 
-const StartBadge = () => (
+const paletteBSymbolSetIds = new Set([
+  'paletteB-shapes',
+  'paletteB-dice',
+  'paletteB-dice-growing',
+]);
+
+const StartBadge = ({ fill }: { fill: string }) => (
   <svg
     className="absolute left-[2px] top-[2px]"
     width={MINI_BADGE_SIZE}
@@ -70,11 +78,11 @@ const StartBadge = () => (
     viewBox={`0 0 ${MINI_BADGE_SIZE} ${MINI_BADGE_SIZE}`}
     aria-hidden="true"
   >
-    <path d={startBadgePath} fill="rgb(var(--color-primary))" />
+    <path d={startBadgePath} fill={fill} />
   </svg>
 );
 
-const EndBadge = () => (
+const EndBadge = ({ fill }: { fill: string }) => (
   <svg
     className="absolute right-[2px] top-[2px]"
     width={MINI_BADGE_SIZE}
@@ -82,16 +90,20 @@ const EndBadge = () => (
     viewBox={`0 0 ${MINI_BADGE_SIZE} ${MINI_BADGE_SIZE}`}
     aria-hidden="true"
   >
-    <path d={endBadgePath} fill="rgb(var(--color-success))" />
+    <path d={endBadgePath} fill={fill} />
   </svg>
 );
 
-const renderMiniSymbol = (value: number | undefined, totalCells: number) => {
+const renderMiniSymbol = (
+  value: number | undefined,
+  totalCells: number,
+  symbolSet: SymbolSet
+) => {
   if (value === undefined || value === null) {
     return null;
   }
 
-  if (typeof tutorialSymbolSet.renderPreview === 'function') {
+  if (typeof symbolSet.renderPreview === 'function') {
     return (
       <div
         className="flex items-center justify-center"
@@ -100,7 +112,7 @@ const renderMiniSymbol = (value: number | undefined, totalCells: number) => {
           height: MINI_SYMBOL_SIZE,
         }}
       >
-        {tutorialSymbolSet.renderPreview({
+        {symbolSet.renderPreview({
           value,
           totalCells,
           cellSize: MINI_SYMBOL_SIZE,
@@ -115,9 +127,13 @@ const renderMiniSymbol = (value: number | undefined, totalCells: number) => {
 function MiniGrid({
   cells,
   arrowSequence,
+  symbolSet,
+  totalCells,
 }: {
   cells: MiniCell[];
   arrowSequence?: number[];
+  symbolSet: SymbolSet;
+  totalCells: number;
 }) {
   const gridSide =
     MINI_PADDING * 2 + MINI_CELL_SIZE * 3 + MINI_GAP * 2;
@@ -154,6 +170,24 @@ function MiniGrid({
         {cells.map((cell, idx) => {
           const isStart = cell.value === 1;
           const isEnd = cell.value === cells.length;
+          const badgeColor = (() => {
+            if (!cell.value) {
+              return isStart
+                ? 'rgb(var(--color-primary))'
+                : 'rgb(var(--color-success))';
+            }
+            if (paletteBSymbolSetIds.has(symbolSet.id)) {
+              const context = getPaletteBColorContext(
+                cell.value,
+                totalCells,
+                cell.value - 1
+              );
+              return context.circleColor;
+            }
+            return isStart
+              ? 'rgb(var(--color-primary))'
+              : 'rgb(var(--color-success))';
+          })();
           return (
             <div
               key={idx}
@@ -166,10 +200,10 @@ function MiniGrid({
               <div
                 className={`flex h-full w-full items-center justify-center rounded-lg text-base font-semibold ${statusStyles[cell.status]}`}
               >
-                {renderMiniSymbol(cell.value, cells.length)}
+                {renderMiniSymbol(cell.value, totalCells, symbolSet)}
               </div>
-              {isStart && <StartBadge />}
-              {isEnd && <EndBadge />}
+              {isStart && <StartBadge fill={badgeColor} />}
+              {isEnd && <EndBadge fill={badgeColor} />}
               {cell.status === 'given' && (
                 <span
                   className="absolute left-[6px] right-[6px] bottom-[6px] h-1 rounded-full bg-copy"
@@ -246,7 +280,14 @@ function TutorialCard({
   );
 }
 
-export function TutorialSplash({ isOpen, onClose }: TutorialSplashProps) {
+export function TutorialSplash({
+  isOpen,
+  onClose,
+  symbolSet,
+  previewTotalCells,
+}: TutorialSplashProps) {
+  const activeSymbolSet = symbolSet ?? getDefaultSymbolSet();
+  const demoTotalCells = previewTotalCells ?? 36;
   useEffect(() => {
     if (!isOpen) return;
     const handleKey = (event: KeyboardEvent) => {
@@ -303,14 +344,16 @@ export function TutorialSplash({ isOpen, onClose }: TutorialSplashProps) {
                     <div className="flex flex-col gap-2 md:flex-row md:items-center">
                       <div className="flex-1">
                         <p className="text-base text-copy">
-                          Tap any filled number, place the next value in a neighbor square (diagonals count) so the chain never breaks.
+                          Tap any filled cell, place the next symbol in a neighbor square (diagonals count) so the chain never breaks.
                         </p>
                       </div>
                       <div className="flex justify-center md:ml-4 md:justify-end">
-                        <MiniGrid
-                          cells={goalExample}
-                          arrowSequence={[1, 2, 3, 4, 5, 6, 7, 8, 9]}
-                        />
+                <MiniGrid
+                  cells={goalExample}
+                  arrowSequence={[1, 2, 3, 4, 5, 6, 7, 8, 9]}
+                  symbolSet={activeSymbolSet}
+                  totalCells={demoTotalCells}
+                />
                       </div>
                     </div>
                   </TutorialCard>

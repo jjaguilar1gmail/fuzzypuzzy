@@ -362,7 +362,8 @@ const GuidedGrid = memo(function GuidedGrid() {
     const nextTargetValue =
       state.nextTarget ?? globalSequenceState?.nextTarget ?? null;
     if (nextTargetValue !== null) {
-      nextIndicatorText = `Next: ${nextTargetValue}`;
+      const nextLabel = 'Next symbol';
+      nextIndicatorText = `${nextLabel}: ${nextTargetValue}`;
       const previewNode =
         shouldShowPreview && typeof activeSymbolSet.renderPreview === 'function'
           ? activeSymbolSet.renderPreview({
@@ -371,7 +372,9 @@ const GuidedGrid = memo(function GuidedGrid() {
               cellSize: NEXT_PREVIEW_SIZE,
             })
           : null;
-      const visibleLabel = hideNumericNextLabel ? 'Next:' : nextIndicatorText;
+      const visibleLabel = hideNumericNextLabel
+        ? `${nextLabel}:`
+        : nextIndicatorText;
       nextIndicatorContent = (
         <span className="flex items-center gap-3">
           <span>{visibleLabel}</span>
