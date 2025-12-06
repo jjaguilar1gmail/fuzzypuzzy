@@ -601,6 +601,7 @@ const GuidedGrid = memo(function GuidedGrid() {
             const anchorStrokeColor = paletteContext
               ? paletteContext.circleColor
               : gridPalette.anchorStroke;
+            const anchorStrokeBaseWidth = isPaletteBSet ? 5 : 2;
             let strokeColor = statusPalette.border;
             let strokeWidth = 1;
             if (isAnchor) {
@@ -716,17 +717,31 @@ const GuidedGrid = memo(function GuidedGrid() {
 
                 {/* Highlight pulse for anchor */}
                 {isAnchor && (
-                  <rect
+                  <motion.rect
                     x={x + 1.5}
                     y={y + 1.5}
                     width={cellSize - 3}
                     height={cellSize - 3}
                     fill="none"
                     stroke={anchorStrokeColor}
-                    strokeWidth={isPaletteBSet ? 5 : 2}
+                    strokeWidth={anchorStrokeBaseWidth}
                     rx={5}
                     pointerEvents="none"
                     opacity={1}
+                    style={{ originX: 0.5, originY: 0.5 }}
+                    animate={{
+                      scale: [0.98, 1.05, 0.98],
+                      strokeWidth: [
+                        anchorStrokeBaseWidth,
+                        anchorStrokeBaseWidth + 2,
+                        anchorStrokeBaseWidth,
+                      ],
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }}
                   />
                 )}
 
