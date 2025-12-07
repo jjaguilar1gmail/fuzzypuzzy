@@ -287,6 +287,8 @@ export function TutorialSplash({
   previewTotalCells,
 }: TutorialSplashProps) {
   const activeSymbolSet = symbolSet ?? getDefaultSymbolSet();
+  const isNumericSymbolSet = activeSymbolSet.id === 'numeric';
+  const welcomeTitle = isNumericSymbolSet ? 'Welcome to Number Flow' : 'Welcome to Symbol Flow';
   const demoTotalCells = previewTotalCells ?? 36;
   useEffect(() => {
     if (!isOpen) return;
@@ -337,7 +339,7 @@ export function TutorialSplash({
 
                 <div className="grid gap-3 md:grid-cols-2">
                   <TutorialCard
-                    title="Welcome to Number Flow"
+                    title={welcomeTitle}
                     punchline="Fill every square in order."
                     className="md:col-span-2"
                   >
