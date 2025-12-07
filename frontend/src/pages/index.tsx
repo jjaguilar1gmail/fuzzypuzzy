@@ -311,7 +311,7 @@ export default function HomePage() {
       style={pageViewportStyle}
     >
       <div className="flex w-full max-w-3xl flex-col items-center gap-2 text-center">
-        <div className="relative mb-6 flex w-full items-center justify-center">
+        <div className="relative mb-1 flex w-full items-center justify-center">
           <h1
             className="text-3xl font-bold"
             style={{ fontFamily: 'IowanTitle, serif' }}
@@ -334,33 +334,6 @@ export default function HomePage() {
             </button>
           </div>
         </div>
-
-        {showSizeSelector && (
-          <div
-            className="mb-2 flex flex-wrap gap-2"
-            role="group"
-            aria-label="Select puzzle size"
-          >
-            {sizeOptionsForDifficulty.map((option) => (
-              <button
-                key={option.id}
-                onClick={() => handleSizeChange(option.size)}
-                disabled={loading}
-                className={`
-                  px-3 py-1.5 rounded-full text-sm font-medium transition-colors border
-                  ${selection.size === option.size
-                    ? 'border-primary bg-primary text-primary-foreground shadow-sm'
-                    : 'border-border bg-surface-muted text-copy hover:bg-surface'
-                  }
-                  disabled:opacity-50 disabled:cursor-not-allowed
-                `}
-                aria-pressed={selection.size === option.size}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        )}
 
         <div className="w-full">
           <div className="flex justify-center">
@@ -394,9 +367,35 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-      </div>
 
-      <GuidedGrid />
+        {showSizeSelector && (
+          <div
+            className="flex flex-wrap gap-2"
+            role="group"
+            aria-label="Select puzzle size"
+          >
+            {sizeOptionsForDifficulty.map((option) => (
+              <button
+                key={option.id}
+                onClick={() => handleSizeChange(option.size)}
+                disabled={loading}
+                className={`
+                  px-3 py-1 rounded-full text-sm font-medium transition-colors border
+                  ${selection.size === option.size
+                    ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                    : 'border-border bg-surface-muted text-copy hover:bg-surface'
+                  }
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                `}
+                aria-pressed={selection.size === option.size}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        )}
+        <GuidedGrid />
+      </div>
       
       {/* Old number palette hidden - using guided sequence flow instead */}
       {/* <BottomSheet>
