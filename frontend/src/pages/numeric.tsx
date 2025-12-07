@@ -4,99 +4,90 @@ import { useGameStore } from '@/state/gameStore';
 import {
   getDailyPuzzle,
   getDailyPuzzleKey,
-  getDailyConfig,
-  getDefaultDailySelection,
 } from '@/lib/daily';
-import { getConfiguredSizesForDifficulty } from '@/config/dailySettings';
 import type { DailySelection, DailyDifficultyId } from '@/lib/daily';
 import { loadGameState, saveGameState, clearGameState } from '@/lib/persistence';
 import GuidedGrid from '@/components/Grid/GuidedGrid';
-import Palette from '@/components/Palette/Palette';
-import BottomSheet from '@/components/Palette/BottomSheet';
 import CompletionModal from '@/components/HUD/CompletionModal';
 import { SessionStats } from '@/components/HUD/SessionStats';
-import SettingsMenu from '@/components/HUD/SettingsMenu';
 import { SequenceAnnouncer } from '@/sequence/components';
 import { TutorialSplash } from '@/components/HUD/TutorialSplash';
-import { getDefaultSymbolSet } from '@/symbolSets/registry';
+import { getSymbolSetById } from '@/symbolSets/registry';
 
-const DAILY_SETTINGS_CONFIG = getDailyConfig();
+const NUMERIC_SIZE_OPTIONS = [
+  { id: '5x5', size: 5, label: 'Small' },
+  { id: '6x6', size: 6, label: 'Medium' },
+  { id: '7x7', size: 7, label: 'Large' },
+] as const;
+const NUMERIC_ALLOWED_SIZES = NUMERIC_SIZE_OPTIONS.map((option) => option.size);
 
-const ALLOWED_DIFFICULTIES = new Set(DAILY_SETTINGS_CONFIG.difficulties);
-
-const DAILY_SELECTION_PREFERENCE_KEY = 'hpz:daily:selection';
+const NUMERIC_DIFFICULTY: DailyDifficultyId = 'classic';
+const NUMERIC_SELECTION_KEY = 'hpz:numeric:selection';
 const TUTORIAL_SEEN_KEY = 'hpz:tutorial:seen';
 
-function normalizeSelection(raw?: Partial<DailySelection>): DailySelection {
-  const defaultSelection = getDefaultDailySelection();
-  const difficulty =
-    raw?.difficulty && ALLOWED_DIFFICULTIES.has(raw.difficulty)
-      ? raw.difficulty
-      : defaultSelection.difficulty;
-  const sizeOptions = getConfiguredSizesForDifficulty(difficulty);
-  const allowedSizes = new Set(sizeOptions.map((option) => option.size));
-  let size = raw?.size && allowedSizes.has(raw.size) ? raw.size : defaultSelection.size;
-  if (DAILY_SETTINGS_CONFIG.mixSizes || sizeOptions.length === 0) {
-    size = undefined;
-  } else if (size === undefined || !allowedSizes.has(size)) {
-    size = sizeOptions[0]?.size;
-  }
-  return { difficulty, size };
+type NumericSelection = DailySelection & { size: number };
+
+function normalizeNumericSelection(raw?: Partial<DailySelection>): NumericSelection {
+  const allowedSizes = new Set<number>(NUMERIC_SIZE_OPTIONS.map((option) => option.size));
+  const fallbackSize: number = NUMERIC_SIZE_OPTIONS[0]?.size ?? 5;
+  const size = raw?.size && allowedSizes.has(raw.size) ? raw.size : fallbackSize;
+  return { difficulty: NUMERIC_DIFFICULTY, size };
 }
 
-function loadSelectionPreference(): DailySelection {
+function loadNumericSelection(): NumericSelection {
   if (typeof window === 'undefined') {
-    return normalizeSelection();
+    return normalizeNumericSelection();
   }
   try {
-    const saved = localStorage.getItem(DAILY_SELECTION_PREFERENCE_KEY);
+    const saved = window.localStorage.getItem(NUMERIC_SELECTION_KEY);
     if (saved) {
       const parsed = JSON.parse(saved) as Partial<DailySelection>;
-      return normalizeSelection(parsed);
+      return normalizeNumericSelection(parsed);
     }
   } catch (err) {
-    console.warn('Failed to load selection preference:', err);
+    console.warn('Failed to load numeric selection preference:', err);
   }
-  return normalizeSelection();
+  return normalizeNumericSelection();
 }
 
-function saveSelectionPreference(selection: DailySelection): void {
+function saveNumericSelection(selection: NumericSelection): void {
   if (typeof window === 'undefined') {
     return;
   }
   try {
-    localStorage.setItem(DAILY_SELECTION_PREFERENCE_KEY, JSON.stringify(selection));
+    window.localStorage.setItem(NUMERIC_SELECTION_KEY, JSON.stringify(selection));
   } catch (err) {
-    console.warn('Failed to save selection preference:', err);
+    console.warn('Failed to save numeric selection preference:', err);
   }
 }
 
-/**
- * Daily puzzle page (US1 implementation).
- */
-export default function HomePage() {
+function getNumericDailyKey(selection: NumericSelection, date = new Date()): string {
+  return `${getDailyPuzzleKey(selection, date)}-numeric`;
+}
+
+export default function NumericModePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selection, setSelection] = useState<DailySelection>(() => loadSelectionPreference());
+  const [selection, setSelection] = useState<NumericSelection>(() => loadNumericSelection());
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [hasSeenTutorial, setHasSeenTutorial] = useState(true);
-  const previousSelectionKeyRef = useRef<string>(getDailyPuzzleKey(selection));
+  const previousSelectionKeyRef = useRef<string>(getNumericDailyKey(selection));
   const [sessionDate] = useState(() => new Date());
-  const difficultyOptions = DAILY_SETTINGS_CONFIG.difficulties;
-  const sizeOptionsForDifficulty = getConfiguredSizesForDifficulty(selection.difficulty);
-  const showSizeSelector =
-    !DAILY_SETTINGS_CONFIG.mixSizes && sizeOptionsForDifficulty.length > 1;
-  
+  const sizeOptions = NUMERIC_SIZE_OPTIONS;
+  const showSizeSelector = true;
+
   const loadPuzzle = useGameStore((state) => state.loadPuzzle);
   const puzzle = useGameStore((state) => state.puzzle);
   const completionStatus = useGameStore((state) => state.completionStatus);
-  const dismissCompletionStatus = useGameStore(
-    (state) => state.dismissCompletionStatus
-  );
+  const dismissCompletionStatus = useGameStore((state) => state.dismissCompletionStatus);
   const resetMistakeHistory = useGameStore((state) => state.resetMistakeHistory);
   const sequenceState = useGameStore((state) => state.sequenceState);
   const recentMistakes = useGameStore((state) => state.recentMistakes);
-  const activeSymbolSet = useMemo(() => getDefaultSymbolSet(), []);
+  const grid = useGameStore((state) => state.grid);
+  const elapsedMs = useGameStore((state) => state.elapsedMs);
+  const isComplete = useGameStore((state) => state.isComplete);
+
+  const activeSymbolSet = useMemo(() => getSymbolSetById('numeric'), []);
   const previewTotalCells = useMemo(() => {
     const size = puzzle?.size ?? selection.size ?? 6;
     return size * size;
@@ -111,14 +102,15 @@ export default function HomePage() {
       }),
     [sessionDate]
   );
-  const difficultyLabel = selection.difficulty === 'classic' ? 'Classic' : 'Expert';
-  const sizeDescriptor = puzzle ? `${puzzle.size}x${puzzle.size}` : selection.size ? `${selection.size}x${selection.size}` : undefined;
-  const dailyDescriptor = sizeDescriptor ? `${difficultyLabel} · ${sizeDescriptor}` : difficultyLabel;
+  const difficultyLabel = puzzle?.difficulty === 'expert' ? 'Expert' : 'Classic';
+  const sizeDescriptor = puzzle
+    ? `${puzzle.size}x${puzzle.size}`
+    : `${selection.size}x${selection.size}`;
+  const dailyDescriptor = `${difficultyLabel} - ${sizeDescriptor}`;
 
-  // Handle "Play Again" - clear saved state and reset puzzle
   const handlePlayAgain = useCallback(() => {
     if (puzzle) {
-      const dailyKey = getDailyPuzzleKey(selection);
+      const dailyKey = getNumericDailyKey(selection);
       clearGameState(dailyKey);
       useGameStore.setState({ sequenceBoard: null, sequenceBoardKey: null });
       resetMistakeHistory();
@@ -126,86 +118,42 @@ export default function HomePage() {
     }
   }, [puzzle, selection, resetMistakeHistory]);
 
-  const handleDifficultyChange = (difficulty: DailyDifficultyId) => {
-    if (difficulty === selection.difficulty) {
-      return;
-    }
-    const nextSelection = normalizeSelection({ ...selection, difficulty });
-    setLoading(true);
-    setError(null);
-    setSelection(nextSelection);
-    saveSelectionPreference(nextSelection);
-  };
-
   const handleSizeChange = (newSize: number) => {
     if (selection.size === newSize) {
       return;
     }
-    const nextSelection = normalizeSelection({ ...selection, size: newSize });
+    const nextSelection = normalizeNumericSelection({ size: newSize });
     setLoading(true);
     setError(null);
     setSelection(nextSelection);
-    saveSelectionPreference(nextSelection);
+    saveNumericSelection(nextSelection);
   };
 
   useEffect(() => {
-    if (DAILY_SETTINGS_CONFIG.mixSizes) {
-      if (selection.size !== undefined) {
-        const next = { ...selection, size: undefined };
-        setSelection(next);
-        saveSelectionPreference(next);
-      }
-      return;
+    const previousKey = previousSelectionKeyRef.current;
+    const nextKey = getNumericDailyKey(selection);
+    if (previousKey !== nextKey) {
+      saveGameState(previousKey);
     }
-
-    const options = getConfiguredSizesForDifficulty(selection.difficulty);
-    if (options.length === 0) {
-      if (selection.size !== undefined) {
-        const next = { ...selection, size: undefined };
-        setSelection(next);
-        saveSelectionPreference(next);
-      }
-      return;
-    }
-
-    const allowed = new Set(options.map((option) => option.size));
-    if (selection.size && allowed.has(selection.size)) {
-      return;
-    }
-
-    const fallback = options[0]?.size;
-    if (fallback !== undefined && selection.size !== fallback) {
-      const next = { ...selection, size: fallback };
-      setSelection(next);
-      saveSelectionPreference(next);
-    }
-  }, [selection.difficulty, selection.size, setSelection]);
-
-  useEffect(() => {
-    if (puzzle) {
-      const previousKey = previousSelectionKeyRef.current;
-      const nextKey = getDailyPuzzleKey(selection);
-      if (previousKey !== nextKey) {
-        saveGameState(previousKey);
-      }
-      previousSelectionKeyRef.current = nextKey;
-    }
+    previousSelectionKeyRef.current = nextKey;
 
     let cancelled = false;
-    getDailyPuzzle(selection)
+    getDailyPuzzle(selection, undefined, {
+      allowedSizes: NUMERIC_ALLOWED_SIZES,
+      allowedDifficulties: ['classic', 'expert'],
+    })
       .then((nextPuzzle) => {
         if (cancelled) {
           return;
         }
-
         if (nextPuzzle) {
-          const dailyKey = getDailyPuzzleKey(selection);
+          const dailyKey = getNumericDailyKey(selection);
           const restored = loadGameState(nextPuzzle, undefined, dailyKey);
           if (!restored) {
             loadPuzzle(nextPuzzle);
           }
         } else {
-          setError('No daily puzzle available. Generate packs using the CLI.');
+          setError('No numeric puzzle available. Generate packs using the CLI.');
         }
       })
       .catch((err) => {
@@ -223,11 +171,6 @@ export default function HomePage() {
       cancelled = true;
     };
   }, [loadPuzzle, selection, puzzle]);
-
-  // Subscribe to grid changes for auto-save
-  const grid = useGameStore((state) => state.grid);
-  const elapsedMs = useGameStore((state) => state.elapsedMs);
-  const isComplete = useGameStore((state) => state.isComplete);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -264,15 +207,14 @@ export default function HomePage() {
     markTutorialSeen();
   };
 
-  // Auto-save on state changes
   useEffect(() => {
-    const shouldSave =
-      puzzle &&
-      !loading &&
-      (selection.size === undefined || puzzle.size === selection.size);
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const shouldSave = puzzle && !loading;
     if (shouldSave) {
       const timer = setTimeout(() => {
-        const dailyKey = getDailyPuzzleKey(selection);
+        const dailyKey = getNumericDailyKey(selection);
         saveGameState(dailyKey);
       }, 1000);
       return () => clearTimeout(timer);
@@ -286,7 +228,7 @@ export default function HomePage() {
         className="flex min-h-screen items-center justify-center"
         style={pageViewportStyle}
       >
-        <p>Loading daily puzzle...</p>
+        <p>Loading numeric puzzle...</p>
       </div>
     );
   }
@@ -297,9 +239,9 @@ export default function HomePage() {
         className="flex min-h-screen items-center justify-center flex-col gap-4"
         style={pageViewportStyle}
       >
-        <p className="text-red-600">Error: {error || 'Failed to load puzzle'}</p>
-        <Link href="/packs" className="text-primary hover:underline">
-          Browse puzzle packs
+        <p className="text-red-600">Error: {error || 'Failed to load numeric puzzle'}</p>
+        <Link href="/" className="text-primary hover:underline">
+          Return to the main page
         </Link>
       </div>
     );
@@ -312,13 +254,20 @@ export default function HomePage() {
     >
       <div className="flex w-full max-w-3xl flex-col items-center gap-2 text-center">
         <div className="relative mb-1 flex w-full items-center justify-center">
+          <Link
+            href="/"
+            aria-label="Return to Symbol Flow"
+            className="absolute left-0 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface-elevated/70 text-lg font-bold text-copy shadow-sm transition hover:bg-surface-elevated hover:text-copy focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            ←
+          </Link>
           <h1
             className="text-3xl font-bold"
             style={{ fontFamily: 'IowanTitle, serif' }}
           >
-            Symbol Flow
+            Number Flow
           </h1>
-          <div className="absolute right-0 flex">
+          <div className="absolute right-0 flex gap-2">
             <button
               type="button"
               onClick={openTutorial}
@@ -342,28 +291,9 @@ export default function HomePage() {
                 <SessionStats variant="inline" />
               </div>
               <span className="h-5 w-px bg-border/50" aria-hidden="true" />
-              <div className="inline-flex items-center gap-0 rounded-full bg-surface-muted px-0 py-0">
-                {difficultyOptions.map((diff) => {
-                  const isActive = selection.difficulty === diff;
-                  const label = diff === 'classic' ? 'Classic' : 'Expert';
-                  return (
-                    <button
-                      key={diff}
-                      type="button"
-                      onClick={() => handleDifficultyChange(diff)}
-                      className={`rounded-full px-2 py-0 text-xs font-semibold uppercase tracking-wide transition-colors ${
-                        isActive
-                          ? 'bg-primary text-primary-foreground'
-                          : 'text-copy-muted hover:text-copy'
-                      }`}
-                      aria-pressed={isActive}
-                      disabled={loading}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
+              <span className="rounded-full bg-primary text-primary-foreground px-3 py-0.5 text-xs font-semibold uppercase tracking-wide">
+                {difficultyLabel}
+              </span>
             </div>
           </div>
         </div>
@@ -374,19 +304,16 @@ export default function HomePage() {
             role="group"
             aria-label="Select puzzle size"
           >
-            {sizeOptionsForDifficulty.map((option) => (
+            {sizeOptions.map((option) => (
               <button
                 key={option.id}
                 onClick={() => handleSizeChange(option.size)}
                 disabled={loading}
-                className={`
-                  px-3 py-1 rounded-full text-sm font-medium transition-colors border
-                  ${selection.size === option.size
+                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors border ${
+                  selection.size === option.size
                     ? 'border-primary bg-primary text-primary-foreground shadow-sm'
                     : 'border-border bg-surface-muted text-copy hover:bg-surface'
-                  }
-                  disabled:opacity-50 disabled:cursor-not-allowed
-                `}
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
                 aria-pressed={selection.size === option.size}
               >
                 {option.label}
@@ -394,13 +321,9 @@ export default function HomePage() {
             ))}
           </div>
         )}
-        <GuidedGrid />
+
+        <GuidedGrid symbolSetId="numeric" />
       </div>
-      
-      {/* Old number palette hidden - using guided sequence flow instead */}
-      {/* <BottomSheet>
-        <Palette />
-      </BottomSheet> */}
 
       <CompletionModal
         isOpen={completionStatus !== null}
@@ -409,8 +332,7 @@ export default function HomePage() {
         dailyLabel={dailyDescriptor}
         dateLabel={dateLabel}
       />
-      
-      {/* Screen reader announcements for accessibility */}
+
       {sequenceState && (
         <SequenceAnnouncer
           state={sequenceState}
@@ -424,10 +346,6 @@ export default function HomePage() {
         symbolSet={activeSymbolSet}
         previewTotalCells={previewTotalCells}
       />
-
-      <Link href="/numeric" className="numeric-mode-fab" aria-label="Play numeric-only mode">
-        #
-      </Link>
     </main>
   );
 }

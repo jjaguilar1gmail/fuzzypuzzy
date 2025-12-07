@@ -11,7 +11,7 @@ import {
   paletteB,
 } from '@/styles/colorTokens';
 import { deriveSymbolRange } from '@/symbolSets/valueRange';
-import { getDefaultSymbolSet } from '@/symbolSets/registry';
+import { getDefaultSymbolSet, getSymbolSetById, type SymbolSetId } from '@/symbolSets/registry';
 import { getPaletteBColorContext } from '@/symbolSets/paletteBShapeSymbolSet';
 
 const HOLD_DURATION_MS = 650;
@@ -43,14 +43,17 @@ const PlusMinusGlyph = ({ variant }: { variant: 'plus' | 'minus' }) => (
 /**
  * Grid component integrated with guided sequence flow
  */
-const activeSymbolSet = getDefaultSymbolSet();
 const paletteBSymbolSetIds = new Set([
   'paletteB-shapes',
   'paletteB-dice',
   'paletteB-dice-growing',
 ]);
 
-const GuidedGrid = memo(function GuidedGrid() {
+interface GuidedGridProps {
+  symbolSetId?: SymbolSetId;
+}
+
+const GuidedGrid = memo(function GuidedGrid({ symbolSetId }: GuidedGridProps = {}) {
   const puzzle = useGameStore((state) => state.puzzle);
   const puzzleInstance = useGameStore((state) => state.puzzleInstance);
   const updateSequenceState = useGameStore((state) => state.updateSequenceState);
@@ -111,6 +114,12 @@ const GuidedGrid = memo(function GuidedGrid() {
     (store) => store.reopenCompletionSummary
   );
   const interactionsLocked = isComplete;
+  const activeSymbolSet = useMemo(() => {
+    if (symbolSetId) {
+      return getSymbolSetById(symbolSetId);
+    }
+    return getDefaultSymbolSet();
+  }, [symbolSetId]);
 
   const boardSize = board.length || puzzle?.size || 0;
   const columnCount = board[0]?.length ?? boardSize;

@@ -1,4 +1,11 @@
-import { DAILY_CONFIG, DAILY_CONFIG as DAILY_SETTINGS, WEEKLY_LEVEL_ROTATION, type DailyConfig, type DailySizeConfig, getConfiguredSizesForDifficulty } from '@/config/dailySettings';
+import {
+  DAILY_CONFIG,
+  DAILY_CONFIG as DAILY_SETTINGS,
+  WEEKLY_LEVEL_ROTATION,
+  type DailyConfig,
+  type DailySizeConfig,
+  getConfiguredSizesForDifficulty,
+} from '@/config/dailySettings';
 import { Difficulty, IntermediateLevel, Puzzle } from '@/domain/puzzle';
 import { loadPuzzle } from '@/lib/loaders/packs';
 
@@ -8,6 +15,11 @@ export type DailySizeOption = DailySizeConfig;
 export interface DailySelection {
   difficulty: DailyDifficultyId;
   size?: number;
+}
+
+export interface DailyPuzzleOptions {
+  allowedSizes?: number[];
+  allowedDifficulties?: Difficulty[];
 }
 
 interface DailyCatalogEntry {
@@ -26,19 +38,24 @@ interface DailyCatalogData {
 let catalogCache: DailyCatalogEntry[] | null = null;
 let catalogPromise: Promise<DailyCatalogEntry[]> | null = null;
 
-function allowedSizes(difficulty?: Difficulty): number[] {
+function resolveAllowedSizes(
+  difficulty: Difficulty | undefined,
+  override?: number[],
+): number[] {
+  if (override && override.length > 0) {
+    return override;
+  }
   return getConfiguredSizesForDifficulty(difficulty).map((option) => option.size);
 }
 
-function availableSizesForDifficulty(entries: DailyCatalogEntry[], difficulty: Difficulty): number[] {
-  const allowed = new Set(allowedSizes(difficulty));
-  const result = new Set<number>();
-  entries.forEach((entry) => {
-    if (entry.difficulty === difficulty && allowed.has(entry.size)) {
-      result.add(entry.size);
-    }
-  });
-  return Array.from(result);
+function resolveAllowedDifficulties(
+  selection: DailySelection,
+  override?: Difficulty[],
+): Difficulty[] {
+  if (override && override.length > 0) {
+    return override;
+  }
+  return [selection.difficulty];
 }
 
 export function getDailyConfig(): DailyConfig {
@@ -106,27 +123,53 @@ function filterEntries(
   entries: DailyCatalogEntry[],
   selection: DailySelection,
   targetLevel: IntermediateLevel,
+  options?: DailyPuzzleOptions,
 ) {
-  const allowed = new Set(allowedSizes(selection.difficulty));
-  const allowedSizesForDiff = new Set(availableSizesForDifficulty(entries, selection.difficulty));
-  const desiredSize =
-    selection.size && allowedSizesForDiff.has(selection.size) ? selection.size : undefined;
-
-  let matches = entries.filter(
-    (entry) =>
-      entry.difficulty === selection.difficulty &&
-      allowed.has(entry.size) &&
-      (desiredSize ? entry.size === desiredSize : true),
+  const allowedSizeSet = new Set(
+    resolveAllowedSizes(selection.difficulty, options?.allowedSizes),
   );
+  const allowedDifficultyList = resolveAllowedDifficulties(
+    selection,
+    options?.allowedDifficulties,
+  );
+  const allowedDifficultySet = new Set(allowedDifficultyList);
+
+  const availableSizes = new Set<number>();
+  entries.forEach((entry) => {
+    if (allowedDifficultySet.has(entry.difficulty) && allowedSizeSet.has(entry.size)) {
+      availableSizes.add(entry.size);
+    }
+  });
+
+  const desiredSize =
+    selection.size && availableSizes.has(selection.size) ? selection.size : undefined;
+
+  const applyFilters = (opts?: { ignoreSizePreference?: boolean; ignoreSizeLimit?: boolean }) =>
+    entries.filter((entry) => {
+      if (!allowedDifficultySet.has(entry.difficulty)) {
+        return false;
+      }
+      if (!opts?.ignoreSizeLimit && !allowedSizeSet.has(entry.size)) {
+        return false;
+      }
+      if (!opts?.ignoreSizePreference && desiredSize) {
+        return entry.size === desiredSize;
+      }
+      return true;
+    });
+
+  let matches = applyFilters();
 
   if (matches.length === 0) {
-    matches = entries.filter(
-      (entry) => entry.difficulty === selection.difficulty && allowed.has(entry.size),
-    );
+    matches = applyFilters({ ignoreSizePreference: true });
   }
 
   if (matches.length === 0) {
-    matches = entries.filter((entry) => entry.difficulty === selection.difficulty);
+    matches = applyFilters({ ignoreSizePreference: true, ignoreSizeLimit: true });
+  }
+
+  if (matches.length === 0) {
+    matches = entries.filter((entry) => allowedSizeSet.has(entry.size));
   }
 
   if (matches.length === 0) {
@@ -189,10 +232,11 @@ async function loadPuzzleFromEntries(
 export async function getDailyPuzzle(
   selection: DailySelection,
   date = new Date(),
+  options?: DailyPuzzleOptions,
 ): Promise<Puzzle | null> {
   const catalog = await loadCatalog();
   const targetLevel = getIntermediateLevelForDate(date);
-  const pool = filterEntries(catalog, selection, targetLevel);
+  const pool = filterEntries(catalog, selection, targetLevel, options);
   if (pool.length === 0) {
     return null;
   }
