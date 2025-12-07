@@ -22,9 +22,11 @@ export interface DailyConfig {
 }
 
 export const DAILY_CONFIG: DailyConfig = {
-  difficulties: ['classic', 'expert'],
+  difficulties: ['classic','expert'],
   sizes: [
-    { id: '5x5', size: 5, label: '5x5' },
+    { id: '5x5', size: 5, label: 'Small' },
+    // { id: '6x6', size: 6, label: 'Medium' },
+    // { id: '7x7', size: 7, label: 'Large' },
   ],
   sizeOverrides: {
     expert: ['5x5'],

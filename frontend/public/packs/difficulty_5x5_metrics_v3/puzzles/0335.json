@@ -1,0 +1,286 @@
+{
+  "schema_version": "1.0",
+  "id": "0335",
+  "pack_id": "difficulty_5x5_metrics_v3",
+  "size": 5,
+  "difficulty": "expert",
+  "seed": 1072683439,
+  "clue_count": 9,
+  "max_gap": null,
+  "givens": [
+    {
+      "row": 1,
+      "col": 3,
+      "value": 7
+    },
+    {
+      "row": 1,
+      "col": 4,
+      "value": 8
+    },
+    {
+      "row": 2,
+      "col": 1,
+      "value": 19
+    },
+    {
+      "row": 2,
+      "col": 2,
+      "value": 17
+    },
+    {
+      "row": 2,
+      "col": 3,
+      "value": 5
+    },
+    {
+      "row": 3,
+      "col": 0,
+      "value": 21
+    },
+    {
+      "row": 3,
+      "col": 1,
+      "value": 20
+    },
+    {
+      "row": 3,
+      "col": 3,
+      "value": 25
+    },
+    {
+      "row": 4,
+      "col": 2,
+      "value": 1
+    }
+  ],
+  "solution": [
+    {
+      "row": 0,
+      "col": 0,
+      "value": 13
+    },
+    {
+      "row": 0,
+      "col": 1,
+      "value": 12
+    },
+    {
+      "row": 0,
+      "col": 2,
+      "value": 11
+    },
+    {
+      "row": 0,
+      "col": 3,
+      "value": 10
+    },
+    {
+      "row": 0,
+      "col": 4,
+      "value": 9
+    },
+    {
+      "row": 1,
+      "col": 0,
+      "value": 14
+    },
+    {
+      "row": 1,
+      "col": 1,
+      "value": 16
+    },
+    {
+      "row": 1,
+      "col": 2,
+      "value": 18
+    },
+    {
+      "row": 1,
+      "col": 3,
+      "value": 7
+    },
+    {
+      "row": 1,
+      "col": 4,
+      "value": 8
+    },
+    {
+      "row": 2,
+      "col": 0,
+      "value": 15
+    },
+    {
+      "row": 2,
+      "col": 1,
+      "value": 19
+    },
+    {
+      "row": 2,
+      "col": 2,
+      "value": 17
+    },
+    {
+      "row": 2,
+      "col": 3,
+      "value": 5
+    },
+    {
+      "row": 2,
+      "col": 4,
+      "value": 6
+    },
+    {
+      "row": 3,
+      "col": 0,
+      "value": 21
+    },
+    {
+      "row": 3,
+      "col": 1,
+      "value": 20
+    },
+    {
+      "row": 3,
+      "col": 2,
+      "value": 24
+    },
+    {
+      "row": 3,
+      "col": 3,
+      "value": 25
+    },
+    {
+      "row": 3,
+      "col": 4,
+      "value": 4
+    },
+    {
+      "row": 4,
+      "col": 0,
+      "value": 22
+    },
+    {
+      "row": 4,
+      "col": 1,
+      "value": 23
+    },
+    {
+      "row": 4,
+      "col": 2,
+      "value": 1
+    },
+    {
+      "row": 4,
+      "col": 3,
+      "value": 2
+    },
+    {
+      "row": 4,
+      "col": 4,
+      "value": 3
+    }
+  ],
+  "metrics": {
+    "timings_ms": {
+      "total": 82256,
+      "path_build": 2.0143985748291016,
+      "solve": 0,
+      "uniqueness": 0,
+      "generation": 82256.01
+    },
+    "solver": {
+      "clue_density": 0.36,
+      "logic_ratio": 0.5308310991957105,
+      "nodes": 239,
+      "depth": 10,
+      "steps": 373,
+      "strategy_hits": {
+        "corridor": 0,
+        "degree": 0,
+        "neighbor": 0,
+        "forced": 78
+      },
+      "path_coverage": 1.0,
+      "path_reason": "success",
+      "anchor_count": 2,
+      "anchor_hard_count": 0,
+      "anchor_soft_count": 0,
+      "anchor_repair_count": 0,
+      "anchor_endpoint_count": 2,
+      "anchor_positions": [
+        [
+          4,
+          2
+        ],
+        [
+          3,
+          3
+        ]
+      ],
+      "anchor_policy_name": "adaptive_v1",
+      "anchor_selection_reason": "policy",
+      "anchor_min_index_gap_enforced": false,
+      "anchor_adjacency_mode": "8",
+      "mask_enabled": false,
+      "mask_pattern_id": null,
+      "mask_cells_count": 0,
+      "mask_density": 0.0,
+      "mask_attempts": 5,
+      "structural_repair_used": false,
+      "ambiguity_regions_detected": 0
+    },
+    "structure": {
+      "givens": {
+        "total": 9,
+        "density": 0.36,
+        "row_counts": [
+          0,
+          2,
+          3,
+          3,
+          1
+        ],
+        "column_counts": [
+          1,
+          2,
+          2,
+          3,
+          1
+        ],
+        "quadrants": {
+          "top_left": 2,
+          "top_right": 3,
+          "bottom_left": 3,
+          "bottom_right": 1
+        }
+      },
+      "anchors": {
+        "count": 2,
+        "density": 0.08,
+        "gaps": {
+          "min": 24,
+          "max": 24,
+          "avg": 24
+        }
+      },
+      "branching": {
+        "nodes": 239,
+        "depth": 10,
+        "steps": 373,
+        "average_branching_factor": 23.9,
+        "search_ratio": 0.4692
+      }
+    },
+    "mask": {
+      "mask_enabled": false,
+      "mask_pattern_id": null,
+      "mask_cells_count": 0,
+      "mask_density": 0.0,
+      "mask_attempts": 5
+    }
+  },
+  "difficulty_score_1": 0.8387,
+  "difficulty_score_2": 0.5887,
+  "intermediate_level": 1
+}

@@ -1,0 +1,45 @@
+{
+  "pack_id": "difficulty_5x5_metrics_v3",
+  "total_requested": 800,
+  "total_generated": 800,
+  "total_skipped": 0,
+  "total_failed": 0,
+  "difficulty_breakdown": {
+    "easy": {
+      "generated": 386,
+      "failed": 0
+    },
+    "extreme": {
+      "generated": 414,
+      "failed": 0
+    }
+  },
+  "size_breakdown": {
+    "5": 800
+  },
+  "average_generation_time_ms": 65994.44812625647,
+  "total_time_sec": 52796.91159772873,
+  "metrics": {
+    "generation_time_ms": {
+      "avg": 65994.45,
+      "min": 382.1,
+      "max": 328691.27
+    },
+    "clue_density": {
+      "avg": 0.41,
+      "min": 0.24,
+      "max": 0.48
+    },
+    "anchor_gap": {
+      "avg": 15.31,
+      "min": 6,
+      "max": 24
+    },
+    "branching_factor": {
+      "avg": 35.89,
+      "min": 1.17,
+      "max": 193.7
+    }
+  },
+  "success_rate": 1.0
+}
