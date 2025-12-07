@@ -164,6 +164,10 @@ python -m app.packgen.cli \
 - `--include-solution`: Include solution in output
 
 The CLI automatically updates `public/packs/index.json` when generating packs.
+If you edit or add pack folders manually, rebuild the index with:
+```
+node tools/build_packs_index.js
+```
 
 ### Metrics Playground
 

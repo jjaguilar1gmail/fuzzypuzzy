@@ -36,6 +36,10 @@ function processPuzzle(puzzlePath) {
     if (puzzlesIndex <= 0) {
       return;
     }
+    // Ignore playground packs entirely so daily catalog only references deployable packs.
+    if (segments[0] === 'playground') {
+      return;
+    }
     const slugParts = segments.slice(0, puzzlesIndex);
     const packSlug = slugParts.join('/');
     entries.push({
