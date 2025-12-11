@@ -781,13 +781,17 @@ def check_puzzle_uniqueness(puzzle: Puzzle, solver_mode: str) -> bool:
         puzzle=puzzle,
         size=puzzle.grid.rows,  # Use actual grid size
         adjacency=adjacency,
-        difficulty='medium',  # Conservative budget (500ms)
+        difficulty='hard',  # Conservative budget (500ms)
         enable_early_exit=True,
-        enable_probes=False,  # Disable probes for now (placeholder logic)
-        enable_sat=False
+        enable_probes=True,  # Disable probes for now (placeholder logic)
+        enable_sat=False,
     )
+    # Override the small-board 100ms cap
+    request.total_budget_ms = 2000   # try 1500–2000ms
+    request.stage_budget_split = {'early_exit': 0.5, 'probes': 0.5, 'sat': 0.0} # even split
+    request.strategy_flags['probes'] = True  # Enable probes explicitly
     result = check_uniqueness(request)
-    
+    #print(result)
     # Honor tri-state decision per FR-008
     if result.decision == UniquenessDecision.UNIQUE:
         # Extra guardrail for sparse 8-neighbor puzzles (high ambiguity risk)
@@ -840,13 +844,14 @@ def check_puzzle_uniqueness(puzzle: Puzzle, solver_mode: str) -> bool:
         # Fallback to old method for inconclusive cases
         from generate.uniqueness import count_solutions
         density = _compute_clue_density(puzzle)
-        node_cap = 4000
-        timeout_ms = 10000
+        node_cap = 40000
+        timeout_ms = 100000
         # Increase budgets for sparse diagonal puzzles
         if puzzle.constraints.allow_diagonal and density < SPARSE_DENSITY_THRESHOLD:
-            node_cap = 80000
-            timeout_ms = 40000
+            node_cap = 300000
+            timeout_ms = 200000
         fallback_result = count_solutions(puzzle, cap=2, node_cap=node_cap, timeout_ms=timeout_ms)
+        print(f'density:{density}, fallback_result:{fallback_result}')
         if not fallback_result.is_unique and fallback_result.solutions_found >= 2:
             return False
         
@@ -1460,26 +1465,32 @@ def prune_puzzle(
     
     session = PruningSession()
     
-    # Pre-pruning anchoring: Minimal spine approach
-    # Compute positions needed to ensure max_gap <= 12, inject only those
+    # Pre-pruning anchoring: enforce a small maximum value gap along the path
+    # This is computed purely from path indices so it still triggers even when all cells start as givens.
     protected_positions = set()
-    if puzzle.constraints.allow_diagonal and puzzle.grid.rows >= 9:
-        spine_positions = compute_minimal_spine(path, puzzle, max_gap=MAX_VALUE_GAP)
-        for pos in spine_positions:
+    max_gap = 6  # aim to keep value anchors every <=10 steps on the path
+    if path:
+        spine_indices = list(range(0, len(path), max_gap))
+        if spine_indices[-1] != len(path) - 1:
+            spine_indices.append(len(path) - 1)
+        for idx in spine_indices:
+            pos = path[idx]
             cell = puzzle.grid.get_cell(pos)
             if not cell.blocked and not cell.given:
                 cell.given = True
-                # Set value based on path index
-                idx = path.index(pos)
                 cell.value = idx + 1
-                protected_positions.add(pos)
-                session.record_repair()
+            protected_positions.add(pos)
+            session.record_repair()
     
     removable = order_removable_clues(puzzle, path)
     
     # Remove protected positions from removable list
     if protected_positions:
         removable = [pos for pos in removable if pos not in protected_positions]
+    
+    # Shuffle removal order to explore different clue configurations
+    import random
+    random.shuffle(removable)
     
     if not removable:
         clue_count = sum(
@@ -1554,9 +1565,10 @@ def prune_puzzle(
                 # Within target range - stop pruning
                 break
         
-        # Check fallback condition
+        # Check fallback condition (favor earlier linear probing to explore more configs)
         current_count = high_index - low_index + 1
-        if should_fallback_to_linear(current_count, config.pruning_linear_fallback_k):
+        fallback_k = max(3, config.pruning_linear_fallback_k // 2)
+        if should_fallback_to_linear(current_count, fallback_k):
             break
         
         mid_index = (low_index + high_index) // 2
@@ -1780,8 +1792,8 @@ def prune_puzzle(
                 target_min_density=min_density,
                 target_max_density=max_density,
                 max_gap=MAX_VALUE_GAP,
-                max_iterations=15,
-                batch_size_init=5,
+                max_iterations=25,
+                batch_size_init=2,  # even smaller batches to explore more configs
             )
             if removed_thinning > 0:
                 final_status = PruningStatus.SUCCESS_WITH_REPAIRS

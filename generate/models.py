@@ -34,7 +34,7 @@ class GenerationConfig:
     anchor_tolerance: float = 0.0  # Future tuning parameter
     # T16: Solver-driven pruning configuration
     pruning_enabled: bool = True
-    pruning_max_repairs: int = 2
+    pruning_max_repairs: int = 6
     # Target density ranges by difficulty
     pruning_target_density_easy_min: float = 0.50
     pruning_target_density_easy_max: float = 1.00

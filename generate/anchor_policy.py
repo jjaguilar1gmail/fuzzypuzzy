@@ -211,8 +211,28 @@ def select_anchors(
                 reason="option",
                 path_index=mid_turn[0]
             ))
-    
-    # Hard and extreme: No additional anchors initially (repairs added later)
+
+    elif difficulty in ["hard", "extreme"]:
+        # Hard/extreme: keep up to three spaced turns for structural stability
+        if turn_positions:
+            target_count = min(2, len(turn_positions))
+            # Spread them out along the path
+            gap = max(policy.min_index_gap, max(2, len(path) // 6))
+            selected, gap_enforced_local = _select_spaced_turns(
+                turn_positions,
+                target_count,
+                gap,
+                len(path)
+            )
+            if gap_enforced_local:
+                min_gap_enforced = True
+            for idx, pos in selected:
+                anchors.append(TurnAnchor(
+                    position=pos,
+                    kind=ANCHOR_KIND_HARD,
+                    reason="stability",
+                    path_index=idx
+                ))
     
     metrics = _build_metrics(anchors, policy.name, "policy", min_gap_enforced)
     return anchors, metrics

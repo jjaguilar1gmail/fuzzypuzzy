@@ -87,6 +87,7 @@ class Generator:
         import copy
         
         start_time = time.time()
+        uniqueness_time_ms = 0
         
         # Validate config
         config = GenerationConfig(
@@ -426,6 +427,7 @@ class Generator:
                     node_cap=config.uniqueness_node_cap,
                     timeout_ms=config.uniqueness_timeout_ms
                 )
+                uniqueness_time_ms += uniqueness_result.elapsed_ms
                 
                 if uniqueness_result.is_unique:
                     # Accept removal
@@ -483,8 +485,10 @@ class Generator:
         
         # Final validation (T016): Re-solve to confirm  
         # Note: We validated uniqueness during removal; this confirms solvability
+        solve_start_time = time.time()
         final_solve_result = Solver.solve(final_puzzle, mode='logic_v3', 
-                                          max_nodes=2000, max_time_ms=80000,timeout_ms=80000)
+                                          max_nodes=200000, max_time_ms=300000,timeout_ms=300000)
+        solve_time_ms = int((time.time() - solve_start_time) * 1000)
         
         # T017: Compute metrics from solve
         if final_solve_result.solved:
@@ -574,8 +578,8 @@ class Generator:
         timings_ms = {
             "total": int((end_time - start_time) * 1000),
             "path_build": path_build_ms,
-            "solve": 0,  # SolverResult doesn't track elapsed_ms currently
-            "uniqueness": 0,  # TODO: track separately
+            "solve": solve_time_ms,
+            "uniqueness": uniqueness_time_ms,
         }
 
         # Create result (T023: Include mask cells in blocked_cells)
