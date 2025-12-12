@@ -117,7 +117,26 @@ class Solver:
         def is_timeout() -> bool:
             return (time.time() - start_time) * 1000 > timeout_ms
         
-        def is_complete(puzzle_state) -> bool:
+        def build_neighbors(puzzle_state: Puzzle) -> dict[Position, list[Position]]:
+            """Cache neighbor lists for each unblocked position."""
+            cache = {}
+            for cell in puzzle_state.grid.iter_cells():
+                if cell.blocked:
+                    continue
+                cache[cell.pos] = puzzle_state.grid.neighbors_of(cell.pos)
+            return cache
+
+        def build_placed_map(puzzle_state: Puzzle) -> dict[int, Position]:
+            """Map placed value -> position for current puzzle state."""
+            placed = {}
+            for cell in puzzle_state.grid.iter_cells():
+                if cell.blocked:
+                    continue
+                if cell.value is not None:
+                    placed[cell.value] = cell.pos
+            return placed
+
+        def is_complete(puzzle_state, placed_values: dict[int, Position]) -> bool:
             """Check if puzzle is completely filled and valid."""
             # All non-blocked cells must have values
             for cell in puzzle_state.grid.iter_cells():
@@ -129,7 +148,7 @@ class Solver:
             temp_solver = Solver(puzzle_state)
             return temp_solver._is_solved()
         
-        def get_next_empty_cell(puzzle_state):
+        def get_next_empty_cell(puzzle_state, placed_values, neighbors_map):
             """Find the next empty non-blocked cell using MRV (min remaining values)."""
             best_pos = None
             best_count = None
@@ -141,7 +160,7 @@ class Solver:
                     if cell.blocked or not cell.is_empty():
                         continue
                     # Compute possible values count for MRV
-                    possible = get_possible_values(puzzle_state, pos)
+                    possible = get_possible_values(puzzle_state, pos, placed_values, neighbors_map)
                     cnt = len(possible)
                     if cnt == 0:
                         # Early detect dead-end: no values possible for this cell
@@ -154,24 +173,15 @@ class Solver:
                             return best_pos
             return best_pos
         
-        def get_possible_values(puzzle_state, pos):
+        def get_possible_values(puzzle_state, pos, placed_values, neighbors_map):
             """Get possible values for a position based on Hidato adjacency rules."""
             # Position must be empty and not blocked
             cell = puzzle_state.grid.get_cell(pos)
             if not cell.is_empty() or cell.blocked:
                 return []
-            
-            # Find which values are already placed and their positions
-            placed_values = {}
-            for cell in puzzle_state.grid.iter_cells():
-                # Skip blocked cells
-                if cell.blocked:
-                    continue
-                if cell.value is not None:
-                    placed_values[cell.value] = cell.pos
-            
+
             possible = []
-            neighbors = puzzle_state.grid.neighbors_of(pos)
+            neighbors = neighbors_map.get(pos)
             
             for value in range(puzzle_state.constraints.min_value, 
                              puzzle_state.constraints.max_value + 1):
@@ -198,39 +208,37 @@ class Solver:
             
             return possible
         
-        def search_recursive(puzzle_state, depth: int) -> None:
+        def search_recursive(puzzle_state, depth: int, placed_values: dict[int, Position]) -> None:
             """Recursive search that counts all solutions up to cap."""
             nonlocal nodes_explored, max_search_depth, solutions_found, timed_out, exhausted
             
             # Early termination if we've found enough solutions
             if solutions_found >= cap:
                 return
-            
-            nodes_explored += 1
-            max_search_depth = max(max_search_depth, depth)
-            
-            # Check termination conditions
-            if nodes_explored > max_nodes or depth > max_depth:
+            # Check limits before heavier work
+            if nodes_explored >= max_nodes or depth > max_depth:
                 exhausted = True
                 return
-            
             if is_timeout():
                 timed_out = True
                 return
             
+            nodes_explored += 1
+            max_search_depth = max(max_search_depth, depth)
+            
             # Check if puzzle is complete
-            if is_complete(puzzle_state):
+            if is_complete(puzzle_state, placed_values):
                 solutions_found += 1
                 return
             
             # Find next empty cell
-            pos = get_next_empty_cell(puzzle_state)
+            pos = get_next_empty_cell(puzzle_state, placed_values, neighbors_map)
             if pos is None:
                 # No empty cells but not complete - contradiction
                 return
             
             # Get possible values for this position
-            possible_values = get_possible_values(puzzle_state, pos)
+            possible_values = get_possible_values(puzzle_state, pos, placed_values, neighbors_map)
             
             if not possible_values:
                 # No valid values - dead end
@@ -247,15 +255,19 @@ class Solver:
                 new_puzzle = temp_solver._copy_puzzle(puzzle_state)
                 new_cell = new_puzzle.grid.get_cell(pos)
                 new_cell.value = value
+                new_placed = placed_values.copy()
+                new_placed[value] = pos
                 
                 # Recursive search
-                search_recursive(new_puzzle, depth + 1)
+                search_recursive(new_puzzle, depth + 1, new_placed)
         
         # Create a working copy of the puzzle
         solver = Solver(puzzle)
         new_puzzle = solver._copy_puzzle(puzzle)
         clear_nongivens(new_puzzle)
-        search_recursive(new_puzzle, 0)
+        neighbors_map = build_neighbors(new_puzzle)
+        placed_values = build_placed_map(new_puzzle)
+        search_recursive(new_puzzle, 0, placed_values)
 
         return {
             'solutions_found': solutions_found,
@@ -1423,4 +1435,3 @@ def validate_solution(puzzle: Puzzle, original_givens: dict) -> dict:
     report['status'] = 'PASS'
     report['message'] = f"Valid Hidato solution: all {len(placed_values)} values correctly placed in contiguous path"
     return report
-
