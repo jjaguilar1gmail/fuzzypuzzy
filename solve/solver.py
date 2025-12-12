@@ -100,7 +100,6 @@ class Solver:
                 exhausted: bool (whether search space was exhausted)
         """
         import time
-        from solve.candidates import CandidateModel
         
         start_time = time.time()
         nodes_explored = 0
@@ -207,8 +206,44 @@ class Solver:
                 possible.append(value)
             
             return possible
+
+        def has_viable_neighbors(puzzle_state: Puzzle, value: int, pos: Position, placed_values: dict[int, Position], neighbors_map) -> bool:
+            """Light forward-check: ensure required adjacent values can still be placed."""
+            min_val = puzzle_state.constraints.min_value
+            max_val = puzzle_state.constraints.max_value
+            neighbors = neighbors_map.get(pos, [])
+
+            prev_val = value - 1
+            next_val = value + 1
+
+            # Helper: does there exist an empty neighbor (or already placed) for target_val?
+            def neighbor_exists(target_val: int) -> bool:
+                if target_val in placed_values:
+                    return placed_values[target_val] in neighbors
+                for npos in neighbors:
+                    ncell = puzzle_state.grid.get_cell(npos)
+                    if ncell.is_empty():
+                        return True
+                return False
+
+            if value == min_val:
+                if next_val <= max_val:
+                    return neighbor_exists(next_val)
+                return True
+            if value == max_val:
+                if prev_val >= min_val:
+                    return neighbor_exists(prev_val)
+                return True
+
+            ok_prev = True
+            ok_next = True
+            if prev_val >= min_val:
+                ok_prev = neighbor_exists(prev_val)
+            if next_val <= max_val:
+                ok_next = neighbor_exists(next_val)
+            return ok_prev and ok_next
         
-        def search_recursive(puzzle_state, depth: int, placed_values: dict[int, Position]) -> None:
+        def search_recursive(puzzle_state, depth: int, placed_values: dict[int, Position], empty_count: int) -> None:
             """Recursive search that counts all solutions up to cap."""
             nonlocal nodes_explored, max_search_depth, solutions_found, timed_out, exhausted
             
@@ -227,6 +262,10 @@ class Solver:
             max_search_depth = max(max_search_depth, depth)
             
             # Check if puzzle is complete
+            if empty_count == 0:
+                if is_complete(puzzle_state, placed_values):
+                    solutions_found += 1
+                return
             if is_complete(puzzle_state, placed_values):
                 solutions_found += 1
                 return
@@ -250,16 +289,23 @@ class Solver:
                 if solutions_found >= cap:
                     return
                 
-                # Create new puzzle state with this assignment
-                temp_solver = Solver(puzzle_state)
-                new_puzzle = temp_solver._copy_puzzle(puzzle_state)
-                new_cell = new_puzzle.grid.get_cell(pos)
-                new_cell.value = value
-                new_placed = placed_values.copy()
-                new_placed[value] = pos
+                # Assign in place
+                cell = puzzle_state.grid.get_cell(pos)
+                cell.value = value
+                placed_values[value] = pos
+
+                # Quick forward-check: ensure required neighbors remain possible
+                if not has_viable_neighbors(puzzle_state, value, pos, placed_values, neighbors_map):
+                    placed_values.pop(value, None)
+                    cell.value = None
+                    continue
                 
-                # Recursive search
-                search_recursive(new_puzzle, depth + 1, new_placed)
+                # Recursive search with updated counts
+                search_recursive(puzzle_state, depth + 1, placed_values, empty_count - 1)
+                
+                # Backtrack
+                placed_values.pop(value, None)
+                cell.value = None
         
         # Create a working copy of the puzzle
         solver = Solver(puzzle)
@@ -267,7 +313,8 @@ class Solver:
         clear_nongivens(new_puzzle)
         neighbors_map = build_neighbors(new_puzzle)
         placed_values = build_placed_map(new_puzzle)
-        search_recursive(new_puzzle, 0, placed_values)
+        empty_cells = sum(1 for cell in new_puzzle.grid.iter_cells() if not cell.blocked and cell.is_empty())
+        search_recursive(new_puzzle, 0, placed_values, empty_cells)
 
         return {
             'solutions_found': solutions_found,
